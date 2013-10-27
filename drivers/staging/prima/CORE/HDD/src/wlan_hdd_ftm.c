@@ -1304,7 +1304,7 @@ static VOS_STATUS wlan_ftm_priv_get_status(hdd_adapter_t *pAdapter,char *buf)
     }
 
     lenRes = snprintf(buf, lenBuf, "\n chainSelect: %s\n rxmode: %s\n "
-                                   "txpktgen: %s\n  txifs: %ld\n  txrate: ",
+                                   "txpktgen: %s\n  txifs: %d\n  txrate: ",
                       chain[ftm_status.chainSelect], rx[ftm_status.rxmode],
                       tx[ftm_status.frameGenEnabled],
                       ftm_status.frameParams.interFrameSpace);
@@ -1342,7 +1342,7 @@ static VOS_STATUS wlan_ftm_priv_get_status(hdd_adapter_t *pAdapter,char *buf)
     buf += lenRes;
     lenBuf -= lenRes;
 
-    lenRes = snprintf(buf, lenBuf, "\n  power ctl mode: %d\n  txpktcnt: %ld\n  "
+    lenRes = snprintf(buf, lenBuf, "\n  power ctl mode: %d\n  txpktcnt: %d\n  "
                                    "txpktlen: %d\n", ftm_status.powerCtlMode,
                       ftm_status.frameParams.numTestPackets,
                       ftm_status.frameParams.payloadLength);
