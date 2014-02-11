@@ -98,7 +98,7 @@
 #define FREQ_BAND_DIFF_80211G     (5)
 #define MAX_SCAN_SSID 9
 #define GET_IE_LEN_IN_BSS_DESC(lenInBss) ( lenInBss + sizeof(lenInBss) - \
-        ((int) OFFSET_OF( tSirBssDescription, ieFields)))
+        ((uintptr_t)OFFSET_OF( tSirBssDescription, ieFields)))
 
 #define HDD2GHZCHAN(freq, chan, flag)   {     \
     .band =  IEEE80211_BAND_2GHZ, \
