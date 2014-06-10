@@ -75,6 +75,8 @@ static inline __printf(1, 2) void persistent_ram_annotation_append(
 static inline void persistent_ram_annotation_merge(
 			struct persistent_ram_zone *prz) { };
 #endif
+void *persistent_ram_map(phys_addr_t start, phys_addr_t size);
+void persistent_ram_unmap(void *vaddr, phys_addr_t start, phys_addr_t size);
 
 void ramoops_console_write_buf(const char *buf, size_t size);
 
