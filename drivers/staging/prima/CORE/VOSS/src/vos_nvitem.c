@@ -1134,7 +1134,7 @@ VOS_STATUS vos_nv_open(void)
        return VOS_STATUS_E_RESOURCES;
     }
 
-    memcpy(&magicNumber, &pnvEncodedBuf[sizeof(v_U32_t)], sizeof(v_U32_t));
+    vos_mem_copy(&magicNumber, &pnvEncodedBuf[sizeof(v_U32_t)], sizeof(v_U32_t));
 
     /// Allocate buffer with maximum length..
     pEncodedBuf = (v_U8_t *)vos_mem_malloc(nvReadBufSize);
@@ -1567,7 +1567,7 @@ VOS_STATUS vos_nv_getSupportedCountryCode( v_BYTE_t *pBuffer, v_SIZE_t *pBufferS
    }
    for (i = 0; i < countryInfoTable.countryCount; i++)
    {
-      memcpy( pBuffer, countryInfoTable.countryInfo[i].countryCode, VOS_COUNTRY_CODE_LEN );
+      vos_mem_copy( pBuffer, countryInfoTable.countryInfo[i].countryCode, VOS_COUNTRY_CODE_LEN );
       pBuffer += (VOS_COUNTRY_CODE_LEN + paddingSize );
    }
    return VOS_STATUS_SUCCESS;
@@ -1623,13 +1623,13 @@ VOS_STATUS vos_nv_readMacAddress( v_MAC_ADDRESS_t pMacAddress )
          sizeof(fieldImage) );
    if (VOS_STATUS_SUCCESS == status)
    {
-      memcpy( pMacAddress, fieldImage.macAddr, VOS_MAC_ADDRESS_LEN );
+      vos_mem_copy( pMacAddress, fieldImage.macAddr, VOS_MAC_ADDRESS_LEN );
    }
    else
    {
       //This part of the code can be removed when NV is programmed
       const v_U8_t macAddr[VOS_MAC_ADDRESS_LEN] = VOS_HARD_CODED_MAC;
-      memcpy( pMacAddress, macAddr, VOS_MAC_ADDRESS_LEN );
+      vos_mem_copy( pMacAddress, macAddr, VOS_MAC_ADDRESS_LEN );
       VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_WARN,
                 "fail to get MAC address from NV, hardcoded to "MAC_ADDRESS_STR,
                 MAC_ADDR_ARRAY(macAddr));
@@ -1833,7 +1833,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.fields,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.fields,bufferSize);
            }
            break;
        case VNV_RATE_TO_POWER_TABLE:
@@ -1845,7 +1845,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.pwrOptimum[0],bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.pwrOptimum[0],bufferSize);
            }
            break;
        case VNV_REGULARTORY_DOMAIN_TABLE:
@@ -1857,7 +1857,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.regDomains[0],bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.regDomains[0],bufferSize);
            }
            break;
        case VNV_DEFAULT_LOCATION:
@@ -1869,7 +1869,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.defaultCountryTable,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.defaultCountryTable,bufferSize);
            }
            break;
        case VNV_TPC_POWER_TABLE:
@@ -1881,7 +1881,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.plutCharacterized[0],bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.plutCharacterized[0],bufferSize);
            }
            break;
        case VNV_TPC_PDADC_OFFSETS:
@@ -1893,7 +1893,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.plutPdadcOffset[0],bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.plutPdadcOffset[0],bufferSize);
            }
            break;
        case VNV_RSSI_CHANNEL_OFFSETS:
@@ -1908,7 +1908,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.rssiChanOffsets[0],bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.rssiChanOffsets[0],bufferSize);
            }
            break;
        case VNV_HW_CAL_VALUES:
@@ -1923,7 +1923,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.hwCalValues,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.hwCalValues,bufferSize);
            }
            break;
        case VNV_FW_CONFIG:
@@ -1938,7 +1938,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.fwConfig,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.fwConfig,bufferSize);
            }
            break;
        case VNV_ANTENNA_PATH_LOSS:
@@ -1950,7 +1950,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.antennaPathLoss[0],bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.antennaPathLoss[0],bufferSize);
            }
            break;
        case VNV_PACKET_TYPE_POWER_LIMITS:
@@ -1962,7 +1962,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,gnvEFSTable->halnv.tables.pktTypePwrLimits,bufferSize);
+               vos_mem_copy(outputVoidBuffer,gnvEFSTable->halnv.tables.pktTypePwrLimits,bufferSize);
            }
            break;
        case VNV_OFDM_CMD_PWR_OFFSET:
@@ -1974,7 +1974,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.ofdmCmdPwrOffset,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.ofdmCmdPwrOffset,bufferSize);
            }
            break;
        case VNV_TX_BB_FILTER_MODE:
@@ -1986,7 +1986,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.txbbFilterMode,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.txbbFilterMode,bufferSize);
            }
            break;
 
@@ -2000,7 +2000,7 @@ VOS_STATUS vos_nv_read( VNV_TYPE type, v_VOID_t *outputVoidBuffer,
                status = VOS_STATUS_E_INVAL;
            }
            else {
-               memcpy(outputVoidBuffer,&gnvEFSTable->halnv.tables.pwrOptimum_virtualRate,bufferSize);
+               vos_mem_copy(outputVoidBuffer,&gnvEFSTable->halnv.tables.pwrOptimum_virtualRate,bufferSize);
            }
            break;
 
@@ -2064,7 +2064,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.fields,
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.fields,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2081,7 +2081,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.pwrOptimum[0],
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.pwrOptimum[0],
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2098,7 +2098,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.regDomains[0],
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.regDomains[0],
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2115,7 +2115,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.defaultCountryTable,
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.defaultCountryTable,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2132,7 +2132,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.plutCharacterized[0],
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.plutCharacterized[0],
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2149,7 +2149,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.plutPdadcOffset[0],
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.plutPdadcOffset[0],
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2166,7 +2166,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.rssiChanOffsets[0],
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.rssiChanOffsets[0],
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2183,7 +2183,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.hwCalValues,
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.hwCalValues,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2200,7 +2200,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
            }
            else
            {
-               memcpy(&gnvEFSTableV2->halnvV2.tables.fwConfig,
+               vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.fwConfig,
                       inputVoidBuffer,
                       bufferSize);
            }
@@ -2217,7 +2217,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.antennaPathLoss[0],
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.antennaPathLoss[0],
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2234,7 +2234,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(gnvEFSTableV2->halnvV2.tables.pktTypePwrLimits,
+                vos_mem_copy(gnvEFSTableV2->halnvV2.tables.pktTypePwrLimits,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2251,7 +2251,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.ofdmCmdPwrOffset,
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.ofdmCmdPwrOffset,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2268,7 +2268,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.txbbFilterMode,
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.txbbFilterMode,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2285,7 +2285,7 @@ VOS_STATUS vos_nv_write(VNV_TYPE type, v_VOID_t *inputVoidBuffer,
             }
             else
             {
-                memcpy(&gnvEFSTableV2->halnvV2.tables.pwrOptimum_virtualRate,
+                vos_mem_copy(&gnvEFSTableV2->halnvV2.tables.pwrOptimum_virtualRate,
                        inputVoidBuffer,
                        bufferSize);
             }
@@ -2449,7 +2449,7 @@ VOS_STATUS vos_nv_readDefaultCountryTable( uNvTables *tableData )
 {
 
    VOS_STATUS status = VOS_STATUS_SUCCESS;
-   memcpy(&tableData->defaultCountryTable, &pnvEFSTable->halnv.tables.defaultCountryTable, sizeof(sDefaultCountry));
+   vos_mem_copy(&tableData->defaultCountryTable, &pnvEFSTable->halnv.tables.defaultCountryTable, sizeof(sDefaultCountry));
    pr_info("DefaultCountry is %c%c\n",
             tableData->defaultCountryTable.countryCode[0],
             tableData->defaultCountryTable.countryCode[1]);
@@ -4101,7 +4101,7 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
        int status;
        wiphy_dbg(wiphy, "info: set by user\n");
        memset(ccode, 0, WNI_CFG_COUNTRY_CODE_LEN);
-       memcpy(ccode, request->alpha2, 2);
+       vos_mem_copy(ccode, request->alpha2, 2);
        init_completion(&change_country_code);
        /* We will process hints by user from nl80211 in driver.
        * sme_ChangeCountryCode will set the country to driver

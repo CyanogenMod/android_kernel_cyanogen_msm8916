@@ -284,7 +284,7 @@ int hmac_sha1(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
     }
 
     memset(hash_result, 0, 64);
-    memcpy(hash_buff, plaintext, psize);
+    vos_mem_copy(hash_buff, plaintext, psize);
     sg_init_one(&sg, hash_buff, psize);
 
     if (ksize) {
@@ -439,7 +439,7 @@ int hmac_md5(v_U8_t *key, v_U8_t ksize, char *plaintext, v_U8_t psize,
     }
 
     memset(hash_result, 0, 64);
-    memcpy(hash_buff, plaintext, psize);
+    vos_mem_copy(hash_buff, plaintext, psize);
     sg_init_one(&sg, hash_buff, psize);
 
     if (ksize) {
