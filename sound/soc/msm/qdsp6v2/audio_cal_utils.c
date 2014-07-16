@@ -122,6 +122,7 @@ size_t get_cal_info_size(int32_t cal_type)
 		break;
 	case DTS_EAGLE_CAL_TYPE:
 		size = 0;
+		break;
 	case AUDIO_CORE_METAINFO_CAL_TYPE:
 		size = sizeof(struct audio_cal_info_metainfo);
 		break;
@@ -234,6 +235,7 @@ size_t get_user_cal_type_size(int32_t cal_type)
 		break;
 	case DTS_EAGLE_CAL_TYPE:
 		size = 0;
+		break;
 	case AUDIO_CORE_METAINFO_CAL_TYPE:
 		size = sizeof(struct audio_cal_type_metainfo);
 		break;
