@@ -1,0 +1,9 @@
+
+config YL_ADUX1020_GESTURE
+	tristate "adux1020 3d gesture support"
+	select	AVERAGE
+	depends on I2C
+	default n
+	help
+	  adux1020 3d gesture driver
+	  

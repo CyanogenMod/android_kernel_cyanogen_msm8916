@@ -1,0 +1,45 @@
+comment "Hillcrest Labs Sensor Hub module"
+
+config YL_HCREST_SENSORHUB
+	tristate "Hcrest & Atmel G51 Sensor Hub Support"
+	depends on I2C
+	default n
+	help
+	  Hcrest & Atmel G51 Sensor Hub Driver
+
+config SENSOR_HUB_CORE
+	tristate "Hillcrest Labs sensor hub driver core"
+	depends on I2C && SYSFS
+	default n
+	help
+	  This module implements functionality common to all sensor hub interfaces
+
+config SENSOR_HUB_I2C
+	tristate "Hillcrest Labs sensor hub driver - I2C Interface"
+	depends on I2C && SYSFS
+	default n
+	select SENSOR_HUB_CORE
+	help
+	  Select this to enable the Hillcrest Labs sensorhub driver using I2C interface
+
+config SENSOR_HUB_SPI
+	tristate "Hillcrest Labs sensor hub driver - SPI Interface"
+	depends on SPI && SYSFS
+	default n
+	select SENSOR_HUB_CORE
+	help
+	  Select this to enable the Hillcrest Labs sensorhub driver using SPI interface
+
+config SENSOR_HUB_I2C_ATMEL_DFU
+	bool "Hillcrest Labs sensor hub DFU support for Atmel devices"
+	depends on SENSOR_HUB_I2C && FW_LOADER
+	default n
+	help
+	  Select this to enable firmware upgrade support for Atmel I2C devices
+
+config SENSOR_HUB_DEBUG
+	bool "Hillcrest Labs sensor hub driver debug support"
+	depends on SENSOR_HUB_CORE
+	default n
+	help
+	  Select this option to help debug the Hillcrest Labs sensor hub device.

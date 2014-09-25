@@ -1,0 +1,19 @@
+#
+# sensors devices
+#
+
+menu "Sensor Hub Sensors Drivers"
+
+config YL_SENSORS_SENSORHUB
+        tristate "Sensor Hub Sensor Support"
+        depends on I2C
+		default n
+        help
+          Support Sensor Hub Driver
+
+if YL_SENSORS_SENSORHUB
+source "drivers/sensors/sensorhub/hcrest/Kconfig"
+source "drivers/sensors/sensorhub/mxf0100/Kconfig"
+endif
+
+endmenu

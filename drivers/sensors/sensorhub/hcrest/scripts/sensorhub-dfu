@@ -1,0 +1,25 @@
+#!/system/bin/sh
+
+#
+# Example Android Startup Firmware Installation Script
+#
+
+if ! cd /sys/devices/virtual/misc/sensorhub0
+then
+	log -p e -t "sensorhub" "sensorhub driver not loaded'"
+	exit 1
+fi
+
+if [ "$(cat state)" == "bootloader" ]
+then
+	log -p i -t "sensorhub" "performing firmware upgrade; state=$(cat state)"
+	echo "update" > state
+	if [ "$(cat state)" == "app" ]
+	then
+		log -p i -t "sensorhub" "firmware upgrade success"
+		exit 1
+	else
+		log -p e -t "sensorhub" "firmware upgrade error, driver state=$(cat state), check dmesg"
+	fi
+fi
+exit 0

@@ -1,0 +1,19 @@
+#
+# sensors devices
+#
+
+menu "3D Gesture Sensors Drivers"
+
+config YL_SENSORS_GESTURE
+        tristate "Gesture Sensor Support"
+        depends on I2C
+        default n
+        help
+          Support Gesture Driver
+
+if YL_SENSORS_GESTURE
+source "drivers/sensors/gesture/adux1020/Kconfig"
+source "drivers/sensors/gesture/tmg399x/Kconfig"
+endif
+
+endmenu

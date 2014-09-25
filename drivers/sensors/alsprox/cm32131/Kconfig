@@ -1,0 +1,7 @@
+
+config YL_CM32131_ALSPROX
+	tristate "CM32131 ALS Support"
+	depends on I2C=y
+	help
+	  cm36682 ALS Driver
+

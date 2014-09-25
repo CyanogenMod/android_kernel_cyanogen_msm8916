@@ -1,0 +1,6 @@
+
+config YL_AL3320_ALSPROX
+	tristate "al3320 ALS Support"
+	depends on I2C=y
+	help
+	  al3320 ALS Driver

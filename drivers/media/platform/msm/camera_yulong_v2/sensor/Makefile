@@ -1,0 +1,14 @@
+ccflags-y += -Idrivers/media/platform/msm/camera_yulong_v2
+ccflags-y += -Idrivers/media/platform/msm/camera_yulong_v2/msm_vb2
+ccflags-y += -Idrivers/media/platform/msm/camera_yulong_v2/camera
+ccflags-y += -Idrivers/media/platform/msm/camera_yulong_v2/sensor/io
+ccflags-y += -Idrivers/media/platform/msm/camera_yulong_v2/sensor/cci
+obj-$(CONFIG_MSMB_CAMERA) += cci/ io/ csiphy/ csid/ actuator/ flash/ eeprom/
+obj-$(CONFIG_MSM_CAMERA_SENSOR) += msm_sensor_init.o msm_sensor_driver.o msm_sensor.o
+obj-$(CONFIG_IMX214) += imx214.o
+obj-$(CONFIG_OV8865) += ov8865.o
+obj-$(CONFIG_IMX135) += imx135.o
+obj-$(CONFIG_OV13850) += ov13850.o
+obj-$(CONFIG_IMX219) += imx219.o
+obj-$(CONFIG_OV5648) += ov5648.o
+obj-$(CONFIG_GC2235) += gc2235.o

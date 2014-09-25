@@ -1,0 +1,8 @@
+
+config YL_TMG399x_GESTURE
+	tristate "tmg399x 3d gesture support"
+	depends on I2C
+	default n
+	help
+	  tmg399x 3d gesture driver
+	  

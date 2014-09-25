@@ -1,0 +1,6 @@
+config YL_YAS533_COMPASS
+	tristate "YAS533 Magnetic Sensor Driver"
+	depends on I2C
+    default n
+	help
+	 YAS533 Magnetic Sensor Driver implemented by Bosch-Sensortec.

@@ -1,0 +1,7 @@
+#!/system/bin/sh
+
+path=/sys/devices/virtual/misc/sensorhub0
+[ ! -d $path ] && exit 1
+
+echo $path
+exit 0

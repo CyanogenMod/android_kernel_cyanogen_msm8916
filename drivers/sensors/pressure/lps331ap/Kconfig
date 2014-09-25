@@ -1,0 +1,8 @@
+
+config YL_LPS331AP_PRESSURE
+	tristate "LPS331AP Pressure Support"
+	depends on I2C
+	default n
+	help
+	  LPS331AP Pressure Driver
+	  

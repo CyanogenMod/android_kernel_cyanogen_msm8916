@@ -10,3 +10,37 @@ config SENSORS_SSC
 	  Add support for sensors SSC driver.
 	  This driver is used for exercising sensors use case,
 	  time syncing with ADSP clock.
+
+menu "Sensors Device Drivers"
+
+config SENSOR_POWER
+	tristate "Generic sensor layer (needed for accelerometer, ambient, proximity, ...)" if EXPERT
+	help
+	  Say N here if you have a headless (no power) system.
+	  If unsure, say Y.
+
+config YL_SENSORS
+	tristate "Yulong sensor support" if EXPERT
+	default y
+	help
+	  Say Y here if you have any sensor device (accelerometer, light, proximity,
+	  compass, ...) connected to your system and want it to be available to applications.
+	  Say N here if you have a headless (no proximity, no compass) system.
+	  If unsure, say Y.
+
+if YL_SENSORS
+source "drivers/sensors/sensparams/Kconfig"
+source "drivers/sensors/accel/Kconfig"
+source "drivers/sensors/alsprox/Kconfig"
+source "drivers/sensors/compass/Kconfig"
+source "drivers/sensors/fingerprint/Kconfig"
+source "drivers/sensors/humiture/Kconfig"
+source "drivers/sensors/pressure/Kconfig"
+source "drivers/sensors/sensorhub/Kconfig"
+source "drivers/sensors/hall/Kconfig"
+source "drivers/sensors/gesture/Kconfig"
+source "drivers/sensors/Kconfig.invensense"
+source "drivers/sensors/mpu6880/Kconfig"
+endif
+
+endmenu

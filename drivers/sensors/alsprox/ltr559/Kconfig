@@ -1,0 +1,12 @@
+############################################
+## 	Kconfig for alsprox sensors devices	
+## 	Author:LongJiang 									
+## 	Date:2013-09-30 									
+############################################
+
+config YL_LTR559_ALSPROX
+	tristate "LTR559 Ambient & Promixity Sensor Driver"
+	depends on I2C
+	default n
+	help
+	 LTR559 Ambient & Promixity Sensor Driver implemented by YL.

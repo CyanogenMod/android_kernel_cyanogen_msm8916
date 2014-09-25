@@ -1,0 +1,20 @@
+#
+# sensors devices
+#
+
+menu "Humiture Sensors Drivers"
+
+config YL_SENSORS_HUMITURE
+        tristate "Humiture Sensor Support"
+        depends on I2C
+		default n
+        help
+          Support Humiture Driver
+
+if YL_SENSORS_HUMITURE
+source "drivers/sensors/humiture/hshcal001a/Kconfig"
+source "drivers/sensors/humiture/hts221/Kconfig"
+source "drivers/sensors/humiture/bme280/Kconfig"
+endif
+
+endmenu

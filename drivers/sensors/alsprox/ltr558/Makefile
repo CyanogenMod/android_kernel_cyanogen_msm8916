@@ -1,0 +1,3 @@
+
+obj-$(CONFIG_YL_LTR558_ALSPROX) += ltr558.o
+

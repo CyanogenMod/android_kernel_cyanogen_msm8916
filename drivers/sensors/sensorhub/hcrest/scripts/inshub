@@ -1,0 +1,23 @@
+#!/system/bin/sh
+
+function klog() {
+	echo $* > /dev/kmsg
+}
+
+rmhub $*
+err=$?
+[ $err -ne 0 ] && exit $err
+
+klog ">>>>>>>>>>>> insmod <<<<<<<<<<<<"
+for mod in sensorhub-core sensorhub-i2c
+do
+	if [ -f /vendor/lib/modules/$mod.ko ]
+	then
+		klog " >>> module - $mod"
+		out=$(insmod /vendor/lib/modules/$mod.ko 2>&1)
+		err=$?
+		[ $err -ne 0 ] && klog $out && exit $err
+	fi
+done
+klog ">>>>>>>>>>>> insmod <<<<<<<<<<<<"
+

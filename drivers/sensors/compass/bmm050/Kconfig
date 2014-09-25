@@ -1,0 +1,6 @@
+config YL_BMM050_COMPASS
+	tristate "BMM050 Magnetic Sensor Driver"
+	depends on I2C
+    default n
+	help
+	 BMM050 Magnetic Sensor Driver implemented by Bosch-Sensortec.

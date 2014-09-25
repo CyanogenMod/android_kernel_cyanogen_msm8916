@@ -1,0 +1,20 @@
+#
+# sensors devices
+#
+
+menu "Compass Sensors Drivers"
+
+config YL_SENSORS_COMPASS
+        tristate "Compass Sensor Support"
+        depends on I2C
+        default n	
+        help
+          Support Compass Driver
+
+if YL_SENSORS_COMPASS
+source "drivers/sensors/compass/akm8975/Kconfig"
+source "drivers/sensors/compass/bmm050/Kconfig"
+source "drivers/sensors/compass/yas533/Kconfig"
+endif
+
+endmenu

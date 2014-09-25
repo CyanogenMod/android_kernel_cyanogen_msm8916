@@ -1,0 +1,3 @@
+
+obj-$(CONFIG_YL_CM36682_ALSPROX) += cm36682.o
+

@@ -1,0 +1,12 @@
+#
+# Makefile for sensors devices
+#
+
+obj-$(CONFIG_YL_TMD277x_ALSPROX) += tmd277x/
+obj-$(CONFIG_YL_CM36682_ALSPROX) += cm36682/
+obj-$(CONFIG_YL_CM32131_ALSPROX) += cm32131/
+obj-$(CONFIG_YL_LTR559_ALSPROX)  += ltr559/
+obj-$(CONFIG_YL_LTR558_ALSPROX)  += ltr558/
+obj-$(CONFIG_YL_AL3320_ALSPROX)  += al3320/
+obj-$(CONFIG_YL_TXC_PA12200001)  += pa12200001/
+

@@ -1,0 +1,133 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "msm8939-audio-internal_codec-cp8675.dtsi"
+#include "msm8939-camera-sensor-cp8675.dtsi"
+#include "msm8939-panels-cp8675.dtsi"
+#include "msm8939-pinctrl-cp8675.dtsi"
+#include "msm8939-regulator-cp8675.dtsi"
+#include "msm-pm8916-cp8675.dtsi"
+
+/ {
+	pstore_reserve_mem: pstore_reserve_mem_region@0 {
+		linux,reserve-contiguous-region;
+		linux,reserve-region;
+		linux,remove-completely;
+		reg = <0x0 0x9ff00000 0x0 0x00100000>;
+		label = "pstore_reserve_mem";
+	};
+};
+
+&soc {
+	i2c@78b9000 { /* BLSP1 QUP5 */
+		goodix_ts@5d {
+			compatible = "Goodix,Goodix-TS";
+			reg = <0x5d>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2>;
+			vdd_ana-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+
+			goodix,reset-gpio = <&msm_gpio 12 0x00>;
+			goodix,irq-gpio = <&msm_gpio 13 0x2>;
+			goodix,irq_flags = <0x2>;
+			goodix,screen_x = <720>;
+			goodix,screen_y = <1280>;
+		};
+	};
+
+	i2c@78b8000 { /* BLSP1 QUP4 */
+		compatible = "yl,bq24157_charge";
+		reg = <0x6A>;
+		bq24157,irq-gpio = <&msm_gpio 62 0x00>;
+		bq24157,en-gpio = <&msm_gpio 2 0x00>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <62 0>;
+		interrupt-names = "bq24157_irq";
+		pinctrl-names = "active", "sleep";
+		pinctrl-0 = <&bq24157_int_active>;
+		pinctrl-1 = <&bq24157_int_sleep>;
+
+		yl,max-vbus-current-mA = <1500>;
+		yl,weak-batt-vol-mv = <3400>;
+		yl,max-voltage-mv = <4350>;
+		yl,max-charge-current-mA = <1000>;
+		yl,term_current-mA = <100>;
+		yl,vsp-mv = <4500>;
+		yl,safety-charge_current-mA = <1500>;
+		yl,safety-voltage-mv = <4380>;
+		yl,enable-te;
+		yl,recharge-thresh-mv = <100>;
+		yl,vbus-ovp-mv = <6500>;
+		yl,recharge-capa = <99>;
+	};
+
+	i2c@78b6000 { /* BLSP1 QUP2 */
+		mpu6880@68 {
+			compatible = "mpu6880";
+			reg = <0x68>;
+		};
+		yas533@2e {
+			compatible = "compass";
+			reg = <0x2e>;
+		};
+		pa12200001@1e {
+			compatible = "pa12200001";
+			reg = <0x1e>;
+			pinctrl-names = "default","sleep";
+			pinctrl-0 = <&pa12200001_default>;
+			pinctrl-1 = <&pa12200001_sleep>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <113 0x2>;
+			vdd_ana-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			alsp_vreg-supply = <&pm8916_l6>;
+			pa12200001,gpio_int = <&msm_gpio 113 0x00>;
+			pa12200001,irq_flags = <0x2>;
+			pa12200001,cfgs = <40 25 255 0 5 1 0 2 0 1 3 1 1 0>;
+		};
+		lc709203@b {
+			compatible = "yl,lc709203";
+			reg = <0x0B>;
+			lc709203,alarmb-gpio = <&msm_gpio 112 0x00>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <62 0>;
+			interrupt-names = "lc709203_irq";
+			yl,soc-remapping-enable = <1>;
+			yl,soc-remapping-top-limit = <980>;
+			yl,soc-remapping-low-limit = <30>;
+			yl,batt-type = <3>;
+			qcom,lc-vadc = <&pm8916_vadc>;
+		};
+		aw-leds@45 {
+			compatible = "aw-leds";
+			reg = <0x45>;
+		};
+	};
+
+	hall_sensor {
+		compatible = "hall_switch";
+		switch_name = "hall";
+		hall_right {
+			hall_name = "right";
+			gpios = <&msm_gpio 114 0x1>;
+			wakeup = <1>;
+		};
+	};
+};
+
+&pm8916_chg {
+	status = "disabled";
+};

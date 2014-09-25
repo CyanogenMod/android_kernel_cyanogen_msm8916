@@ -1,0 +1,19 @@
+#
+# sensors devices
+#
+
+menu "Pressure Sensors Drivers"
+
+config YL_SENSORS_PRESSURE
+        tristate "Pressure Sensor Support"
+        depends on I2C
+		default n
+        help
+          Support Pressure Driver
+
+if YL_SENSORS_PRESSURE
+source "drivers/sensors/pressure/lps331ap/Kconfig"
+source "drivers/sensors/pressure/lps25h/Kconfig"
+endif
+
+endmenu

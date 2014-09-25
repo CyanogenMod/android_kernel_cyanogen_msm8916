@@ -1,0 +1,8 @@
+
+config YL_LTR558_ALSPROX
+	tristate "ltr558 ALS&Proximity Support"
+	depends on I2C
+	default n	
+	help
+	  ltr558 ALS&Proximity Driver
+	  

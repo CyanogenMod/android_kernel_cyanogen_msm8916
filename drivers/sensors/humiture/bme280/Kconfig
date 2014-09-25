@@ -1,0 +1,36 @@
+#
+# Please let upper layer's Kconfig contains BME280 Kconfig.
+# For example, you can add the following statement to the end of
+# drivers/input/misc/Kconfig when you think BME280 as input misc device.
+#     source "drivers/input/misc/bme280/Kconfig"
+#
+
+config YL_BME280_HUMITURE
+	tristate "BME280 digital pressure sensor"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	  If you say yes here you get support for Bosch Sensortec
+	  digital pressure sensors BME280.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called bme280-core.
+
+config YL_BME280_I2C_HUMITURE
+	tristate "support I2C bus communication"
+	depends on  I2C
+	help
+	  Say Y here if you want to support Bosch Sensortec digital pressure
+	  sensor hooked to an I2C bus.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called bme280-i2c.
+
+#config BME280_SPI
+#	tristate "support SPI bus communication"
+#	depends on BME280 && SPI_MASTER
+#	help
+#	  Say Y here if you want to support Bosch Sensortec digital pressure
+#	  sensor hooked to an SPI bus.
+#
+#	  To compile this driver as a module, choose M here: the
+#	  module will be called bme280-spi.

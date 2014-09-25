@@ -91,6 +91,13 @@ config FIRMWARE_EDID
 	 combination with certain motherboards and monitors are known to
 	 suffer from this problem.
 
+config YULONG_COLOR
+	bool "Enable Yulong color enhancement feature"
+	depends on FB
+	default n
+	---help---
+	  This enables color enhancement for Yulong devices.
+
 config FB_DDC
        tristate
        depends on FB

@@ -1,0 +1,58 @@
+# Yulong/Coolpad configuration options
+
+config MACH_YULONG
+	bool "Yulong device"
+	depends on ARCH_MSM
+	help
+	  Support for Yulong products
+
+config MACH_YULONG_MSM8939
+	bool "Yulong MSM8939"
+	depends on MACH_MSM8916
+	select MACH_YULONG
+	help
+	  Support for MSM8939 Yulong variants
+
+menu "Yulong board selection"
+
+config MACH_CP8675
+	bool "CP8675_I01 board"
+	select MACH_YULONG_MSM8939
+	help
+	  Support for Yulong CP8675_I01 variant
+
+endmenu
+
+menu "Yulong debug selection"
+
+config ANDROID_DEV_DEBUG
+	bool "Android GPIO debugging support"
+	help
+	  GPIO debugging
+
+config YULONG_DEBUG
+	bool "Yulong debugging support"
+	help
+	  Yulong debugging
+
+config YULONG_MODULE_MANAGEMENT
+	bool "Yulong module management support"
+	help
+	  This driver provides a method for enabling/disabling a device.
+
+config YULONG_USB_UART_SWITCH
+	bool "Yulong USB UART switch support"
+	help
+	  This driver provides a method for USB UART switching.
+
+config YL_DEBUG
+	bool "Yulong debug logging support"
+	help
+	  Enable YL_DEBUG macro
+
+config APP_PROFILE
+	bool "Support for apps to set hardware frequencies"
+	help
+	  Allow apps to set CPU/GPU frequencies
+
+endmenu

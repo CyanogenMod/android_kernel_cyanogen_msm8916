@@ -323,6 +323,13 @@ config CHARGER_MAX8998
 	  Say Y to enable support for the battery charger control sysfs and
 	  platform data of MAX8998/LP3974 PMICs.
 
+config CHARGER_BQ24157
+	tristate "TI BQ24157 battery charger driver"
+	depends on I2C
+	help
+	  Say Y to enable support for the TI BQ2415x battery charger
+	  PMICs.
+
 config CHARGER_BQ2415X
 	tristate "TI BQ2415x battery charger driver"
 	depends on I2C
@@ -332,6 +339,19 @@ config CHARGER_BQ2415X
 
 	  You'll need this driver to charge batteries on e.g. Nokia
 	  RX-51/N900.
+
+config CHARGER_LC709203
+	tristate "LC709203 fuelgauger driver"
+	depends on I2C
+	help
+	  Say Y to enable support for the TI BQ2415x battery charger
+	  PMICs.
+
+config CHARGER_HAVE_LC709203_FUEL
+	bool "charger neeed LC709203 fuelgauger driver"
+	default n
+	help
+	  Say Y to enable support for LC709203 fuelgauger in charger driver.
 
 config BATTERY_MSM_FAKE
 	tristate "Fake MSM battery"
@@ -542,6 +562,21 @@ config MSM_BCL_PERIPHERAL_CTL
 	  Say Y here to enable this BCL PMIC peripheral driver. This driver
 	  provides routines to configure and monitor the BCL
 	  PMIC peripheral.
+
+config YL_PM8916_VBUS
+	tristate "Yulong PM8916 VBUS driver"
+	depends on SPMI
+	depends on OF_SPMI
+	depends on MSM_QPNP_INT
+	depends on THERMAL_QPNP_ADC_TM
+	help
+	  Say Y here to enable the Yulong PM8916 VBUS driver
+
+config FAN5405_SM_CHARGE
+	tristate "FAN5405 SM charge driver"
+	depends on I2C
+	help
+	  Say Y here to enable the fan5405 SM charge driver
 
 source "drivers/power/reset/Kconfig"
 

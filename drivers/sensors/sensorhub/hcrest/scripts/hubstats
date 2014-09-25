@@ -1,0 +1,19 @@
+#!/system/bin/sh
+
+SLEEP=${1-1}
+
+while [ 1 ]
+do
+	busybox clear
+	if _dir=$(locatehub)
+	then
+		cd $_dir
+		echo -e "Installed at:   $PWD\n--"
+		cat stats
+		echo "--"
+		grep sensorhub /proc/interrupts
+	else
+		echo "Module not installed"
+	fi
+	busybox sleep $SLEEP
+done

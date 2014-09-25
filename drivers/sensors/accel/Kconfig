@@ -1,0 +1,33 @@
+############################################
+## 	Kconfig for acc sensors devices 			
+## 	Author:LongJiang 									
+## 	Date:2013-09-13 									
+############################################
+
+menu "Sensors Device Drivers"
+
+config YL_SENSORS_GSENSOR
+	tristate "Generic sensor layer (needed for BMA250E, KXTJ2-1009, ...)" if EXPERT
+    depends on I2C
+	default n
+	help
+	  Say Y here if you have any sensor device (BMA250E, KXTJ2-1009, ...) 
+	  connected to your system and want it to be available to applications.
+	  
+	  Say N here if you have a headless (no BMA250E, no KXTJ2-1009) system.
+
+	  If unsure, say Y.
+	  
+config YL_ACCELER_RANGE_CALIBRATE
+	tristate "Generic sensor layer (needed for BMA250E, KXTJ2-1009, ...)" if EXPERT
+	default n
+	help
+	  If unsure, say N.
+	  
+if YL_SENSORS_GSENSOR
+source "drivers/sensors/accel/bma2x2/Kconfig"
+source "drivers/sensors/accel/kionix/Kconfig"
+source "drivers/sensors/accel/lis3dh/Kconfig"
+endif
+
+endmenu

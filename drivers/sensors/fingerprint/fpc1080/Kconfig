@@ -1,0 +1,11 @@
+
+config YL_FPC1080_FINGERPRINT
+	tristate "FPC1080 Fingerprint Sensor Support"
+	depends on SPI_MASTER
+    default n
+	help
+	  FPC1080 Fingerprint Sensor Driver
+
+config FPC1080_NAVIGATION
+    tristate "FPC1080 fingerprint sensor navigation support"
+    depends on YL_FPC1080_FINGERPRINT

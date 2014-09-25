@@ -1,0 +1,7 @@
+
+config YL_MXF0100_SENSORHUB
+	tristate "Atmel mXF0100 Sensor Hub Support"
+	depends on I2C
+	default n
+	help
+	  mXF0100 Sensor Hub Driver

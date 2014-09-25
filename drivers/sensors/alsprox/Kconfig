@@ -1,0 +1,29 @@
+###########################################
+## 	Kconfig for alsprox sensors devices
+## 	Author:LongJiang
+## 	Date:2013-09-13
+############################################
+
+menu "alsprox-sensor Device Drivers"
+
+config YL_SENSORS_ALSPROX
+	tristate "Generic sensor layer (needed for taos, ltr559, ...)" if EXPERT
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have any sensor device (taos, ltr559, ...)
+	  connected to your system and want it to be available to applications.
+	  Say N here if you have a headless (no taos, no ltr559) system.
+	  If unsure, say Y.
+
+if YL_SENSORS_ALSPROX
+source "drivers/sensors/alsprox/tmd277x/Kconfig"
+source "drivers/sensors/alsprox/cm36682/Kconfig"
+source "drivers/sensors/alsprox/cm32131/Kconfig"
+source "drivers/sensors/alsprox/ltr559/Kconfig"
+source "drivers/sensors/alsprox/ltr558/Kconfig"
+source "drivers/sensors/alsprox/al3320/Kconfig"
+source "drivers/sensors/alsprox/pa12200001/Kconfig"
+endif
+
+endmenu

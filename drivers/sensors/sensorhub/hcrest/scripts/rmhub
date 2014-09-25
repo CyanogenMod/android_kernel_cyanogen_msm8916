@@ -1,0 +1,23 @@
+#!/system/bin/sh
+
+function klog() {
+	echo $* > /dev/kmsg
+}
+
+
+
+klog "~~~~~~~~~~~~ rmmod ~~~~~~~~~~~~"
+for mod in sensorhub-i2c sensorhub-core
+do
+
+	if ! ( lsmod | busybox grep ${mod/-/_} > /dev/null )
+	then
+		continue
+	fi
+
+	klog " ~~~ module - $mod"
+	out=$(rmmod $mod 2>&1)
+	err=$?
+	[ $err -ne 0 ] && klog $out && exit $err
+done
+klog "~~~~~~~~~~~~ rmmod ~~~~~~~~~~~~"

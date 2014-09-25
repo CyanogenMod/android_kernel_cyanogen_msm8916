@@ -1,0 +1,52 @@
+#!/system/bin/sh
+
+#
+# Example Android Startup Firmware Installation Script
+#
+
+
+alias _logi='log -p i -t "sensorhub"'
+alias _logw='log -p w -t "sensorhub"'
+alias _loge='log -p e -t "sensorhub"'
+
+PART_NUMBER=10003356
+FW_VERSION=0.4.2
+
+if ! cd /sys/devices/virtual/misc/sensorhub0
+then
+	_loge "sensorhub driver not loaded'"
+	exit 1
+fi
+
+function install_fw {
+	_logi "performing firmware upgrade; state=$(cat state)"
+	if echo "update" > state && [ "$(cat state)" == "app" ]
+	then
+		_logi "firmware upgrade success"
+		return 0
+	fi
+	_loge "firmware upgrade error, driver state=$(cat state), check dmesg"
+	return 1
+}
+
+if [ "$(cat state)" == "bootloader" ]
+then
+	install_fw
+elif [ ! -e /data/.no-sh1-dfu ]
+then
+	hubtool show productids | while read line
+	do
+		line=${line/;/ } 		# strip the ;
+		# match 'Part Number = %8u Version = %u.%u.%u.%05u'
+		# 		 $1   $2    $3  $4   $5    $6  $7
+		eval set -- $line
+		pn=$4
+		ver=${7/%??????/} # strip the build number part
+		if [ "$pn" == "$PART_NUMBER" ]  && [ "$ver" != "$FW_VERSION" ]
+		then
+			_logi "upgrade firmware $ver => $FW_VERSION"
+			install_fw
+		fi
+	done
+fi
+exit 0

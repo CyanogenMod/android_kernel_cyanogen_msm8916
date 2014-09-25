@@ -1,0 +1,23 @@
+############################################
+## 	Kconfig for accel sensors devices 			
+## 	Author:LongJiang 									
+## 	Date:2013-09-13 									
+############################################
+
+#
+# Miscellaneous I2C chip drivers configuration
+#
+# *** DEPRECATED! Do not add new entries! See Makefile ***
+#
+
+menu "Miscellaneous I2C Chip support"
+
+config YL_BMA2x2_GSENSOR
+	tristate "BMA255/BMA250E/BMA222E/BMA280 acceleration sensor support"
+	depends on I2C
+	default n	
+	help
+	  If you say yes here you get support for Bosch Sensortec's 
+	  acceleration sensors BMA255/BMA250E/BMA222E/BMA280.
+
+endmenu

@@ -1020,6 +1020,29 @@ config TOUCHSCREEN_GT9XX
 
           If unsure, say N.
 
+config TOUCHSCREEN_YL_GT9XX
+	bool "Goodix touchpanel (YL variant)"
+	depends on I2C
+	help
+	  Say Y here if you have a Goodix GT9xx touchscreen (YL variant).
+	  Gt9xx controllers are multi touch controllers which can
+	  report 5 touches at a time.
+
+	  If unsure, say N.
+
+
+config TOUCHSCREEN_YL_SYNAPTICS
+	tristate "Synaptics DSX I2C touchscreen (YL variant)"
+	depends on I2C
+	help
+	  Say Y here if you have a Synaptics DSX I2C touchscreen (YL variant)
+	  connected to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called synaptics_i2c_rmi4.
+
 source "drivers/input/touchscreen/gt9xx/Kconfig"
 
 config TOUCHSCREEN_BU21150

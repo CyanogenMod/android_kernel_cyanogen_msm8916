@@ -412,6 +412,8 @@ config MSM_REMOTE_SPINLOCK_LDREX
 config MSM_REMOTE_SPINLOCK_SFPB
 	bool
 
+source "arch/arm/mach-msm/yulong/Kconfig"
+
 config MSM_STACKED_MEMORY
 	bool "Stacked Memory"
 	default y

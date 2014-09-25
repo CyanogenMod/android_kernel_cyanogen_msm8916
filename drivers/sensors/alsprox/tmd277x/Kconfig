@@ -1,0 +1,8 @@
+
+config YL_TMD277x_ALSPROX
+	tristate "TAOS Ambient & Promixity Sensor Driver"
+	depends on I2C
+	default n
+	help
+	 TAOS Ambient & Promixity Sensor Driver implemented by YL.
+	  

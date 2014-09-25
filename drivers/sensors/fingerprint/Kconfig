@@ -1,0 +1,18 @@
+#
+# sensors devices
+#
+
+menu "Fingerprint Sensors Drivers"
+
+config YL_SENSORS_FINGERPRINT
+        tristate "Fingerprint Sensor Support"
+        depends on SPI_MASTER
+		default n
+        help
+          Support Fingerprint Driver
+
+if YL_SENSORS_FINGERPRINT
+source "drivers/sensors/fingerprint/fpc1080/Kconfig"
+endif
+
+endmenu

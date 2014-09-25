@@ -1,0 +1,7 @@
+
+config YL_LPS25H_PRESSURE
+	tristate "LPS25H Pressure Support"
+	depends on I2C=y
+	help
+	  LPS25H Pressure Driver
+	  

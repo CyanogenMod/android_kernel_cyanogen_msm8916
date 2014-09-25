@@ -1,0 +1,1 @@
+obj-$(CONFIG_YL_HTS221_HUMITURE) += hts221.o
