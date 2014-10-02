@@ -14,8 +14,8 @@
 #include "msm_camera_dt_util.h"
 #include "msm_camera_io_util.h"
 #include "msm_camera_i2c_mux.h"
-#include "msm_cci.h"
-#include "msm_sensor.h"
+#include <sensor/cci/msm_cci.h>
+#include <sensor/msm_sensor.h>
 
 #define CAM_SENSOR_PINCTRL_STATE_SLEEP "cam_suspend"
 #define CAM_SENSOR_PINCTRL_STATE_DEFAULT "cam_default"

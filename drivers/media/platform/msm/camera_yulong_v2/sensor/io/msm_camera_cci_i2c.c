@@ -12,7 +12,7 @@
 
 #include <soc/qcom/camera2.h>
 #include "msm_camera_i2c.h"
-#include "msm_cci.h"
+#include <sensor/cci/msm_cci.h>
 
 #undef CDBG
 #ifdef CONFIG_MSMB_CAMERA_DEBUG
