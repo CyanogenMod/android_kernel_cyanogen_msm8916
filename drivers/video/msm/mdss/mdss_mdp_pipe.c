@@ -19,7 +19,7 @@
 #include <linux/mutex.h>
 
 #include "mdss_mdp.h"
-#include "mdss_mdp_trace.h"
+#include <trace/mdss_mdp_trace.h>
 
 #define SMP_MB_SIZE		(mdss_res->smp_mb_size)
 #define SMP_MB_CNT		(mdss_res->smp_mb_cnt)
