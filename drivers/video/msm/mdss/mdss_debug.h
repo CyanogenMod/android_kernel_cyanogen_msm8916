@@ -20,7 +20,7 @@
 #include <linux/mdss_io_util.h>
 
 #include "mdss.h"
-#include "mdss_mdp_trace.h"
+#include <trace/mdss_mdp_trace.h>
 
 #define MISR_POLL_SLEEP		2000
 #define MISR_POLL_TIMEOUT	32000
