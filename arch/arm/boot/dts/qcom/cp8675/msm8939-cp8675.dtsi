@@ -49,29 +49,31 @@
 	};
 
 	i2c@78b8000 { /* BLSP1 QUP4 */
-		compatible = "yl,bq24157_charge";
-		reg = <0x6A>;
-		bq24157,irq-gpio = <&msm_gpio 62 0x00>;
-		bq24157,en-gpio = <&msm_gpio 2 0x00>;
-		interrupt-parent = <&msm_gpio>;
-		interrupts = <62 0>;
-		interrupt-names = "bq24157_irq";
-		pinctrl-names = "active", "sleep";
-		pinctrl-0 = <&bq24157_int_active>;
-		pinctrl-1 = <&bq24157_int_sleep>;
+		bq24157_charge@6A {
+			compatible = "yl,bq24157_charge";
+			reg = <0x6A>;
+			bq24157,irq-gpio = <&msm_gpio 62 0x00>;
+			bq24157,en-gpio = <&msm_gpio 2 0x00>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <62 0>;
+			interrupt-names = "bq24157_irq";
+			pinctrl-names = "active", "sleep";
+			pinctrl-0 = <&bq24157_int_active>;
+			pinctrl-1 = <&bq24157_int_sleep>;
 
-		yl,max-vbus-current-mA = <1500>;
-		yl,weak-batt-vol-mv = <3400>;
-		yl,max-voltage-mv = <4350>;
-		yl,max-charge-current-mA = <1000>;
-		yl,term_current-mA = <100>;
-		yl,vsp-mv = <4500>;
-		yl,safety-charge_current-mA = <1500>;
-		yl,safety-voltage-mv = <4380>;
-		yl,enable-te;
-		yl,recharge-thresh-mv = <100>;
-		yl,vbus-ovp-mv = <6500>;
-		yl,recharge-capa = <99>;
+			yl,max-vbus-current-mA = <1500>;
+			yl,weak-batt-vol-mv = <3400>;
+			yl,max-voltage-mv = <4350>;
+			yl,max-charge-current-mA = <1000>;
+			yl,term_current-mA = <100>;
+			yl,vsp-mv = <4500>;
+			yl,safety-charge_current-mA = <1500>;
+			yl,safety-voltage-mv = <4380>;
+			yl,enable-te;
+			yl,recharge-thresh-mv = <100>;
+			yl,vbus-ovp-mv = <6500>;
+			yl,recharge-capa = <99>;
+		};
 	};
 
 	i2c@78b6000 { /* BLSP1 QUP2 */
