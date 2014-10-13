@@ -2358,14 +2358,12 @@ static int msm8x16_asoc_machine_probe(struct platform_device *pdev)
 	if (IS_ERR(pinctrl_info.cdc_lines_dmic_sus)) {
 		pr_err("%s: Unable to get pinctrl cdc_lines_dmic_sus handle\n",
 							__func__);
-		goto err;
 	}
 	pinctrl_info.cdc_lines_dmic_act = pinctrl_lookup_state(pinctrl,
 		"cdc_lines_dmic_act");
 	if (IS_ERR(pinctrl_info.cdc_lines_dmic_act)) {
 		pr_err("%s: Unable to get pinctrl cdc_lines_dmic_act handle\n",
 							__func__);
-		goto err;
 	}
 #endif
 
