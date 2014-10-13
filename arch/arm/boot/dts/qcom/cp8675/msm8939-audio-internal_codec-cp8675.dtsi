@@ -13,6 +13,7 @@
 &soc {
 	sound {
 		qcom,msm-mbhc-hphl-swh = <1>;
+		qcom,msm-micbias1-ext-cap;
 		qcom,audio-routing =
 			"RX_BIAS", "MCLK",
 			"SPK_RX_BIAS", "MCLK",
