@@ -37,6 +37,10 @@ config PRIMA_WLAN_11AC_HIGH_TP
 	bool "Enable the Prima WLAN 802.11ac High Throughput option (depends upon kernel support)"
 	default n
 
+config QCOM_TDLS
+	bool "Enable TDLS feature"
+	default n
+
 config WLAN_FEATURE_11W
 	bool "Enable the WLAN 802.11w Protected Management Frames feature"
 	default n
@@ -45,7 +49,7 @@ config QCOM_VOWIFI_11R
 	bool "Enable Fast Transition (11r) feature"
 	default n
 
-config CONFIG_ENABLE_LINUX_REG
+config ENABLE_LINUX_REG
 	bool "Enable linux regulatory feature"
 	default n
 
