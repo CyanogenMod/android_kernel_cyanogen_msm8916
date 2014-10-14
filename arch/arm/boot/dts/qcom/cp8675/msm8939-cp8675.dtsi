@@ -81,10 +81,6 @@
 			compatible = "mpu6880";
 			reg = <0x68>;
 		};
-		yas533@2e {
-			compatible = "compass";
-			reg = <0x2e>;
-		};
 		pa12200001@1e {
 			compatible = "pa12200001";
 			reg = <0x1e>;
