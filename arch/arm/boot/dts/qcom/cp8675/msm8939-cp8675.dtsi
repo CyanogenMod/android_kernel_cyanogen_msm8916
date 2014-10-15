@@ -64,7 +64,7 @@
 			yl,max-vbus-current-mA = <1500>;
 			yl,weak-batt-vol-mv = <3400>;
 			yl,max-voltage-mv = <4350>;
-			yl,max-charge-current-mA = <1000>;
+			yl,max-charge-current-mA = <1250>;
 			yl,term_current-mA = <100>;
 			yl,vsp-mv = <4500>;
 			yl,safety-charge_current-mA = <1500>;
