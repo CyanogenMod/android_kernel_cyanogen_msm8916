@@ -1702,7 +1702,7 @@ static int bq24157_get_prop_charge_type(struct bq24157_chip *chip)
 
 	ret.intval = POWER_SUPPLY_CHARGE_TYPE_FAST;
 
-	return POWER_SUPPLY_CHARGE_TYPE_NONE;
+	return ret.intval;
 }
 
 static int bq24157_get_prop_charge_full_design(struct bq24157_chip *chip)
@@ -1710,7 +1710,7 @@ static int bq24157_get_prop_charge_full_design(struct bq24157_chip *chip)
 	union power_supply_propval ret = {0, };
 
 
-	ret.intval = 3000;
+	ret.intval = 2500;
 	return ret.intval;
 
 }
