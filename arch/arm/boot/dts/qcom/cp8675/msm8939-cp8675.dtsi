@@ -17,7 +17,7 @@
 #include "msm8939-regulator-cp8675.dtsi"
 #include "msm-pm8916-cp8675.dtsi"
 
-/ {
+&memory {
 	pstore_reserve_mem: pstore_reserve_mem_region@0 {
 		linux,reserve-contiguous-region;
 		linux,reserve-region;

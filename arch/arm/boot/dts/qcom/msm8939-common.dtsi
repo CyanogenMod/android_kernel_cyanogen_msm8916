@@ -35,7 +35,7 @@
 		spi5 = &spi_5;
 	};
 
-	memory {
+	memory: memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 
