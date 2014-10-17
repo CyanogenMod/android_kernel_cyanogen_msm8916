@@ -1,7 +1,7 @@
 #ifndef _LINUX_GOODIX_CONFIG_H
 #define	_LINUX_GOODIX_CONFIG_H
 
-#if defined(CONFIG_BOARD_CP8675_C00)||defined(CONFIG_BOARD_CP8675_W00)||defined(CONFIG_BOARD_CP8675_T00)||defined(CONFIG_BOARD_CP8675_A)||defined(CONFIG_BOARD_CP8675_I01)
+#ifdef CONFIG_MACH_CP8675
 const char * TW_IC_PREFIX_NAME = "GT";
 #else
 const char * TW_IC_PREFIX_NAME = "GT9158";
@@ -28,7 +28,7 @@ const char * TW_IC_PREFIX_NAME = "GT9158";
 #define GTP_ESD_CHECK_CIRCLE  2000
 //#define TW_GLOVE_SWITCH       0
 
-#if defined(CONFIG_BOARD_CP8675_C00)||defined(CONFIG_BOARD_CP8675_W00)||defined(CONFIG_BOARD_CP8675_T00)||defined(CONFIG_BOARD_CP8675_A)||defined(CONFIG_BOARD_CP8675_I01)
+#ifdef CONFIG_MACH_CP8675
 #define GTP_COB		      1
 #else
 #define GTP_COB		      0
@@ -45,7 +45,7 @@ struct touch_panel_info
 	unsigned int   firmware_size; 
 };
 
-#if defined(CONFIG_BOARD_CP8675_C00)||defined(CONFIG_BOARD_CP8675_W00)||defined(CONFIG_BOARD_CP8675_T00)||defined(CONFIG_BOARD_CP8675_A)||defined(CONFIG_BOARD_CP8675_I01)
+#ifdef CONFIG_MACH_CP8675
 static unsigned char CTP_CFG_GROUP1[]=  
 {
 	#include "coolpad_8675_00_V42_20140714_finger.cfg"
