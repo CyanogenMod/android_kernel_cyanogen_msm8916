@@ -7,7 +7,7 @@
 
 #define HEADER_UPDATE_DATA goodix_firmware
 
-#if defined(CONFIG_BOARD_CP8675_C00)||defined(CONFIG_BOARD_CP8675_W00)||defined(CONFIG_BOARD_CP8675_T00)||defined(CONFIG_BOARD_CP8675_A)||defined(CONFIG_BOARD_CP8675_I01)
+#ifdef CONFIG_MACH_CP8675
 const unsigned char goodix_firmware[] = {
 	#include "GT970_1030(5A1F)"
 };
