@@ -22,6 +22,12 @@
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
 
 static struct v4l2_file_operations msm_sensor_v4l2_subdev_fops;
+
+#ifdef CONFIG_MACH_YULONG
+static bool sensor_probed[2];
+static bool sensor_otp_prepared[2];
+#endif
+
 static void msm_sensor_adjust_mclk(struct msm_camera_power_ctrl_t *ctrl)
 {
 	int idx;
@@ -513,6 +519,9 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		sensor_i2c_client, slave_info->sensor_id_reg_addr,
 		&chipid, MSM_CAMERA_I2C_WORD_DATA);
 	if (rc < 0) {
+#ifdef CONFIG_MACH_YULONG
+		sensor_probed[s_ctrl->sensordata->sensor_info->position] = false;
+#endif
 		pr_err("%s: %s: read id failed\n", __func__, sensor_name);
 		return rc;
 	}
@@ -523,6 +532,11 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		pr_err("msm_sensor_match_id chip id doesnot match\n");
 		return -ENODEV;
 	}
+#ifdef CONFIG_MACH_YULONG
+	if(!(s_ctrl->module_id & (0xFFFF << 16)))
+		s_ctrl->module_id |= (chipid << 16);
+	sensor_probed[s_ctrl->sensordata->sensor_info->position] = true;
+#endif
 	return rc;
 }
 
@@ -1035,6 +1049,33 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 		kfree(reg_setting);
 		break;
 	}
+#ifdef CONFIG_MACH_YULONG
+	case CFG_UPDATE_OTP: {
+		int position = s_ctrl->sensordata->sensor_info->position;
+		CDBG("sensor info: name: %s sensor_otp_prepared: %d\n",
+			s_ctrl->sensordata->sensor_name, sensor_otp_prepared[position]);
+		if(s_ctrl->func_tbl->sensor_prepare_otp && !sensor_otp_prepared[position]) {
+			rc = s_ctrl->func_tbl->sensor_prepare_otp(s_ctrl);
+			if (rc) {
+				pr_err("sensor_prepare_otp failed\n");
+				break;
+			}
+
+			CDBG("sensor OTP prepared");
+			sensor_otp_prepared[position] = true;
+		}
+
+		if(s_ctrl->func_tbl->sensor_update_otp) {
+			rc = s_ctrl->func_tbl->sensor_update_otp(s_ctrl);
+			if (rc) {
+				pr_err("sensor_update_otp failed\n");
+				break;
+			}
+			cdata->cfg.sensor_init_params.module_id = s_ctrl->module_id;
+		}
+		break;
+	}
+#endif
 	case CFG_SLAVE_READ_I2C: {
 		struct msm_camera_i2c_read_config read_config;
 		uint16_t local_data = 0;
@@ -1229,6 +1270,9 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 				break;
 			}
 			s_ctrl->sensor_state = MSM_SENSOR_POWER_UP;
+#ifdef CONFIG_MACH_YULONG
+			cdata->cfg.sensor_init_params.module_id = s_ctrl->module_id;
+#endif
 			pr_err("%s:%d sensor state %d\n", __func__, __LINE__,
 				s_ctrl->sensor_state);
 		} else {
@@ -1498,6 +1542,13 @@ int32_t msm_sensor_platform_probe(struct platform_device *pdev,
 	CDBG("%s:%d\n", __func__, __LINE__);
 	return rc;
 }
+
+#ifdef CONFIG_MACH_YULONG
+bool msm_sensor_is_probed(int position){
+	CDBG("%s sensor_probed[%d] = %d", __func__, position, sensor_probed[position]);
+	return sensor_probed[position];
+}
+#endif
 
 int msm_sensor_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id, struct msm_sensor_ctrl_t *s_ctrl)
