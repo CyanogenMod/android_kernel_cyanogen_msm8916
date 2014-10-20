@@ -401,6 +401,9 @@ enum msm_sensor_cfg_type_t {
 	CFG_SET_AUTOFOCUS,
 	CFG_CANCEL_AUTOFOCUS,
 	CFG_SET_STREAM_TYPE,
+#ifdef CONFIG_MACH_YULONG
+	CFG_UPDATE_OTP,
+#endif
 };
 
 enum msm_actuator_cfg_type_t {
