@@ -91,7 +91,7 @@
 
 	qcom,camera@6c {
 		cell-index = <1>;
-		compatible = "qcom,ov5648";
+		compatible = "ovti,ov5648";
 		reg = <0x6c>;
 		qcom,slave-id = <0x6c 0x300a 0x5648>;
 		qcom,csiphy-sd-index = <1>;
