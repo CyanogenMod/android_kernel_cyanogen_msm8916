@@ -8,7 +8,7 @@ config MACH_YULONG
 
 config MACH_YULONG_MSM8939
 	bool "Yulong MSM8939"
-	depends on MACH_MSM8916
+	depends on ARCH_MSM8916
 	select MACH_YULONG
 	help
 	  Support for MSM8939 Yulong variants
