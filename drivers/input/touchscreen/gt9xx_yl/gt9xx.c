@@ -90,6 +90,7 @@ static unsigned int GTP_PWR_EN=1;
 #define GTP_SLEEP_PWR_EN 0
 u8 glove_mode=0;
 u8 glove_switch=0;
+atomic_t gt_keypad_enable;
 
 #if YL_COVER_SWITCH_FUNC
 
@@ -753,12 +754,14 @@ static void goodix_ts_work_func(struct work_struct *work)
     {
         for (i = 0; i < GTP_MAX_KEY_NUM; i++)
         {
+		if (atomic_read(&gt_keypad_enable)) {
             input_report_key(ts->input_dev, touch_key_array[i], key_value & (0x01<<i));   
 			GTP_DEBUG("input_report_key:%d, touch_key_arr:%d\n", i, touch_key_array[i]);
 				#ifdef YL_TW_DEBUG
 					if (key_value & (0x01<<i)) 
 					GTP_INFO("%s KEY press.", key_name[i]);
 				#endif	            	
+		}
         }
         touch_num = 0;
         pre_touch = 0;
@@ -1577,6 +1580,7 @@ static s8 gtp_request_input_dev(struct goodix_ts_data *ts)
 #endif
 
 #if GTP_HAVE_TOUCH_KEY
+	atomic_set(&gt_keypad_enable, 1);
     for (index = 0; index < GTP_MAX_KEY_NUM; index++)
     {
         input_set_capability(ts->input_dev,EV_KEY,touch_key_array[index]);	
@@ -2827,6 +2831,39 @@ static ssize_t gt968_send_cfg_ver_store(struct device *dev,struct device_attribu
 ///cover for small window. linronghui&mengxiuguan. end. 2014.02.11
 #endif
 
+static ssize_t keypad_enable_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", atomic_read(&gt_keypad_enable));
+}
+
+static ssize_t keypad_enable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long val = 0;
+	bool enable = 0;
+	int i = 0;
+	struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
+
+	if (strict_strtoul(buf, 16, &val))
+		return -EINVAL;
+
+	enable = (val == 0 ? 0 : 1);
+	atomic_set(&gt_keypad_enable, enable);
+	if (enable) {
+		for (i = 0; i < GTP_MAX_KEY_NUM; i++) {
+			set_bit(touch_key_array[i], ts->input_dev->keybit);
+		}
+	} else {
+		for (i = 0; i < GTP_MAX_KEY_NUM; i++) {
+			clear_bit(touch_key_array[i], ts->input_dev->keybit);
+		}
+	}
+	input_sync(ts->input_dev);
+
+	return count;
+}
+
 static DEVICE_ATTR(gesture_support, S_IRUGO|S_IWUSR, gesture_support_show, NULL);
 static DEVICE_ATTR(send_cfg_ver,S_IRUGO|S_IWUSR, gt968_send_cfg_ver_show, gt968_send_cfg_ver_store);
 
@@ -2836,6 +2873,8 @@ static DEVICE_ATTR(glove_switch, S_IRUGO|S_IWUSR, glove_show, glove_store);
 static DEVICE_ATTR(windows_switch, S_IRUGO|S_IWUSR, windows_show, windows_store);
 #endif
 
+static DEVICE_ATTR(keypad_enable, S_IRUGO|S_IWUSR, keypad_enable_show, keypad_enable_store);
+
 static struct attribute *goodix_attributes[] = {
 	&dev_attr_glove_switch.attr,
 #if YL_COVER_SWITCH_FUNC
@@ -2843,6 +2882,7 @@ static struct attribute *goodix_attributes[] = {
 #endif
 	&dev_attr_send_cfg_ver.attr,
 	&dev_attr_gesture_support.attr,/////add mxg
+	&dev_attr_keypad_enable.attr,
 	NULL
 };
 
