@@ -1388,13 +1388,9 @@ static int wcd_mbhc_get_button_mask(u16 btn)
 
 	switch (btn) {
 	case 0:
-		mask = SND_JACK_BTN_0;
-		break;
 	case 1:
-		mask = SND_JACK_BTN_1;
-		break;
 	case 3:
-		mask = SND_JACK_BTN_2;
+		mask = SND_JACK_BTN_0;
 		break;
 	case 7:
 		mask = SND_JACK_BTN_3;
@@ -2054,6 +2050,12 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 		ret = snd_jack_set_key(mbhc->button_jack.jack,
 				       SND_JACK_BTN_0,
 				       KEY_MEDIA);
+		ret = snd_jack_set_key(mbhc->button_jack.jack,
+				       SND_JACK_BTN_3,
+				       KEY_VOLUMEUP);
+		ret = snd_jack_set_key(mbhc->button_jack.jack,
+				       SND_JACK_BTN_4,
+				       KEY_VOLUMEDOWN);
 		if (ret) {
 			pr_err("%s: Failed to set code for btn-0\n",
 				__func__);
