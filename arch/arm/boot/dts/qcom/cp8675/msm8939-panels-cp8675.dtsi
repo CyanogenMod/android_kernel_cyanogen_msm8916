@@ -172,7 +172,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
@@ -340,7 +340,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
@@ -635,7 +635,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
@@ -969,7 +969,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
@@ -1303,7 +1303,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
@@ -1547,7 +1547,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
@@ -1800,7 +1800,7 @@
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 120>;
+		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
 		qcom,mdss-dsi-init-delay-us = <50000>;
