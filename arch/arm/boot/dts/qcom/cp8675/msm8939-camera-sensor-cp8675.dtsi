@@ -97,7 +97,7 @@
 		qcom,csiphy-sd-index = <1>;
 		qcom,csid-sd-index = <1>;
 		qcom,mount-angle = <270>;
-		qcom,sensor-name = "ov5648";
+		qcom,sensor-name = "ov5648_cp8675";
 		cam_vdig-supply = <&pm8916_l6>;
 		cam_vio-supply = <&pm8916_l6>;
 		qcom,cam-vreg-name = "cam_vdig", "cam_vio";
