@@ -69,8 +69,8 @@
 #define APS_TAG                  "[pa12200001]: "
 #define APS_FUN(f)               printk(KERN_INFO APS_TAG"%s\n", __FUNCTION__)
 #define APS_ERR(fmt, args...)    printk(KERN_ERR  APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    printk(KERN_ERR APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    printk(KERN_INFO APS_TAG"%s : "fmt, __FUNCTION__, ##args)  
+#define APS_LOG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    printk(KERN_DEBUG APS_TAG"%s : "fmt, __FUNCTION__, ##args)  
 
 
 static int prox_active = 0;
@@ -645,7 +645,7 @@ static int pa12200001_fast_run_calibration(struct i2c_client *client)
             	pa12_swap(temp_pdata + i, temp_pdata + j);
     /* calculate the cross-talk using central 10 data */
      for (i = 1; i < 3; i++) {
-    	APS_LOG("%s: temp_pdata = %d\n", __func__, temp_pdata[i]);
+    	APS_DBG("%s: temp_pdata = %d\n", __func__, temp_pdata[i]);
         sum_of_pdata = sum_of_pdata + temp_pdata[i];
     }
 	xtalk_data= sum_of_pdata/2 + 4;
@@ -1103,7 +1103,7 @@ static void pa12200001_work_func_proximity(struct work_struct *work)
 		
   	Pval=pa12200001_get_object(data->client);
 
-	APS_LOG("PS value: %d\n", Pval);
+	APS_DBG("PS value: %d\n", Pval);
 
 	input_event(data->proximity_input_dev, EV_MSC, MSC_SCAN, Pval);
 	input_sync(data->proximity_input_dev);
@@ -1115,7 +1115,7 @@ static void pa12200001_work_func_light(struct work_struct *work)
 	int Aval;
 
 	Aval = pa12200001_get_lux_value(data->client);
-	APS_LOG("ALS lux value: %d\n", Aval);
+	APS_DBG("ALS lux value: %d\n", Aval);
 
 	input_event(data->light_input_dev, EV_MSC, MSC_SCAN, Aval);
 	input_sync(data->light_input_dev);
@@ -1256,18 +1256,18 @@ static int pa12200001_init_client(struct i2c_client *client)
 
 static int pa12200001_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	APS_LOG("pa12200001 suspend");
+	APS_DBG("pa12200001 suspend");
 	if(light_active)//ALS ON
 	{
-	APS_LOG("Disalbe ALS for suspend");
+	APS_DBG("Disalbe ALS for suspend");
 	pa12200001_als_enable(0);
 	}
 	if(prox_active)//PS ON
 	{
-	APS_LOG("Keep PS awake for suspend");
+	APS_DBG("Keep PS awake for suspend");
 	wake_lock(&this_data->prx_wake_lock);//Keep system awake if PS is enable 
 	}
-   APS_LOG("pa12200001 suspend end");
+	APS_DBG("pa12200001 suspend end");
 	#if 0  //some problem in following code , maybe crash the system
 	struct pa12200001_data *data = container_of(h, struct pa12200001_data, early_suspend);
 
@@ -1293,15 +1293,15 @@ static int pa12200001_suspend(struct i2c_client *client, pm_message_t mesg)
 
 static int pa12200001_resume(struct i2c_client *client)
 {
-	APS_LOG("pa12200001 resume");	
+	APS_DBG("pa12200001 resume");	
 	if(light_active)//ALS ON
 	{
-	APS_LOG("Enable ALS for resume");
+	APS_DBG("Enable ALS for resume");
 	pa12200001_als_enable(1);
 	}
 	if(prox_active)//PS ON
 	{
-	APS_LOG(" Wake_Unlock PS for Resume");
+	APS_DBG(" Wake_Unlock PS for Resume");
 	wake_unlock(&this_data->prx_wake_lock);//Unlock wake lock, force not to sleep
 	}
 	#if 0 //some problem in following code , maybe crash the system
@@ -1530,7 +1530,7 @@ static int /*__devinit*/ pa12200001_probe(struct i2c_client *client,
 	/* allocate input_device */
     data->light_input_dev= input_allocate_device();
     if (!data->light_input_dev) {
-        printk(KERN_ERR"%s: allocate light input device fail !\n", __func__);
+        APS_ERR("%s: allocate light input device fail !\n", __func__);
         ret = -1;
         goto exit_kfree;
     }
@@ -1541,12 +1541,12 @@ static int /*__devinit*/ pa12200001_probe(struct i2c_client *client,
     /* light Lux data */
 	ret = input_register_device(data->light_input_dev);
     if (ret != 0) {
-        printk(KERN_ERR"%s: light_input_register_device failed ! \n", __func__);
+        APS_ERR("%s: light_input_register_device failed ! \n", __func__);
         goto exit_free_dev_als;
     }
     data->proximity_input_dev= input_allocate_device();
     if (!data->proximity_input_dev) {
-        printk(KERN_ERR"%s: allocate proximity input device fail !\n", __func__);
+        APS_ERR("%s: allocate proximity input device fail !\n", __func__);
         ret = -1;
         goto exit_kfree;
     }
@@ -1557,7 +1557,7 @@ static int /*__devinit*/ pa12200001_probe(struct i2c_client *client,
     /* proximity data */
     ret = input_register_device(data->proximity_input_dev);
     if (ret != 0) {
-        printk(KERN_ERR"%s: proximity_input_register_device failed ! \n", __func__);
+        APS_ERR("%s: proximity_input_register_device failed ! \n", __func__);
         goto exit_free_dev_als;
     }
 
@@ -1570,13 +1570,13 @@ static int /*__devinit*/ pa12200001_probe(struct i2c_client *client,
 
 	ret = sysfs_create_group(&client->dev.kobj, &pa12200001_attr_group);//csl modify 20140107
 	if (ret) {
-		APS_LOG("could not create sysfs group\n");
+		APS_ERR("could not create sysfs group\n");
 		goto exit_unregister_dev_ps;
 	}
 
 	data->wq = create_singlethread_workqueue("pa12200001_wq");
 	if (!data->wq) {
-		APS_LOG("could not create workqueue\n");
+		APS_ERR("could not create workqueue\n");
 		goto exit_work;
 	}
 
@@ -1596,7 +1596,7 @@ static int /*__devinit*/ pa12200001_probe(struct i2c_client *client,
 				PA12200001_DRV_NAME, (void *)client);
 */
 		if (err != 0) {
-			APS_DBG("request irq fail!, irq = %d\n", data->als_ps_int);
+			APS_ERR("request irq fail!, irq = %d\n", data->als_ps_int);
 //			goto exit_remove_sysfs;
 		}else{
 		APS_DBG("request irq success, irq = %d\n", data->als_ps_int);
