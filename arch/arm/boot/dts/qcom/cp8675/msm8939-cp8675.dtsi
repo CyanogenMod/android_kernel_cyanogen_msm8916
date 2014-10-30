@@ -28,6 +28,14 @@
 };
 
 &soc {
+
+	ramoops {
+		compatible = "ramoops";
+		reg = <0x9ff00000 0x00100000>;
+		record-size = <0x00020000>;
+		dump-oops;
+	};
+
 	i2c@78b9000 { /* BLSP1 QUP5 */
 		goodix_ts@5d {
 			compatible = "Goodix,Goodix-TS";
