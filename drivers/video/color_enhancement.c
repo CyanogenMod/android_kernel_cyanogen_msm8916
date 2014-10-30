@@ -33,7 +33,9 @@ static long color_enhancement_ioctl(struct file *file, unsigned int cmd,
 		unsigned long arg)
 {
 	struct color_enhancement_t *ce = file->private_data;
+	void __user *argp = (void __user *)arg;
 	int param;
+	u32 out;
 
 	if (!ce->impl_ops)
 		return -ENOTTY;
@@ -78,6 +80,15 @@ static long color_enhancement_ioctl(struct file *file, unsigned int cmd,
 	case CE_SET_CABC_MOVING_MODE:
 		if (ce->impl_ops->moving_mode)
 			return ce->impl_ops->moving_mode(ce);
+		break;
+
+	case CE_GET_MODE:
+		if (ce->impl_ops->get_mode) {
+			out = ce->impl_ops->get_mode(ce);
+			if (copy_to_user(argp, &out, sizeof(out)))
+				return -EFAULT;
+			return 0;
+		}
 		break;
 
 	case CE_SET_DAYLIGHT_MODE:

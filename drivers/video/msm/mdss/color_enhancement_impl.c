@@ -27,6 +27,8 @@ static int r69429_ce_set_level_impl(struct mdss_color_enhancement_t *impl_data, 
 {
 	impl_data->settings &= (~CE_MASK);
 
+	pr_debug("%s : %d", __func__, level);
+
 	switch (level) {
 	case 0:
 		if (impl_data->ctrl->ce_off_cmds.cmd_cnt)
@@ -118,6 +120,21 @@ static int r69429_osc(struct color_enhancement_t *ce, int weak)
 		impl_data->settings &= ~OSC_WEAK;
 
 	return 0;
+}
+
+static int r69429_get_mode(struct color_enhancement_t *ce)
+{
+	struct mdss_color_enhancement_t *impl_data;
+
+	pr_debug("%s", __func__);
+
+	impl_data = ce->impl_data;
+	if (!impl_data) {
+		pr_err("%s: no driver data\n", __func__);
+		return -ENODEV;
+	}
+
+	return impl_data->settings;
 }
 
 static int r69429_cabc_off(struct color_enhancement_t *ce)
@@ -301,6 +318,7 @@ struct ce_impl_ops_t ce_impl_ops = {
 	.aco = r69429_aco,
 	.osc = r69429_osc,
 	.init_setting = r69429_init_setting,
+	.get_mode = r69429_get_mode,
 };
 
 void color_enhancement_impl_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)

@@ -1,8 +1,10 @@
 #ifndef _COLOR_ENHANCEMENT_H
 #define _COLOR_ENHANCEMENT_H
 
-#include <linux/miscdevice.h>
 #include <linux/ioctl.h>
+
+#ifdef __KERNEL__
+#include <linux/miscdevice.h>
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 
@@ -25,7 +27,10 @@ struct ce_impl_ops_t {
 	int (*aco)(struct color_enhancement_t *, int on);
 	int (*osc)(struct color_enhancement_t *, int weak);
 	int (*init_setting)(struct color_enhancement_t *, int setting);
+	int (*get_mode)(struct color_enhancement_t *);
 };
+
+#endif
 
 #define CE_IOC_BASE 'C'
 
@@ -44,6 +49,7 @@ struct ce_impl_ops_t {
 #define CE_SET_OSC_OFF			_IO(CE_IOC_BASE,12)
 #define CE_INIT_SETTING			_IOR(CE_IOC_BASE,13,int)
 
+#define CE_GET_MODE				_IOW(CE_IOC_BASE, 20,__u32)
 
 #define EN		0x0001
 #define DEFAULT		0x0002
