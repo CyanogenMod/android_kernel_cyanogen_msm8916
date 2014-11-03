@@ -43,7 +43,7 @@
 #define YL_LC_DEBUG_DBG
 #ifdef YL_LC_DEBUG_DBG
 #define pr_lc_dbg(fmt, ...)\
-	printk(KERN_DEBUG FUELGAUGER_PREFIX pr_fmt(fmt), ##__VA_ARGS__)
+	pr_debug(FUELGAUGER_PREFIX pr_fmt(fmt), ##__VA_ARGS__)
 #else
 #define pr_lc_dbg(fmt, ...)
 #endif

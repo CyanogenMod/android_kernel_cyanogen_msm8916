@@ -747,9 +747,9 @@ static int bq24157_get_stat(struct bq24157_chip *chip)
 		dev_err(chip->dev,"fail to read safety register, rc = %d\n", rc);
 	}
 	reg_val = reg_val & mask;
-	pr_err("register 0x00 = 0x%02x \n",reg_val);
+	pr_debug("register 0x00 = 0x%02x \n",reg_val);
 	return (reg_val >> 4);
-	
+
 }
 
 #if 1
@@ -776,9 +776,9 @@ static int bq24157_dump_registers(struct bq24157_chip *chip)
 		if (rc < 0) {
 			dev_err(chip->dev,"fail to read register : 0x%02x, rc = %d\n", i, rc);
 		}
-		pr_err("register 0x%02x = 0x%02x \n", i, reg_val);
+		pr_debug("register 0x%02x = 0x%02x \n", i, reg_val);
 	}
-	
+
 #if 0
 	rc = bq24157_read(chip, BQ24157_MONITOR, &reg_val);
 	if (rc < 0) {
@@ -994,10 +994,10 @@ static int bq24157_need_to_rechg(struct bq24157_chip *chip)
 	chip->vbus_present = (1 == get_yl_pm8916_vbus_status());
 	chip->charge_stat = bq24157_get_stat(chip);
 
-	pr_err("charge_stat = %d, vbus_present = %d, chip->charging_disabled = %d \n", chip->charge_stat, chip->vbus_present, chip->charging_disabled);
-	if ((chip->vbus_present) && (BATT_CAPA_RECHG >= chip->batt_crude_capa) 
+	pr_debug("charge_stat = %d, vbus_present = %d, chip->charging_disabled = %d \n", chip->charge_stat, chip->vbus_present, chip->charging_disabled);
+	if ((chip->vbus_present) && (BATT_CAPA_RECHG >= chip->batt_crude_capa)
 		&& (BQ24157_STAT_CHARGING != chip->charge_stat)) {
-		if (!chip->charging_disabled) { 	
+		if (!chip->charging_disabled) {
 			bq24157_force_en_charging(chip, chip->charging_disabled);
 			msleep(500);
 			bq24157_force_en_charging(chip, !chip->charging_disabled);
@@ -1046,7 +1046,7 @@ static int bq24157_calc_vbat(struct bq24157_chip *chip, int *ocv)
 	else
 		vbatt_avg = vbatt_avg + 50;
 
-	pr_err("vbat_read = %d\n", vbatt_avg);
+	pr_debug("vbat_read = %d\n", vbatt_avg);
 
 	*ocv = vbatt_avg;
 
@@ -1428,9 +1428,9 @@ static int bq24157_get_charging_fault(struct bq24157_chip *chip)
 static void bq24157_update_battery_status(struct bq24157_chip *chip)
 {
 	int chg_stat;
-	
-	pr_err("enter\n");
-	
+
+	pr_debug("enter\n");
+
 	mutex_lock(&chip->work_lock);
 
 	chg_stat = bq24157_get_stat(chip);
@@ -1513,7 +1513,7 @@ static void bq24157_update_heartbeat_work(struct work_struct *work)
 	
 	chip->vbus_present = (1 == get_yl_pm8916_vbus_status());
 	chip->batt_present = (1 == is_battery_present());
-	pr_err(" charge_stat = %d, vbus_present = %d batt_present = %d\n", chip->charge_stat, chip->vbus_present, chip->batt_present);
+	pr_debug(" charge_stat = %d, vbus_present = %d batt_present = %d\n", chip->charge_stat, chip->vbus_present, chip->batt_present);
 
 	//battery not present, stop update status.
 	bq24157_update_battery_status(chip);

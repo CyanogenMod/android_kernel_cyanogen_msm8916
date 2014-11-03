@@ -67,10 +67,10 @@
 #define PA12_IOCTL_PHONE_STATE       ALSPROX_IOCTL_PHONE_STATE
 
 #define APS_TAG                  "[pa12200001]: "
-#define APS_FUN(f)               printk(KERN_INFO APS_TAG"%s\n", __FUNCTION__)
-#define APS_ERR(fmt, args...)    printk(KERN_ERR  APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    printk(KERN_DEBUG APS_TAG"%s : "fmt, __FUNCTION__, ##args)  
+#define APS_FUN(f)               pr_info(APS_TAG"%s\n", __FUNCTION__)
+#define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
+#define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    pr_debug(APS_TAG"%s : "fmt, __FUNCTION__, ##args)
 
 
 static int prox_active = 0;
