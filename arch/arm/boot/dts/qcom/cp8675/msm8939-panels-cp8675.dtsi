@@ -175,7 +175,6 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 
 	dsi_hx8394a_yashi_cmi_hd_vid: qcom,mdss_dsi_hx8394a_yashi_cmi_hd_video {
@@ -343,7 +342,6 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 
 	dsi_ili9881_yashi_cpt_hd_vid: qcom,mdss_dsi_ili9881_yashi_cpt_hd_video {
@@ -638,7 +636,6 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 
 	dsi_otm1283a_boyi_lg_hd_vid: qcom,mdss_dsi_otm1283a_boyi_lg_hd_video {
@@ -972,7 +969,6 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 
 	dsi_otm1283a_lide_cpt_hd_vid: qcom,mdss_dsi_otm1283a_lide_cpt_hd_video {
@@ -1306,7 +1302,6 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 
 	dsi_otm1284a_boyi_cpt_hd_vid: qcom,mdss_dsi_otm1284a_boyi_cpt_hd_video {
@@ -1550,7 +1545,6 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 
 	dsi_otm1284a_tianma_tm_hd_vid: qcom,mdss_dsi_otm1284a_tianma_tm_hd_video {
@@ -1803,6 +1797,5 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 2>, <1 20>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-init-delay-us = <50000>;
 	};
 };
