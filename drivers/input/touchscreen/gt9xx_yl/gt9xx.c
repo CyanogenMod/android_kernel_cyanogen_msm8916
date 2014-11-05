@@ -696,15 +696,10 @@ static void goodix_ts_work_func(struct work_struct *work)
         }
         
         if (doze_status == DOZE_WAKEUP) {
-        	  struct device *touchscreen_dev;
-        	  touchscreen_dev = touchscreen_get_dev();
-//        	    input_report_key(ts->input_dev, KEY_POWER, 1);
-//              input_sync(ts->input_dev);
-//              input_report_key(ts->input_dev, KEY_POWER, 0);
-//              input_sync(ts->input_dev);
-             kobject_uevent_env(&touchscreen_dev->kobj, KOBJ_CHANGE, envp);
-             GTP_INFO("send kobject uevent!");
-                         
+             input_report_key(ts->input_dev, KEY_POWER, 1);
+             input_report_key(ts->input_dev, KEY_POWER, 0);
+             input_sync(ts->input_dev);
+
              // clear 0x814B              
              doze_buf[2] = 0x00;
              gtp_i2c_write(i2c_connect_client, doze_buf, 3);
@@ -1588,7 +1583,8 @@ static s8 gtp_request_input_dev(struct goodix_ts_data *ts)
 #endif
 
 #if GTP_SLIDE_WAKEUP
-    input_set_capability(ts->input_dev, EV_KEY, KEY_POWER);
+    set_bit(EV_KEY, ts->input_dev->evbit);
+    set_bit(KEY_POWER, ts->input_dev->keybit);
 #endif 
 #if GTP_CHANGE_X2Y
     GTP_SWAP(ts->abs_x_max, ts->abs_y_max);
