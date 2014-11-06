@@ -831,6 +831,7 @@ static int pa12200001_parse_dt(struct device *dev, struct pa12200001_platform_da
 	int rc = 0;
 	int index = 0;
 	u32 array[14];
+	u32 ps_fast_cal_en = 1;
 	struct device_node *np = dev->of_node;
 
 	pdata->gpio_int = of_get_named_gpio_flags(np, "pa12200001,gpio_int",
@@ -842,6 +843,10 @@ static int pa12200001_parse_dt(struct device *dev, struct pa12200001_platform_da
 		dev_err(dev, "Looking up %s property in node %s failed", "pa12200001,cfgs", np->full_name);
 		return -ENODEV;
 	}
+
+	if (!of_property_read_u32(np, "pa12200001,ps-fast-cal-enable",
+				&ps_fast_cal_en))
+		pdata->pa12_ps_fast_cal = ps_fast_cal_en;
 
 	pdata->pa12_ps_th_high                     = array[index++];
 	pdata->pa12_ps_th_low              	   = array[index++];
@@ -872,6 +877,7 @@ static int pa12200001_parse_dt(struct device *dev, struct pa12200001_platform_da
 	printk("%s:pa12_int_type=%d\n",__func__,pdata->pa12_int_type);
 	printk("%s:pa12_ps_period=%d\n",__func__,pdata->pa12_ps_period);
 	printk("%s:pa12_als_period=%d\n",__func__,pdata->pa12_als_period);
+	printk("%s:pa12_ps_fast_cal=%d\n",__func__,pdata->pa12_ps_fast_cal);
 	
     return rc;
 }
@@ -1358,11 +1364,10 @@ static long pa12200001_ioctl(struct file *file, unsigned int cmd, unsigned long 
 			break;
 
 		case PA12_IOCTL_PROX_ON:
-            printk("zb test :enter PA12_IOCTL_PROX_ON %d at %d\n",PA12_FAST_PS_CAL,__LINE__);
-			if(PA12_FAST_PS_CAL)
-            pa12200001_fast_run_calibration(this_data->client);
+			printk("zb test :enter PA12_IOCTL_PROX_ON\n");
+			if (this_data->pdata->pa12_ps_fast_cal)
+				pa12200001_fast_run_calibration(this_data->client);
 			pa12200001_ps_enable(1);
-            printk("zb test :enter PA12_IOCTL_PROX_ON %d at %d\n",PA12_FAST_PS_CAL,__LINE__);
 			enable_irq(this_data->als_ps_int);
 			prox_active = 1;
 
