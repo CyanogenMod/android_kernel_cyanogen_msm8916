@@ -58,10 +58,6 @@
 #define I2C_RETRY   		        5
 #define I2C_RETRY_DELAY 	 5
 
-/*Use fast calibration ?*/
-#define PA12_FAST_PS_CAL      1
-
-
 struct pa12200001_platform_data {
 	int (*power_onoff)(int onoff);
 	int 				irq;  /* proximity/light-sensor- external irq*/
@@ -81,6 +77,7 @@ struct pa12200001_platform_data {
 	unsigned char		pa12_int_type;// 0:Window type 1:Hysteresis type for Auto Clear flag//1
 	unsigned char		pa12_ps_period;// 2:25 ms 3:50 ms sleep time//1
 	unsigned char		pa12_als_period;// 0 ms//0
+	unsigned char		pa12_ps_fast_cal;// run fast calibration on enable
 };
 
 #endif
