@@ -69,7 +69,7 @@
 #define APS_TAG                  "[pa12200001]: "
 #define APS_FUN(f)               pr_info(APS_TAG"%s\n", __FUNCTION__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)    pr_info(APS_TAG fmt, ##args)
 #define APS_DBG(fmt, args...)    pr_debug(APS_TAG"%s : "fmt, __FUNCTION__, ##args)
 
 
@@ -326,7 +326,7 @@ static int pa12200001_set_mode(struct i2c_client *client, int mode)
 static int pa12200001_ps_enable(int flag)
 {
 	u8 regdata;
-printk("zb test :enter %s flag=%d at %d\n",__func__,flag,__LINE__);
+	APS_LOG("zb test :enter %s flag=%d at %d\n",__func__,flag,__LINE__);
 	if(flag){
 		mutex_lock(&this_data->lock);
 		i2c_read_reg(this_data->client, REG_CFG0, &regdata);
@@ -626,7 +626,7 @@ static int pa12200001_fast_run_calibration(struct i2c_client *client)
 	i2c_read_reg(client, REG_CFG2, &cfg2data); /*Offset mode & disable intr from ps*/
 	i2c_read_reg(client, REG_CFG3, &cfg3data);
 	
-	APS_LOG("cfg0 = %x\n cfg2 = %x\n cfg3 = %x\n",cfg0data, cfg2data, cfg3data);
+	APS_DBG("cfg0 = %x cfg2 = %x cfg3 = %x\n",cfg0data, cfg2data, cfg3data);
 	
 	i2c_write_reg(client, REG_CFG0, cfg0data | 1<<1);  /* PS Enable */	
 	i2c_write_reg(client, REG_CFG2, cfg2data & 0x28); /*Offset mode & disable intr from ps*/		
@@ -672,7 +672,7 @@ static int pa12200001_fast_run_calibration(struct i2c_client *client)
 	i2c_read_reg(client, REG_CFG2, &cfg2data); /*Offset mode & disable intr from ps*/
 	i2c_read_reg(client, REG_CFG3, &cfg3data);
 	
-	APS_LOG("cfg0 = %x\n cfg2 = %x\n cfg3 = %x\n",cfg0data, cfg2data, cfg3data);
+	APS_DBG("cfg0 = %x\n cfg2 = %x\n cfg3 = %x\n",cfg0data, cfg2data, cfg3data);
 
 	mutex_unlock(&data->lock);
 	return xtalk_data;
@@ -814,15 +814,15 @@ static int pa12200001_parse_configs(struct device *dev, char *name, u32 *array) 
 
 	rc = of_property_read_u32_array(np, name, array, prop->length/sizeof(u32));
 	if (rc && (rc != -EINVAL)) {
-		dev_err(dev, "%s: Unable to read %s\n", __func__, name);
+		APS_ERR("%s: Unable to read %s\n", __func__, name);
 		return rc;
 	}
 
-	dev_info(dev, "%s size is %d\n", name, prop->length/sizeof(u32));
+	APS_DBG("%s size is %d\n", name, prop->length/sizeof(u32));
 	for (i = 0; i < prop->length/sizeof(u32); i++) {
-		dev_info(dev, "arrary[%d]=%d, ", i, array[i]);
+		APS_DBG("arrary[%d]=%d, ", i, array[i]);
 	}
-	dev_info(dev, "\n");
+	APS_DBG("\n");
 	return rc;
 }
 
@@ -840,7 +840,7 @@ static int pa12200001_parse_dt(struct device *dev, struct pa12200001_platform_da
 	/* general_reg */
 	rc = pa12200001_parse_configs(dev, "pa12200001,cfgs", array);
 	if (rc) {
-		dev_err(dev, "Looking up %s property in node %s failed", "pa12200001,cfgs", np->full_name);
+		APS_ERR("Looking up %s property in node %s failed", "pa12200001,cfgs", np->full_name);
 		return -ENODEV;
 	}
 
@@ -854,32 +854,32 @@ static int pa12200001_parse_dt(struct device *dev, struct pa12200001_platform_da
 	pdata->pa12_ps_th_min    			   = array[index++];
 	pdata->pa12_ps_offset_default            = array[index++];
 	pdata->pa12_als_gain                        = array[index++];
- 	pdata->pa12_led_curr                         = array[index++];
- 	pdata->pa12_ps_prst                          = array[index++];
- 	pdata->pa12_als_prst                         = array[index++];
+	pdata->pa12_led_curr                         = array[index++];
+	pdata->pa12_ps_prst                          = array[index++];
+	pdata->pa12_als_prst                         = array[index++];
 	pdata->pa12_int_set                          = array[index++];
 	pdata->pa12_ps_mode                        = array[index++];
- 	pdata->pa12_int_type                         = array[index++];
- 	pdata->pa12_ps_period                       = array[index++];
- 	pdata->pa12_als_period                      = array[index++];	
+	pdata->pa12_int_type                         = array[index++];
+	pdata->pa12_ps_period                       = array[index++];
+	pdata->pa12_als_period                      = array[index++];
 
-    printk("%s:pa12_ps_th_high=%d\n",__func__,pdata->pa12_ps_th_high);
-	printk("%s:pa12_ps_th_low=%d\n",__func__,pdata->pa12_ps_th_low);
-	printk("%s:pa12_ps_th_max=%d\n",__func__,pdata->pa12_ps_th_max);
-	printk("%s:pa12_ps_th_min=%d\n",__func__,pdata->pa12_ps_th_min);
-	printk("%s:pa12_ps_offset_default=%d\n",__func__,pdata->pa12_ps_offset_default);
-	printk("%s:pa12_als_gain=%d\n",__func__,pdata->pa12_als_gain);
-	printk("%s:pa12_led_curr=%d\n",__func__,pdata->pa12_led_curr);
-	printk("%s:pa12_ps_prst=%d\n",__func__,pdata->pa12_ps_prst);
-	printk("%s:pa12_als_prst=%d\n",__func__,pdata->pa12_als_prst);
-	printk("%s:pa12_int_set=%d\n",__func__,pdata->pa12_int_set);
-	printk("%s:pa12_ps_mode=%d\n",__func__,pdata->pa12_ps_mode);
-	printk("%s:pa12_int_type=%d\n",__func__,pdata->pa12_int_type);
-	printk("%s:pa12_ps_period=%d\n",__func__,pdata->pa12_ps_period);
-	printk("%s:pa12_als_period=%d\n",__func__,pdata->pa12_als_period);
-	printk("%s:pa12_ps_fast_cal=%d\n",__func__,pdata->pa12_ps_fast_cal);
-	
-    return rc;
+	APS_DBG("%s:pa12_ps_th_high=%d\n",__func__,pdata->pa12_ps_th_high);
+	APS_DBG("%s:pa12_ps_th_low=%d\n",__func__,pdata->pa12_ps_th_low);
+	APS_DBG("%s:pa12_ps_th_max=%d\n",__func__,pdata->pa12_ps_th_max);
+	APS_DBG("%s:pa12_ps_th_min=%d\n",__func__,pdata->pa12_ps_th_min);
+	APS_DBG("%s:pa12_ps_offset_default=%d\n",__func__,pdata->pa12_ps_offset_default);
+	APS_DBG("%s:pa12_als_gain=%d\n",__func__,pdata->pa12_als_gain);
+	APS_DBG("%s:pa12_led_curr=%d\n",__func__,pdata->pa12_led_curr);
+	APS_DBG("%s:pa12_ps_prst=%d\n",__func__,pdata->pa12_ps_prst);
+	APS_DBG("%s:pa12_als_prst=%d\n",__func__,pdata->pa12_als_prst);
+	APS_DBG("%s:pa12_int_set=%d\n",__func__,pdata->pa12_int_set);
+	APS_DBG("%s:pa12_ps_mode=%d\n",__func__,pdata->pa12_ps_mode);
+	APS_DBG("%s:pa12_int_type=%d\n",__func__,pdata->pa12_int_type);
+	APS_DBG("%s:pa12_ps_period=%d\n",__func__,pdata->pa12_ps_period);
+	APS_DBG("%s:pa12_als_period=%d\n",__func__,pdata->pa12_als_period);
+	APS_DBG("%s:pa12_ps_fast_cal=%d\n",__func__,pdata->pa12_ps_fast_cal);
+
+	return rc;
 }
 //add end 
 /*----------------------------------------------------------------------------*/
@@ -899,11 +899,11 @@ static ssize_t pa12200001_store_enable_ps_sensor(struct device *dev,
  	//unsigned long flags;
     int mode=0;
 
-	printk("%s: enable ps sensor ( %ld)\n", __func__, val);
+	APS_LOG("%s: enable ps sensor ( %ld)\n", __func__, val);
 
 	if ((val != 0) && (val != 1))//tag debug (chucuo)node ,1:enable,0:disable
 	{
-		printk("%s: enable ps sensor=%ld\n", __func__, val);
+		APS_DBG("%s: enable ps sensor=%ld\n", __func__, val);
 		return count;
 	}
 
@@ -940,11 +940,11 @@ static ssize_t pa12200001_store_enable_als_sensor(struct device *dev,
  	//unsigned long flags;
     int mode=0;
 
-	printk("%s: enable als sensor ( %ld)\n", __func__, val);
+	APS_LOG("%s: enable als sensor ( %ld)\n", __func__, val);
 
 	if ((val != 0) && (val != 1))
 	{
-		printk("%s: enable als sensor=%ld\n", __func__, val);
+		APS_DBG("%s: enable als sensor=%ld\n", __func__, val);
 		return count;
 	}
 
@@ -1137,7 +1137,7 @@ static irqreturn_t pa12200001_irq(int irq, void *info)
 #if 0
 	u8 int_stat;
 	int_stat = pa12200001_get_intstat(data->client);
-	printk(KERN_INFO"pa12200001:%s:int_stat=%d\n",__func__,int_stat);
+	APS_DBG("pa12200001:%s:int_stat=%d\n",__func__,int_stat);
 	/* ALS int */
 	if ((int_stat & ALS_INT_ACTIVE) && !als_polling)
 	{
@@ -1149,7 +1149,7 @@ static irqreturn_t pa12200001_irq(int irq, void *info)
 		queue_work(data->wq, &data->work_proximity);
 	}
 #endif
-	printk(KERN_INFO"pa12200001:%s :irq handle\n",__func__);
+	APS_DBG("pa12200001:%s :irq handle\n",__func__);
 	queue_work(data->wq, &data->work_proximity);
 
 	return IRQ_HANDLED;
@@ -1340,7 +1340,7 @@ static long pa12200001_ioctl(struct file *file, unsigned int cmd, unsigned long 
 	int xtalk=0;
     int i=0;
 	u8  prox_param[4];
-    printk("zb test :enter %s at %d\n",__func__,__LINE__);
+	APS_DBG("zb test :enter %s at %d\n",__func__,__LINE__);
      switch (cmd) {
 		case PA12_IOCTL_ALS_ON:
 			pa12200001_als_enable(1);
@@ -1364,7 +1364,6 @@ static long pa12200001_ioctl(struct file *file, unsigned int cmd, unsigned long 
 			break;
 
 		case PA12_IOCTL_PROX_ON:
-			printk("zb test :enter PA12_IOCTL_PROX_ON\n");
 			if (this_data->pdata->pa12_ps_fast_cal)
 				pa12200001_fast_run_calibration(this_data->client);
 			pa12200001_ps_enable(1);
@@ -1375,8 +1374,6 @@ static long pa12200001_ioctl(struct file *file, unsigned int cmd, unsigned long 
 			if(!ps_polling)//force trigger once
 			  queue_work(this_data->wq, &this_data->work_proximity);
 #endif 
-
-			APS_LOG("[pa12]:>>>>%s: enable pa12_als proximity end\n", __func__);
 			break;
 
 		case PA12_IOCTL_PROX_OFF:
@@ -1431,7 +1428,7 @@ static int pa12200001_open(struct inode *inode, struct file *file)
 {
 	u8 prox_param[4]={0};
 	struct pa12200001_data *data = i2c_get_clientdata(this_data->client);
-	APS_LOG("pa122_open_start read flash");
+	APS_DBG("pa122_open_start read flash\n");
 	sensparams_read_from_flash(SENSPARAMS_TYPE_PROX, prox_param, 4);
 	if(prox_param[0] == 1)
     {
@@ -1446,7 +1443,7 @@ static int pa12200001_open(struct inode *inode, struct file *file)
           mutex_unlock(&this_data->lock);
 	data->crosstalk = data->pdata->pa12_ps_offset_default;
     }
-	APS_LOG("pa122_open_read flash finish");
+	APS_DBG("pa122_open_read flash finish\n");
 
 	return 0;
 }
@@ -1569,7 +1566,7 @@ static int /*__devinit*/ pa12200001_probe(struct i2c_client *client,
 	//register misc//
 	ret = misc_register(&pa12200001_dev);
 	if (ret) {
-		printk(KERN_ERR "%s: PA12 ALS misc_register failed.\n", __func__);
+		APS_ERR("%s: PA12 ALS misc_register failed.\n", __func__);
 		goto failed_misc_register;
 	}
 
