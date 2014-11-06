@@ -103,6 +103,7 @@
 			pa12200001,gpio_int = <&msm_gpio 113 0x00>;
 			pa12200001,irq_flags = <0x2>;
 			pa12200001,cfgs = <40 25 255 0 5 1 0 2 0 1 3 1 1 0>;
+			pa12200001,ps-fast-cal-enable = <0>;
 		};
 		lc709203@b {
 			compatible = "yl,lc709203";
