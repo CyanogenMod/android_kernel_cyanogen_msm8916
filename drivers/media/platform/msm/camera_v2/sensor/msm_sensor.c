@@ -498,7 +498,9 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	struct msm_camera_i2c_client *sensor_i2c_client;
 	struct msm_camera_slave_info *slave_info;
 	const char *sensor_name;
-
+#ifdef CONFIG_MACH_YULONG
+	int position;
+#endif
 	if (!s_ctrl) {
 		pr_err("%s:%d failed: %p\n",
 			__func__, __LINE__, s_ctrl);
@@ -533,6 +535,19 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		return -ENODEV;
 	}
 #ifdef CONFIG_MACH_YULONG
+	position = s_ctrl->sensordata->sensor_info->position;
+	CDBG("sensor info: name: %s sensor_otp_prepared: %d\n",
+		s_ctrl->sensordata->sensor_name, sensor_otp_prepared[position]);
+	if(s_ctrl->func_tbl->sensor_prepare_otp && !sensor_otp_prepared[position]) {
+		rc = s_ctrl->func_tbl->sensor_prepare_otp(s_ctrl);
+		if (rc) {
+			pr_err("sensor_prepare_otp failed\n");
+		} else {
+			CDBG("sensor OTP prepared");
+			sensor_otp_prepared[position] = true;
+		}
+	}
+
 	if(!(s_ctrl->module_id & (0xFFFF << 16)))
 		s_ctrl->module_id |= (chipid << 16);
 	sensor_probed[s_ctrl->sensordata->sensor_info->position] = true;
@@ -1051,20 +1066,6 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 	}
 #ifdef CONFIG_MACH_YULONG
 	case CFG_UPDATE_OTP: {
-		int position = s_ctrl->sensordata->sensor_info->position;
-		CDBG("sensor info: name: %s sensor_otp_prepared: %d\n",
-			s_ctrl->sensordata->sensor_name, sensor_otp_prepared[position]);
-		if(s_ctrl->func_tbl->sensor_prepare_otp && !sensor_otp_prepared[position]) {
-			rc = s_ctrl->func_tbl->sensor_prepare_otp(s_ctrl);
-			if (rc) {
-				pr_err("sensor_prepare_otp failed\n");
-				break;
-			}
-
-			CDBG("sensor OTP prepared");
-			sensor_otp_prepared[position] = true;
-		}
-
 		if(s_ctrl->func_tbl->sensor_update_otp) {
 			rc = s_ctrl->func_tbl->sensor_update_otp(s_ctrl);
 			if (rc) {

@@ -1447,20 +1447,9 @@ power_up_failed:
 		devm_pinctrl_put(ctrl->pinctrl_info.pinctrl);
 	}
 	ctrl->cam_pinctrl_status = 0;
-#ifdef CONFIG_MACH_YULONG
-	CDBG("current sensor use system power,so do not release gpios,just release mclk gpio\n");
-	for (index = 0; index < ctrl->gpio_conf->cam_gpio_req_tbl_size; index++) {
-		CDBG("current gpio lable is :%s\n",ctrl->gpio_conf->cam_gpio_req_tbl[index].label);
-		if (!strcmp(ctrl->gpio_conf->cam_gpio_req_tbl[index].label,"CAMIF_MCLK")) {
-			CDBG("release mclk gpio\n");
-			gpio_free(ctrl->gpio_conf->cam_gpio_req_tbl[index].gpio);
-		}
-	}
-#else
 	msm_camera_request_gpio_table(
 		ctrl->gpio_conf->cam_gpio_req_tbl,
 		ctrl->gpio_conf->cam_gpio_req_tbl_size, 0);
-#endif
 	return rc;
 }
 
