@@ -250,9 +250,6 @@ struct outputdata {
 	s16 temperature;
 };
 
-extern int yl_params_kernel_read(char *buf, size_t count);
-extern int yl_params_kernel_write(char *buf, size_t count);
-
 static int lps331ap_write_crosstalk_to_flash(unsigned char* input)
 {
 	/*struct ProductlineInfo info;
