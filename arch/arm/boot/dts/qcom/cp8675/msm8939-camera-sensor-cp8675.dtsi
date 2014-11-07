@@ -78,6 +78,28 @@
 			"CAM_VANA",
 			"CAM_VDIG",
 			"CAM_AF_PWDM";
+		qcom,cam-power-seq-type = "sensor_gpio",
+			"sensor_gpio",
+			"sensor_gpio",
+			"sensor_gpio",
+			"sensor_vreg",
+			"sensor_vreg",
+			"sensor_gpio",
+			"sensor_gpio",
+			"sensor_clk",
+			"sensor_i2c_mux";
+		qcom,cam-power-seq-val = "sensor_gpio_standby",
+			"sensor_gpio_af_pwdm",
+			"sensor_gpio_vana",
+			"sensor_gpio_vdig",
+			"cam_vio",
+			"cam_vaf",
+			"sensor_gpio_standby",
+			"sensor_gpio_af_pwdm",
+			"sensor_cam_mclk",
+			"none";
+		qcom,cam-power-seq-cfg-val = <0 0 1 1 0 0 1 1 24000000 0>;
+		qcom,cam-power-seq-delay = <5 1 10 0 0 0 10 5 10 0>;
 		qcom,csi-lane-assign = <0x4320>;
 		qcom,csi-lane-mask = <0x1f>;
 		qcom,sensor-position = <0>;
@@ -123,6 +145,24 @@
 			"CAM_RESET",
 			"CAM_STANDBY",
 			"CAM_VANA";
+		qcom,cam-power-seq-type = "sensor_gpio",
+			"sensor_gpio",
+			"sensor_vreg",
+			"sensor_gpio",
+			"sensor_gpio",
+			"sensor_gpio",
+			"sensor_clk",
+			"sensor_i2c_mux";
+		qcom,cam-power-seq-val = "sensor_gpio_reset",
+			"sensor_gpio_standby",
+			"cam_vio",
+			"sensor_gpio_vana",
+			"sensor_gpio_standby",
+			"sensor_gpio_reset",
+			"sensor_cam_mclk",
+			"none";
+		qcom,cam-power-seq-cfg-val = <0 0 0 1 1 1 24000000 0>;
+		qcom,cam-power-seq-delay = <5 5 5 5 5 5 10 5>;
 		qcom,csi-lane-assign = <0x4320>;
 		qcom,csi-lane-mask = <0x07>;
 		qcom,sensor-position = <1>;
