@@ -43,113 +43,6 @@ static int first_time_power_up_ov5648 = 1;
 #endif
 
 static struct msm_sensor_power_setting ov5648_power_setting[] = {
-#ifdef CONFIG_MACH_YULONG
-#ifdef CONFIG_BOARD_CP5316
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_AF_PWDM,
-		.config_val = GPIO_OUT_LOW,
-		.delay = 5,
-	},
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VIO,
-		.config_val = 0,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_VANA,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VAF,
-		.config_val = 0,
-		.delay = 1,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_STANDBY,
-		.config_val = GPIO_OUT_LOW,
-		.delay = 5,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_STANDBY,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_AF_PWDM,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 5,
-	},
-	{
-		.seq_type = SENSOR_CLK,
-		.seq_val = SENSOR_CAM_MCLK,
-		.config_val = 24000000,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_I2C_MUX,
-		.seq_val = 0,
-		.config_val = 0,
-		.delay = 5,
-	},
-#else
-	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VIO,
-		.config_val = 0,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_VANA,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_STANDBY,
-		.config_val = GPIO_OUT_LOW,
-		.delay = 5,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_STANDBY,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
-		.config_val = GPIO_OUT_LOW,
-		.delay = 5,
-	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
-		.config_val = GPIO_OUT_HIGH,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_CLK,
-		.seq_val = SENSOR_CAM_MCLK,
-		.config_val = 24000000,
-		.delay = 10,
-	},
-	{
-		.seq_type = SENSOR_I2C_MUX,
-		.seq_val = 0,
-		.config_val = 0,
-		.delay = 5,
-	},
-#endif
-#else
 	{
 		.seq_type = SENSOR_VREG,
 		.seq_val = CAM_VIO,
@@ -210,7 +103,6 @@ static struct msm_sensor_power_setting ov5648_power_setting[] = {
 		.config_val = 0,
 		.delay = 0,
 	},
-#endif
 };
 
 static struct v4l2_subdev_info ov5648_subdev_info[] = {
