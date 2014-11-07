@@ -169,7 +169,7 @@ static int yl_params_check_res(struct mmc_request *mrq)
 }
 
 static int yl_params_transfer(struct yl_params_data *priv,
-		sector_t offset, char *buf, int write)
+		sector_t offset, const char *buf, int write)
 {
 	struct mmc_request mrq;
 	struct mmc_command cmd;
@@ -246,7 +246,7 @@ static ssize_t yl_params_read_locked(char *buf)
 /* caller should only provide buffer of size 512 bytes exactly,
  * as only read-modify-write is accept
  * */
-static ssize_t yl_params_write_locked(char *buf)
+static ssize_t yl_params_write_locked(const char *buf)
 {
 	int block;
 	ssize_t len;
@@ -282,7 +282,7 @@ static ssize_t yl_params_write_locked(char *buf)
 	return len;
 }
 
-ssize_t yl_params_kernel_read(char *buf, ssize_t count)
+ssize_t yl_params_kernel_read(uint8_t *buf, ssize_t count)
 {
 	ssize_t len;
 
@@ -296,7 +296,7 @@ ssize_t yl_params_kernel_read(char *buf, ssize_t count)
 }
 EXPORT_SYMBOL_GPL(yl_params_kernel_read);
 
-ssize_t yl_params_kernel_write(char *buf, ssize_t count)
+ssize_t yl_params_kernel_write(const uint8_t *buf, ssize_t count)
 {
 	ssize_t len;
 

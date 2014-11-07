@@ -1,5 +1,19 @@
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef _YL_PARAMS_H_
 #define _YL_PARAMS_H_
+
+#include <linux/types.h>
 
 enum yl_params_index {
 	YL_DEVICE = 0,
@@ -46,185 +60,187 @@ enum yl_params_index_v0 {
 };
 
 struct DeviceInfo_v0 {
-	char	SyncByte[10];
-	char	DeviceName[32];
-	char	BSP[32];
-	char	ESN[32];
-	char	SN[32];
-	char	CommunicationModel1[32];
-	char	CommunicationModel2[32];
-	char	BlueModel[32];
-	char	ImageSensorModel[32];
-	char	WiFi[32];
-	char	HardwareVersionMajor;
-	char	HardwareVersionAux;
-	char	Year;
-	char	Month;
-	char	Day;
-	char	GPS[32];
-	char	IMEI1[32];
-	char	IMEI2[32];
-	char	Module1CalStatus;
-	char	Module2CalStatus;
-	char	Module1RFTestStatus;
-	char	Module2RFTestStatus;
-	char	PCBAInformation[32];
-	char	AccInfo[12];
-	char	DMtag;
-	char	sensor_cal_flag;
-	char	RPtag;
-	char	SupperPassword[8];
-	char	pad[54];
+	uint8_t SyncByte[10];
+	uint8_t DeviceName[32];
+	uint8_t BSP[32];
+	uint8_t ESN[32];
+	uint8_t SN[32];
+	uint8_t CommunicationModel1[32];
+	uint8_t CommunicationModel2[32];
+	uint8_t BlueModel[32];
+	uint8_t ImageSensorModel[32];
+	uint8_t WiFi[32];
+	uint8_t HardwareVersionMajor;
+	uint8_t HardwareVersionAux;
+	uint8_t Year;
+	uint8_t Month;
+	uint8_t Day;
+	uint8_t GPS[32];
+	uint8_t IMEI1[32];
+	uint8_t IMEI2[32];
+	uint8_t Module1CalStatus;
+	uint8_t Module2CalStatus;
+	uint8_t Module1RFTestStatus;
+	uint8_t Module2RFTestStatus;
+	uint8_t PCBAInformation[32];
+	uint8_t AccInfo[12];
+	uint8_t DMtag;
+	uint8_t sensor_cal_flag;
+	uint8_t RPtag;
+	uint8_t SupperPassword[8];
+	uint8_t pad[54];
 };
 
 struct DeviceInfo {
-	char 	SyncByte[16];
-	char 	ParamVer[2];
-	char 	Date[6];
-	char 	CommunicationModel1[16];
-	char 	CommunicationModel2[16];
-	char 	ImageSensorModel[16];
-	char 	SafeboxKey[128];
-	char 	pad1[128];
-	char 	Sim1Capacity[2];
-	char 	Sim2Capacity[2];
-	char 	Sim3Capacity[2];
-	char 	NET_CARRIER;
-	char 	SimSlots;
-	char 	pad[176];
+	uint8_t SyncByte[16];
+	uint8_t ParamVer[2];
+	uint8_t Date[6];
+	uint8_t CommunicationModel1[16];
+	uint8_t CommunicationModel2[16];
+	uint8_t ImageSensorModel[16];
+	uint8_t SafeboxKey[128];
+	uint8_t pad1[128];
+	uint8_t Sim1Capacity[2];
+	uint8_t Sim2Capacity[2];
+	uint8_t Sim3Capacity[2];
+	uint8_t NET_CARRIER;
+	uint8_t SimSlots;
+	uint8_t pad[176];
 };
 
 struct SensorCalInfo {
-	char SensorCalStatus;
-	char value[7];
+	uint8_t SensorCalStatus;
+	uint8_t value[7];
 } __attribute__ ((packed));
 
 struct ProductlineInfo {
-	char	SyncByte[16];
-	char	SN[16];
-	char	IMEI1[32];
-	char	IMEI2[32];
-	char	ModuleCalStatus1;
-	char	ModuleCalStatus2;
-	char	ModuleRFTestStatus1;
-	char	ModuleRFTestStatus2;
-	char	ModuleCouplingTestStatus1;
-	char	ModuleCouplingTestStatus2;
-	char	DMtag;
-	char	CameraCal;
-	char	RPtag;
-	char	BatteryTest;
-	char	ModuleSoftVersion1[48];
-	char	ModuleSoftVersion2[48];
-	char	ModuleAudioVersion1[48];
-	char	ModuleAudioVersion2[48];
-	char	FuseBurnStatus;
-	char	MiscStatus[5];
-	char	LightProxInfo[8];
-	char	AccInfo[8];
-	char	PressInfo[8];
-	char	SensorReserved1[8];
-	char	SensorReserved2[8];
-	char	SensorReserved3[8];
-	char	DSDS_IMEI[32];
-	char	WIFI_MAC[6];
-	char	BT_MAC[6];
-	char	pad[112];
+	uint8_t SyncByte[16];
+	uint8_t SN[16];
+	uint8_t IMEI1[32];
+	uint8_t IMEI2[32];
+	uint8_t ModuleCalStatus1;
+	uint8_t ModuleCalStatus2;
+	uint8_t ModuleRFTestStatus1;
+	uint8_t ModuleRFTestStatus2;
+	uint8_t ModuleCouplingTestStatus1;
+	uint8_t ModuleCouplingTestStatus2;
+	uint8_t DMtag;
+	uint8_t CameraCal;
+	uint8_t RPtag;
+	uint8_t BatteryTest;
+	uint8_t ModuleSoftVersion1[48];
+	uint8_t ModuleSoftVersion2[48];
+	uint8_t ModuleAudioVersion1[48];
+	uint8_t ModuleAudioVersion2[48];
+	uint8_t FuseBurnStatus;
+	uint8_t MiscStatus[5];
+	uint8_t LightProxInfo[8];
+	uint8_t AccInfo[8];
+	uint8_t PressInfo[8];
+	uint8_t SensorReserved1[8];
+	uint8_t SensorReserved2[8];
+	uint8_t SensorReserved3[8];
+	uint8_t DSDS_IMEI[32];
+	uint8_t WIFI_MAC[6];
+	uint8_t BT_MAC[6];
+	uint8_t pad[112];
 };
 
 struct DynamicInfo {
-	char	SyncByte[16];
-	char	BSP[32];
-	char	Password[16];
-	char	SupperPassword[16];
-	char	DownloadFlag[16];
-	char	DownloadTool[32];
-	char	SoftwareVersion[48];
-	char 	DIYimageFlag[16];
-	char 	SecurityFlag;
-	char	CTSFlag;
-	char	DRMFlag;
-	char 	USBChargeFlag;
-	char	LTEState;
-	char	MultiBootloader;
-	char	GMSDownload;
-	char	CPBDownload;
-	char	MiscFlags[56];
-	char	Virgin[16];
-	char	NfcUnlockScreenKey[32];
-	char 	pad[208];
+	uint8_t SyncByte[16];
+	uint8_t BSP[32];
+	uint8_t Password[16];
+	uint8_t SupperPassword[16];
+	uint8_t DownloadFlag[16];
+	uint8_t DownloadTool[32];
+	uint8_t SoftwareVersion[48];
+	uint8_t DIYimageFlag[16];
+	uint8_t SecurityFlag;
+	uint8_t CTSFlag;
+	uint8_t DRMFlag;
+	uint8_t USBChargeFlag;
+	uint8_t LTEState;
+	uint8_t MultiBootloader;
+	uint8_t GMSDownload;
+	uint8_t CPBDownload;
+	uint8_t MiscFlags[56];
+	uint8_t Virgin[16];
+	uint8_t NfcUnlockScreenKey[32];
+	uint8_t pad[208];
 };
 
 struct MainDevInfo {
-	char	name[8];
-	char	Vendor[16];
-	char	model[16];
+	uint8_t name[8];
+	uint8_t Vendor[16];
+	uint8_t model[16];
 };
 
 struct ConfigurationInfo {
-	char	SyncByte[16];
-	char	ProductName[16];
-	char	HardwareVersionMajor[6];
-	char	HardwareVersionAux[6];
-	char	HardwareRF_NV[6];
-	struct	MainDevInfo DevInfo[11];
-	char	pad[22];
+	uint8_t SyncByte[16];
+	uint8_t ProductName[16];
+	uint8_t HardwareVersionMajor[6];
+	uint8_t HardwareVersionAux[6];
+	uint8_t HardwareRF_NV[6];
+	struct MainDevInfo DevInfo[11];
+	uint8_t pad[22];
 };
 
 struct CommandlineInfo {
-	char	SyncByte[16];
-	unsigned short crc;
-	unsigned short len;
-	char	data[492];
+	uint8_t SyncByte[16];
+	uint16_t crc;
+	uint16_t len;
+	uint8_t data[492];
 };
 
 struct Reserve0Info {
-	char	SyncByte[16];
-	char	LockCode[8];
-	char	Reserved[7];
-	char	LockLevel;
-	char	RecordVersion[32];
-	char	YL_IMSI[12 * 16];
-	char	Tele_IMSI[12 * 16];
-	char	pad[64];
+	uint8_t SyncByte[16];
+	uint8_t LockCode[8];
+	uint8_t Reserved[7];
+	uint8_t LockLevel;
+	uint8_t RecordVersion[32];
+	uint8_t YL_IMSI[12 * 16];
+	uint8_t Tele_IMSI[12 * 16];
+	uint8_t pad[64];
 };
 
 struct FctDiagInfo {
-	char	SyncByte[16];
-	char	todo[496];
+	uint8_t SyncByte[16];
+	uint8_t todo[496];
 };
 
 struct RcpInfo {
-	char	SyncByte[16];
-	char	RFlag[4];
-	char	RTime[4];
-	char	AuthCode[260];
-	char	EncryptoCode[116];
-	char	CoolyunID[8];
-	char	CoolyunPassword[32];
-	char	LogStatus[1];
-	char	pad[71];
+	uint8_t SyncByte[16];
+	uint8_t RFlag[4];
+	uint8_t RTime[4];
+	uint8_t AuthCode[260];
+	uint8_t EncryptoCode[116];
+	uint8_t CoolyunID[8];
+	uint8_t CoolyunPassword[32];
+	uint8_t LogStatus[1];
+	uint8_t pad[71];
 };
 
 struct ReturnZeroInfo {
-	char	SyncByte[16];
-	char	AlarmTime[4];
-	char	AlarmAssigned;
-	char	USBChargerType;
-	char	BootNoVib;
-	char	res[1];
-	char	CommRunMode[4];
-	char	pad[484];
+	uint8_t SyncByte[16];
+	uint8_t AlarmTime[4];
+	uint8_t AlarmAssigned;
+	uint8_t USBChargerType;
+	uint8_t BootNoVib;
+	uint8_t res[1];
+	uint8_t CommRunMode[4];
+	uint8_t pad[484];
 };
 
-#define TAG_LENGTH	16
-#define ONE_BLOCK_SIZE	512
+#define TAG_LENGTH			16
+#define ONE_BLOCK_SIZE			512
 
-#define	RETURNZERO_AlARM_TIME							16
-#define RETURNZERO_ALARM_ASSIGNED						20
-#define RETURNZERO_USB_CHARGER_TYPE						21
-#define RETURNZERO_BOOT_NO_VIB							22
+#define RETURNZERO_ALARM_TIME		16
+#define RETURNZERO_ALARM_ASSIGNED	20
+#define RETURNZERO_USB_CHARGER_TYPE	21
+#define RETURNZERO_BOOT_NO_VIB		22
 #define RETURNZERO_COMM_RUN_MODE	
 
+ssize_t yl_params_kernel_write(const uint8_t *buf, ssize_t count);
+ssize_t yl_params_kernel_read(uint8_t *buf, ssize_t count);
 
-#endif
+#endif /* _YL_PARAMS_H_ */

@@ -20,9 +20,7 @@
 #include <linux/poll.h>
 #include <linux/wakelock.h>
 #include <linux/sensors/sensparams.h>
-
-extern int yl_params_kernel_read(char *buf, size_t count); //, int ver);
-extern int yl_params_kernel_write(char *buf, size_t count); //, int ver);
+#include <linux/yl_params.h>
 
 int sensparams_write_to_flash(int type, unsigned char *in, int len) {
     int ret = 0;

@@ -20,10 +20,7 @@
 #include <linux/reboot.h>
 
 #include <linux/mutex.h>
-
-
-extern ssize_t yl_params_kernel_read(char *buf, ssize_t count); 
-extern ssize_t yl_params_kernel_write(char *buf, ssize_t count);
+#include <linux/yl_params.h>
 
 unsigned char yl_read_params_charge_mode(unsigned char *chg_mode)
 {
