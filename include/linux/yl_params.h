@@ -22,6 +22,7 @@ enum yl_params_index {
 	YL_FCT_DIAG,
 	YL_RCP,
 	YL_RETURNZERO,
+	YL_VIRTOS_PASSWD,
 	YL_PARAMS_COUNT,
 };
 
@@ -76,9 +77,6 @@ struct DeviceInfo_v0 {
 	char	pad[54];
 };
 
-#define TAG_LENGTH	16
-#define ONE_BLOCK_SIZE	512
-
 struct DeviceInfo {
 	char 	SyncByte[16];
 	char 	ParamVer[2];
@@ -86,8 +84,14 @@ struct DeviceInfo {
 	char 	CommunicationModel1[16];
 	char 	CommunicationModel2[16];
 	char 	ImageSensorModel[16];
-	char	SafeboxKey[128];
-	char 	pad[312];
+	char 	SafeboxKey[128];
+	char 	pad1[128];
+	char 	Sim1Capacity[2];
+	char 	Sim2Capacity[2];
+	char 	Sim3Capacity[2];
+	char 	NET_CARRIER;
+	char 	SimSlots;
+	char 	pad[176];
 };
 
 struct SensorCalInfo {
@@ -116,15 +120,17 @@ struct ProductlineInfo {
 	char	ModuleAudioVersion2[48];
 	char	FuseBurnStatus;
 	char	MiscStatus[5];
-	struct	SensorCalInfo	LightProxInfo;
-	struct	SensorCalInfo	AccInfo;
-	struct	SensorCalInfo	PressInfo;
-	struct	SensorCalInfo	SensorReserved1;
-	struct	SensorCalInfo	SensorReserved2;
-	struct	SensorCalInfo	SensorReserved3;
+	char	LightProxInfo[8];
+	char	AccInfo[8];
+	char	PressInfo[8];
+	char	SensorReserved1[8];
+	char	SensorReserved2[8];
+	char	SensorReserved3[8];
 	char	DSDS_IMEI[32];
-	char	pad[128];
-} __attribute__ ((packed));
+	char	WIFI_MAC[6];
+	char	BT_MAC[6];
+	char	pad[112];
+};
 
 struct DynamicInfo {
 	char	SyncByte[16];
@@ -139,23 +145,14 @@ struct DynamicInfo {
 	char	CTSFlag;
 	char	DRMFlag;
 	char 	USBChargeFlag;
-	char 	MiscFlags[12];
-	char 	pad[304];
-};
-
-struct RcpInfo{
-	char SyncByte[16];
-	char RFlag[4];
-	char RTime[4];
-	char pad[488];
-};
-
-struct ReturnZeroInfo{
-	char SyncByte[16];
-	char AlarmTime[4];
-	char AlarmAssigned;
-	char USBChargerType;
-	char pad[490];
+	char	LTEState;
+	char	MultiBootloader;
+	char	GMSDownload;
+	char	CPBDownload;
+	char	MiscFlags[56];
+	char	Virgin[16];
+	char	NfcUnlockScreenKey[32];
+	char 	pad[208];
 };
 
 struct MainDevInfo {
@@ -192,9 +189,42 @@ struct Reserve0Info {
 	char	pad[64];
 };
 
-struct Project2_Info {
+struct FctDiagInfo {
 	char	SyncByte[16];
-	int 	battery_check;
-	char	pad[492];
+	char	todo[496];
 };
+
+struct RcpInfo {
+	char	SyncByte[16];
+	char	RFlag[4];
+	char	RTime[4];
+	char	AuthCode[260];
+	char	EncryptoCode[116];
+	char	CoolyunID[8];
+	char	CoolyunPassword[32];
+	char	LogStatus[1];
+	char	pad[71];
+};
+
+struct ReturnZeroInfo {
+	char	SyncByte[16];
+	char	AlarmTime[4];
+	char	AlarmAssigned;
+	char	USBChargerType;
+	char	BootNoVib;
+	char	res[1];
+	char	CommRunMode[4];
+	char	pad[484];
+};
+
+#define TAG_LENGTH	16
+#define ONE_BLOCK_SIZE	512
+
+#define	RETURNZERO_AlARM_TIME							16
+#define RETURNZERO_ALARM_ASSIGNED						20
+#define RETURNZERO_USB_CHARGER_TYPE						21
+#define RETURNZERO_BOOT_NO_VIB							22
+#define RETURNZERO_COMM_RUN_MODE	
+
+
 #endif

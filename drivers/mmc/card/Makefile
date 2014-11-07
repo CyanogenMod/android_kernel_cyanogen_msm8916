@@ -11,3 +11,4 @@ obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
 obj-$(CONFIG_MMC_BLOCK_TEST)		+= mmc_block_test.o
 
 obj-$(CONFIG_MMC_YL_PARAMS)	+= yl_params.o
+obj-$(CONFIG_MMC_YL_PARAMS)	+= yl_params_if.o
