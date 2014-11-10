@@ -1030,6 +1030,35 @@ config TOUCHSCREEN_YL_GT9XX
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
+	bool "Touchscreen cover window size"
+	depends on TOUCHSCREEN_YL_GT9XX
+	help
+	  Say Y here if you want to set a size for cover window.
+	  This is used for the IC that cann't support window mode in firmware.
+	  So you can set a window size in your driver.
+
+	  If unsure, say N.
+
+config TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+	bool "Touchscreen cover window config switch"
+	depends on TOUCHSCREEN_YL_GT9XX
+	help
+	  Say Y here if you want to set conver window mode via switching a config file.
+	  This is used for the IC(goodix) that can support window mode in firmware.
+	  So you can set a window mode via a config.
+
+	  If unsure, say N.
+
+config TOUCHSCREEN_YL_GT9XX_TW_GLOVE_SWITCH
+	bool "Touchscreen glove window switch"
+	depends on TOUCHSCREEN_YL_GT9XX
+	help
+	  Say Y here if you want to set conver window mode.
+	  This is used for the IC(syna) that cannt't support window mode in firmware.
+	  So you can set a window mode in your driver.
+
+	  If unsure, say N.
 
 config TOUCHSCREEN_YL_SYNAPTICS
 	tristate "Synaptics DSX I2C touchscreen (YL variant)"

@@ -65,6 +65,7 @@ struct goodix_ts_data {
     u8  fixed_cfg;
     u8  esd_running;
     u8  fw_error;
+    struct mutex reset_mutex;
     struct tw_platform_data *pdata;		
     struct pinctrl *ts_pinctrl;
 	struct pinctrl_state *gpio_state_active;
@@ -86,7 +87,7 @@ extern u16 total_len;
 #define SWITCH_OFF            0
 #define SWITCH_ON             1
 
-#if defined(CONFIG_BOARD_CP7625)
+#ifdef CONFIG_MACH_CP8675
 #define TW_GLOVE_SWITCH  1
 #else
 #define TW_GLOVE_SWITCH  0

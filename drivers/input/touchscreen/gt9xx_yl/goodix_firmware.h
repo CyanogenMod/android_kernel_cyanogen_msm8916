@@ -9,7 +9,11 @@
 
 #ifdef CONFIG_MACH_CP8675
 const unsigned char goodix_firmware[] = {
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+	#include "GT970_1039(DACA)"
+#else
 	#include "GT970_1030(5A1F)"
+#endif
 };
 #else
 const unsigned char goodix_firmware[] = {

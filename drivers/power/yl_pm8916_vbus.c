@@ -24,7 +24,11 @@
 #include <linux/bitops.h>
 #include "yl_pm8916_vbus.h"
 
+#ifdef CONFIG_MACH_CP8675
+#define TW_GLOVE_SWITCH 1
+#else
 #define TW_GLOVE_SWITCH 0
+#endif
 
 #define CREATE_MASK(NUM_BITS, POS) \
 	((unsigned char) (((1 << (NUM_BITS)) - 1) << (POS)))
