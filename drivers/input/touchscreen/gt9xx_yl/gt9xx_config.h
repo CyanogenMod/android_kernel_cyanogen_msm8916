@@ -2,7 +2,7 @@
 #define	_LINUX_GOODIX_CONFIG_H
 
 #ifdef CONFIG_MACH_CP8675
-const char * TW_IC_PREFIX_NAME = "GT";
+const char * TW_IC_PREFIX_NAME = "GT970";
 #else
 const char * TW_IC_PREFIX_NAME = "GT9158";
 #endif
@@ -48,40 +48,68 @@ struct touch_panel_info
 #ifdef CONFIG_MACH_CP8675
 static unsigned char CTP_CFG_GROUP1[]=  
 {
-	#include "coolpad_8675_00_V42_20140714_finger.cfg"
+	#include "coolpad_8675_00_V45_20141008_finger.cfg"
 };
 static unsigned char CTP_CFG_GROUP1_glove[]=  
 {
-	#include "coolpad_8675_00_V42_20140714_glove.cfg"
+	#include "coolpad_8675_00_V45_20141008_glove.cfg"
 };
-static unsigned char CTP_CFG_GROUP2[]=
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+static unsigned char CTP_CFG_GROUP1_window[]=  
 {
-	#include "coolpad_8675_01_V42_20140804_finger.cfg"
+	#include "coolpad_8675_00_V45_20141008_window.cfg"
 };
-static unsigned char CTP_CFG_GROUP2_glove[]=
+#endif
+
+static unsigned char CTP_CFG_GROUP2[]=  
 {
-	#include "coolpad_8675_01_V42_20140804_glove.cfg"
+	#include "coolpad_8675_02_V45_20141008_finger.cfg"
 };
-static unsigned char CTP_CFG_GROUP3[]=
+static unsigned char CTP_CFG_GROUP2_glove[]=  
 {
-	#include "coolpad_8675_02_V43_20140711_finger.cfg"
+	#include "coolpad_8675_02_V45_20141008_glove.cfg"
 };
-static unsigned char CTP_CFG_GROUP3_glove[]=
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+static unsigned char CTP_CFG_GROUP2_window[]=  
 {
-	#include "coolpad_8675_02_V43_20140711_glove.cfg"
+	#include "coolpad_8675_02_V45_20141008_window.cfg"
 };
+#endif
+
+static unsigned char CTP_CFG_GROUP3[]=  
+{
+	#include "coolpad_8675_01_V45_20141008_finger.cfg"
+};
+static unsigned char CTP_CFG_GROUP3_glove[]=  
+{
+	#include "coolpad_8675_01_V45_20141008_glove.cfg"
+};
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+static unsigned char CTP_CFG_GROUP3_window[]=  
+{
+	#include "coolpad_8675_01_V45_20141008_window.cfg"
+};
+#endif
 
 struct touch_panel_info yl_cfg[] = {
   {0x00, "Boen", CTP_CFG_GROUP1, sizeof(CTP_CFG_GROUP1)},
-  {0x01, "Yeji", CTP_CFG_GROUP2, sizeof(CTP_CFG_GROUP2)},
-  {0x02, "Ofilm", CTP_CFG_GROUP3, sizeof(CTP_CFG_GROUP3)},
+  {0x02, "Ofilm", CTP_CFG_GROUP2, sizeof(CTP_CFG_GROUP2)},
+  {0x01, "Each", CTP_CFG_GROUP3, sizeof(CTP_CFG_GROUP3)},
 };
 
 struct touch_panel_info yl_cfg_glove[] = {
   {0x00, "Boen", CTP_CFG_GROUP1_glove, sizeof(CTP_CFG_GROUP1_glove)},
-  {0x01, "Yeji", CTP_CFG_GROUP2_glove, sizeof(CTP_CFG_GROUP2_glove)},
-  {0x02, "Ofilm", CTP_CFG_GROUP3_glove, sizeof(CTP_CFG_GROUP3_glove)},
+  {0x02, "Ofilm", CTP_CFG_GROUP2_glove, sizeof(CTP_CFG_GROUP2_glove)},
+  {0x01, "Each", CTP_CFG_GROUP3_glove, sizeof(CTP_CFG_GROUP3_glove)},
 };
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+struct touch_panel_info yl_cfg_window[] = {
+  {0x00, "Boen", CTP_CFG_GROUP1_window, sizeof(CTP_CFG_GROUP1_window)},
+  {0x02, "Ofilm", CTP_CFG_GROUP2_window, sizeof(CTP_CFG_GROUP2_window)},
+  {0x01, "Each", CTP_CFG_GROUP3_window, sizeof(CTP_CFG_GROUP3_window)},
+};
+#endif
+
 #else
 static unsigned char CTP_CFG_GROUP1[]=  
 {

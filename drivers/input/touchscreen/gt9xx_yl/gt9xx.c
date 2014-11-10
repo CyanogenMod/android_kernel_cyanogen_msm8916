@@ -92,7 +92,7 @@ u8 glove_mode=0;
 u8 glove_switch=0;
 atomic_t gt_keypad_enable;
 
-#if YL_COVER_SWITCH_FUNC
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
 
 struct cover_window_info {
      unsigned int win_x_min;
@@ -211,6 +211,7 @@ s32 gtp_i2c_read(struct i2c_client *client, u8 *buf, s32 len)
     struct i2c_msg msgs[2];
     s32 ret=-1;
     s32 retries = 0;
+    struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
 
     GTP_DEBUG_FUNC();
 
@@ -226,15 +227,19 @@ s32 gtp_i2c_read(struct i2c_client *client, u8 *buf, s32 len)
 
     while(retries < 5)
     {
+        mutex_lock(&ts->reset_mutex);
         ret = i2c_transfer(client->adapter, msgs, 2);
-        if(ret == 2)break;
+		mutex_unlock(&ts->reset_mutex);
+
+	if(ret == 2)
+		break;
         retries++;
-		   #if GTP_SLIDE_WAKEUP
+#if GTP_SLIDE_WAKEUP
              if (DOZE_ENABLED == doze_status)
                 {
                    mdelay(10);  //wait for i2c resume
                 }
-           #endif
+#endif
     }
     if(retries >= 5)
     {
@@ -270,6 +275,7 @@ s32 gtp_i2c_write(struct i2c_client *client,u8 *buf,s32 len)
     struct i2c_msg msg;
     s32 ret=-1;
     s32 retries = 0;
+    struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
 
     GTP_DEBUG_FUNC();
 
@@ -280,8 +286,12 @@ s32 gtp_i2c_write(struct i2c_client *client,u8 *buf,s32 len)
 
     while(retries < 5)
     {
+	mutex_lock(&ts->reset_mutex);
         ret = i2c_transfer(client->adapter, &msg, 1);
-        if (ret == 1)break;
+        mutex_unlock(&ts->reset_mutex);
+
+        if (ret == 1)
+		break;
         retries++;
     }
     if(retries >= 5)
@@ -492,7 +502,7 @@ static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
     GTP_SWAP(x, y);
 #endif
 
-#if YL_COVER_SWITCH_FUNC
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
 if(atomic_read(&gt9xx_cover_window.windows_switch) && !(x > gt9xx_cover_window.win_x_min
                                                    && x < gt9xx_cover_window.win_x_max
                                                    && y > gt9xx_cover_window.win_y_min
@@ -1810,7 +1820,6 @@ touch_mode_type goodix_get_mode(void)
 
 int goodix_set_mode(touch_mode_type glove)
 {
-	u8 retry = 0;
 	u8 ret=0;
 	struct goodix_ts_data *ts;
 	
@@ -1820,55 +1829,65 @@ int goodix_set_mode(touch_mode_type glove)
 	ts = i2c_get_clientdata(i2c_connect_client);
 	glove_switch=glove;	
 	
-    if (ts->use_irq)
-    {
-        gtp_irq_disable(ts);
-    }
-    else
-    {
-        hrtimer_cancel(&ts->timer);
-    }	
-	
-	if(glove_switch!=MODE_GLOVE)
+	if (ts->use_irq)
 	{
-		//config
+	    gtp_irq_disable(ts);
+	}
+	else
+	{
+	    hrtimer_cancel(&ts->timer);
+	}	
+
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+	if(glove_switch!=MODE_GLOVE && glove_switch!=MODE_WINDOW )
+#else
+	if(glove_switch!=MODE_GLOVE)
+#endif
+	{
+	    printk(KERN_ERR"[GTP]:switch to normal mode.\n");
 	    ts->gtp_cfg_len = yl_cfg[tp_index].firmware_size;		
 	    memset(&config[GTP_ADDR_LENGTH], 0, GTP_CONFIG_MAX_LENGTH);
 	    memcpy(&config[GTP_ADDR_LENGTH], yl_cfg[tp_index].firmware, ts->gtp_cfg_len);
 	}
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
+	else if( glove_switch == MODE_WINDOW )
+	{
+	    printk(KERN_ERR"[GTP]:switch to window mode.\n");
+	    ts->gtp_cfg_len = yl_cfg_window[tp_index].firmware_size;		
+	    memset(&config[GTP_ADDR_LENGTH], 0, GTP_CONFIG_MAX_LENGTH);
+	    memcpy(&config[GTP_ADDR_LENGTH], yl_cfg_window[tp_index].firmware, ts->gtp_cfg_len);
+
+	}
+#endif
 	else
 	{
-		//config
+	    printk(KERN_ERR"[GTP]:switch to glove mode.\n");
 	    ts->gtp_cfg_len = yl_cfg_glove[tp_index].firmware_size;		
 	    memset(&config[GTP_ADDR_LENGTH], 0, GTP_CONFIG_MAX_LENGTH);
 	    memcpy(&config[GTP_ADDR_LENGTH], yl_cfg_glove[tp_index].firmware, ts->gtp_cfg_len);
 	}
+	gtp_reset_guitar(ts->client, 20);
+	ret = gtp_send_cfg(ts->client);
+	if (ret >= 0)
+	{
+	    	msleep(400);
+ 		GTP_INFO("send config successed!");
+	}
 
-    while(retry++ < 5)
-    {
-        gtp_reset_guitar(ts->client, 20);
-        ret = gtp_send_cfg(ts->client);
-        if (ret >= 0)
-        {
-            GTP_INFO("send config successed!");
-            break;
-        }
-    }
-	
 	if (glove_switch == MODE_GLOVE) {
-    	yl_chg_status_changed();
-    }
-	
-	if (ts->use_irq)
-    {
-        gtp_irq_enable(ts);
-    }
-    else
-    {
-        hrtimer_start(&ts->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
-    }
-	
-	printk("%s: glove_switch  = %d\n", __func__,glove_switch);
+	    yl_chg_status_changed();
+	}
+	if(!ts->gtp_is_suspend){
+		if (ts->use_irq)
+		{
+		    gtp_irq_enable(ts);
+		}
+		else
+		{
+		    hrtimer_start(&ts->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
+		}
+	}
+	printk(KERN_ERR"%s: mode  = %d\n", __func__,glove_switch);
 	return 1;
 }
 #else
@@ -2437,6 +2456,9 @@ static void goodix_ts_release(void)
  
 static int goodix_ts_reset(int ms)
 {
+    struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
+
+    mutex_lock(&ts->reset_mutex);
     gpio_direction_output(gtpdata->gpio_irq, 0); 
     gpio_direction_output(gtpdata->gpio_reset, 0);
     msleep(ms);
@@ -2453,6 +2475,7 @@ static int goodix_ts_reset(int ms)
     gpio_direction_output(gtpdata->gpio_irq, 0); 
     msleep(50);
     gpio_direction_input(gtpdata->gpio_irq);		
+    mutex_unlock(&ts->reset_mutex);
     
     return 0;
 }	
@@ -2790,7 +2813,7 @@ static ssize_t gt968_send_cfg_ver_store(struct device *dev,struct device_attribu
 	return count;
 }
 
-#if YL_COVER_SWITCH_FUNC
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
 ///cover for small window. linronghui&mengxiuguan. start. 2014.02.11
  static ssize_t windows_show(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -2865,7 +2888,7 @@ static DEVICE_ATTR(send_cfg_ver,S_IRUGO|S_IWUSR, gt968_send_cfg_ver_show, gt968_
 
 static DEVICE_ATTR(glove_switch, S_IRUGO|S_IWUSR, glove_show, glove_store);
 
-#if YL_COVER_SWITCH_FUNC
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
 static DEVICE_ATTR(windows_switch, S_IRUGO|S_IWUSR, windows_show, windows_store);
 #endif
 
@@ -2873,7 +2896,7 @@ static DEVICE_ATTR(keypad_enable, S_IRUGO|S_IWUSR, keypad_enable_show, keypad_en
 
 static struct attribute *goodix_attributes[] = {
 	&dev_attr_glove_switch.attr,
-#if YL_COVER_SWITCH_FUNC
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
 	&dev_attr_windows_switch.attr,
 #endif
 	&dev_attr_send_cfg_ver.attr,
@@ -2904,12 +2927,12 @@ static int  goodix_ts_probe(struct i2c_client *client, const struct i2c_device_i
     s32 ret = -1;
     struct goodix_ts_data *ts;
     struct tw_platform_data *pdata;		
-    u16 version_info;
+    //u16 version_info;
 	u16 rate;
 
     GTP_DEBUG_FUNC();
 
-#if YL_COVER_SWITCH_FUNC
+#ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_SIZE
 
 atomic_set(&gt9xx_cover_window.windows_switch, 0);   ///cover for small window. linronghui&mengxiuguan. 2014.02.11
 
@@ -2984,7 +3007,8 @@ gt9xx_cover_window.win_y_max = 300;
     ts->client->irq = gpio_to_irq(ts->pdata->gpio_irq);
     ts->fw_error = 0;
 	gtpdata=pdata;
-    i2c_set_clientdata(client, ts);
+	mutex_init(&ts->reset_mutex);
+        i2c_set_clientdata(client, ts);
 	 printk("[gt]:x=%d,y=%d.\n",ts->abs_x_max,ts->abs_y_max);  		
 	if(!ts->pdata->init || ts->pdata->init() < 0)
 	{
@@ -3061,7 +3085,7 @@ gt9xx_cover_window.win_y_max = 300;
     }
 
 
-    ret = gtp_read_version(client, &version_info);
+    ret = gtp_read_fw_cfg_version();
     if (ret < 0)
     {
         GTP_ERROR("Read version failed.");
@@ -3109,6 +3133,7 @@ exit_power_failed:
 	if(ts->pdata->release)
 			ts->pdata->release();
 exit_init_failed:	
+	mutex_destroy(&ts->reset_mutex);
 	 kfree(ts);
 	 if (ts->ts_pinctrl) {
 		ret = goodix_pinctrl_select(ts, false);
@@ -3279,11 +3304,11 @@ static int goodix_ts_enable(struct input_dev *in_dev)
         GTP_ERROR("GTP later resume failed.");
     }
 
-	#if  TW_GLOVE_SWITCH
+#if  TW_GLOVE_SWITCH
     if (glove_switch == MODE_GLOVE) {
     	yl_chg_status_changed();
     	}
-    #endif
+#endif
 	
     if (ts->use_irq)
     {
