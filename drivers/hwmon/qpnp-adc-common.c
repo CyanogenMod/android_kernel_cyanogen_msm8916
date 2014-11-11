@@ -44,6 +44,61 @@
    and provided to the battery driver in the units desired for
    their framework which is 0.1DegC. True resolution of 0.1DegC
    will result in the below table size to increase by 10 times */
+#ifdef CONFIG_NTC_12K_249K
+static const struct qpnp_vadc_map_pt adcmap_btm_threshold[] = {
+	{-200,	1545},
+	{-180,	1523},
+	{-160,	1501},
+	{-140,	1477},
+	{-120,	1452},
+	{-100,	1427},
+	{-80,	1400},
+	{-60,	1373},
+	{-40,	1345},
+	{-20,	1316},
+	{0,	1287},
+	{20,	1257},
+	{40,	1227},
+	{60,	1197},
+	{80,	1166},
+	{100,	1136},
+	{120,	1106},
+	{140,	1076},
+	{160,	1046},
+	{180,	1016},
+	{200,	987},
+	{220,	959},
+	{240,	931},
+	{260,	904},
+	{280,	878},
+	{300,	852},
+	{320,	827},
+	{340,	803},
+	{360,	780},
+	{380,	758},
+	{400,	736},
+	{420,	716},
+	{440,	696},
+	{460,	677},
+	{480,	659},
+	{500,	642},
+	{520,	625},
+	{540,	609},
+	{560,	594},
+	{580,	580},
+	{600,	566},
+	{620,	553},
+	{640,	541},
+	{660,	530},
+	{680,	518},
+	{700,	508},
+	{720,	498},
+	{740,	489},
+	{760,	480},
+	{780,	471},
+	{800,	463},
+};
+#else
 static const struct qpnp_vadc_map_pt adcmap_btm_threshold[] = {
 	{-300,	1642},
 	{-200,	1544},
@@ -129,6 +184,7 @@ static const struct qpnp_vadc_map_pt adcmap_btm_threshold[] = {
 	{780,	208},
 	{790,	203}
 };
+#endif
 
 static const struct qpnp_vadc_map_pt adcmap_qrd_btm_threshold[] = {
 	{-200,	1540},

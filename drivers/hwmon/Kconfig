@@ -995,6 +995,12 @@ config SENSORS_QPNP_ADC_CURRENT
 	  configuration that include reading the external/internal Rsense, CSP_EX,
 	  CSN_EX pair along with the gain and offset calibration.
 
+config NTC_12K_249K
+	bool "Support for NTC 12K 2.49K battery"
+	depends on SENSORS_QPNP_ADC_VOLTAGE || SENSORS_QPNP_ADC_CURRENT
+	help
+	  Say Y to use NTC 12K, 2.49K battery data
+
 config SENSORS_QPNP_CURRENT_MONITOR
 	tristate "Support for QPNP SMPS current monitor"
 	depends on SPMI
