@@ -114,7 +114,7 @@ static bool mhl_det_in_progress;
 static struct regulator *hsusb_3p3;
 static struct regulator *hsusb_1p8;
 static struct regulator *hsusb_vdd;
-#ifndef CONFIG_MACH_JALEBI
+#if !defined(CONFIG_MACH_JALEBI) && !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 static struct regulator *vbus_otg;
 #endif
 static struct regulator *mhl_usb_hs_switch;
@@ -2111,7 +2111,6 @@ out:
 	return NOTIFY_OK;
 }
 
-
 #ifdef CONFIG_MACH_JALEBI
 #define OTG_PINCTRL_STATE_ACTIVE "active"
 #define OTG_PINCTRL_STATE_SLEEP "sleep"
@@ -2177,6 +2176,13 @@ static int otg_enable(struct msm_otg_platform_data *pdata, bool enable)
 }
 #endif
 
+#ifdef CONFIG_YL_FAN5405_CHARGER
+extern int fan5405_enable_otg_mode(bool);
+#endif
+#ifdef CONFIG_YL_BQ24157_CHARGER
+extern int bq24157_enable_otg_mode(bool);
+#endif
+
 static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 {
 	int ret;
@@ -2193,7 +2199,7 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 		return;
 	}
 
-#ifndef CONFIG_MACH_JALEBI
+#if !defined(CONFIG_MACH_JALEBI) && !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 	if (!vbus_otg) {
 		pr_err("vbus_otg is NULL.");
 		return;
@@ -2210,7 +2216,14 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 		msm_otg_notify_host_mode(motg, on);
 #ifdef CONFIG_MACH_JALEBI
 		ret = otg_enable(motg->pdata, true);
-#else
+#endif
+#ifdef CONFIG_YL_BQ24157_CHARGER
+		ret = bq24157_enable_otg_mode(true);
+#endif
+#ifdef CONFIG_YL_FAN5405_CHARGER
+		ret = fan5405_enable_otg_mode(true);
+#endif
+#if !defined(CONFIG_MACH_JALEBI) && !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 		ret = regulator_enable(vbus_otg);
 #endif
 		if (ret) {
@@ -2221,7 +2234,14 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 	} else {
 #ifdef CONFIG_MACH_JALEBI
 		ret = otg_enable(motg->pdata, false);
-#else
+#endif
+#ifdef CONFIG_YL_BQ24157_CHARGER
+		ret = bq24157_enable_otg_mode(false);
+#endif
+#ifdef CONFIG_YL_FAN5405_CHARGER
+		ret = fan5405_enable_otg_mode(false);
+#endif
+#if !defined(CONFIG_MACH_JALEBI) && !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 		ret = regulator_disable(vbus_otg);
 #endif
 		if (ret) {
@@ -2247,7 +2267,7 @@ static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
 		return -ENODEV;
 	}
 
-#ifndef CONFIG_MACH_JALEBI
+#if !defined(CONFIG_MACH_JALEBI) && !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 	if (!motg->pdata->vbus_power && host) {
 		vbus_otg = devm_regulator_get(motg->phy.dev, "vbus_otg");
 		if (IS_ERR(vbus_otg)) {
@@ -3407,6 +3427,9 @@ static void msm_otg_sm_work(struct work_struct *w)
 						OTG_STATE_B_PERIPHERAL;
 					break;
 				case USB_SDP_CHARGER:
+#ifdef CONFIG_MACH_YULONG
+					msm_otg_set_power(otg->phy, 500);
+#endif
 					msm_otg_start_peripheral(otg, 1);
 					otg->phy->state =
 						OTG_STATE_B_PERIPHERAL;
