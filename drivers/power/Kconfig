@@ -552,6 +552,42 @@ config YL_PM8916_VBUS
 	help
 	  Say Y here to enable the Yulong PM8916 VBUS driver
 
+config YL_BQ24157_CHARGER
+	tristate "Yulong BQ24157 charger driver"
+	depends on I2C
+	help
+	  Say Y here to enable the fan5405 sm charge driver
+
+config CHARGING_DISABLE_IN_HIGH_TEMPERATURE_MICROMAX
+	bool "Use Micromax config for Yulong BQ24157 charger"
+	depends on YL_BQ24157_CHARGER
+	help
+	  Say Y here to use Micromax configs for yl_bq24157_charger
+
+config YL_FAN5405_CHARGER
+	tristate "Yulong FAN5405 charger driver"
+	depends on I2C
+	help
+	  Say Y here to enable the fan5405 sm charge driver
+
+config YL_LC709203_FUELGAUGE
+	tristate "Yulong LC709203 fuelgauge driver"
+	depends on I2C
+	help
+	  Say Y here to enable the lc709203 fuelgauge driver
+
+config PRIORITIZE_LOAD_LC709203
+	bool "Prioritize loading lc709203 driver"
+	depends on YL_LC709203_FUELGAUGE
+	help
+	  Say Y here to prioritize loading the lc709203 driver
+
+config YL_CHARGE_MODE
+	bool "Select for fast or normal charging (Yulong)"
+	default n
+	help
+	  Say Y to enable Yulong charge mode.
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY

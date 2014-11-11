@@ -448,9 +448,9 @@ static irqreturn_t yl_pm8916_vbus_usbin_valid_irq_handler(int irq, void *_chip)
 		pr_err("%s[%d] Updating usb_psy PRESENT property\n",__func__, __LINE__);
 		power_supply_set_present(chip->usb_psy, chip->usb_present);
 		
-		if (chip->usb_present) {
+		//if (chip->usb_present) {
 			power_supply_set_battery_charged(chip->batt_psy);
-		}
+		//}
 	}
 	
 	return IRQ_HANDLED;
@@ -668,6 +668,7 @@ static int yl_pm8916_vbus_probe(struct spmi_device *spmi)
 
 	}
 
+	this_chip = chip;
 	chip->batt_present = is_battery_present();
 	/* Initial check if USB already inserted */
 	determine_initial_status(chip);
@@ -693,7 +694,6 @@ static int yl_pm8916_vbus_probe(struct spmi_device *spmi)
 	if(rc)
 		pr_err("Unable to set USB_SUSP_REG rc=%d\n", rc);
 	
-	this_chip = chip;
 
 	pr_info("LBC probed USB is %s\n", chip->usb_present ? "connected" :"not conneccted");
         pr_info("=====probe success====\n");
