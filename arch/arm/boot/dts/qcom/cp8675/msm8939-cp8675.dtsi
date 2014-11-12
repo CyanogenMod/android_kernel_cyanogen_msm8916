@@ -86,6 +86,15 @@
 			yl,batt-psy-name = "battery";
 			yl,battery-psy-name = "lc709203_battery";
 		};
+
+		tps651321@3E {
+			compatible="qcom,tps-651321";
+			reg=<0x3e>;
+			interrupt-parent=<&msm_gpio>;
+			vdd-supply=<&pm8916_l17>;
+			vcc_i2c-supply=<&pm8916_l5>;
+			interrupts=<13 0x2008>;
+		};
 	};
 
 	yl_adc_battery {
