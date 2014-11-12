@@ -28,26 +28,26 @@
 			};
 		};
 
-		bq24157_int_pin {
+		fan_int_pin {
 			qcom,pins = <&gp 62>;
 			qcom,num-grp-pins = <1>;
 			qcom,pin-func = <0>;
-			label = "bq24157_int_gpio";
-			bq24157_int_active: bq24157_int_active {
+			label = "fan5405_int_gpio";
+			fan_int_active: fan_int_active {
 				drive-strength = <2>;	/* 2 MA */
-				bias-pull-up;		/* PULL UP*/
+				bias-disable = <0>;	/* No PULL */
 			};
-			bq24157_int_sleep: bq24157_int_sleep {
+			fan_int_sleep: fan_int_sleep {
 				drive-strength = <2>;	/* 2 MA */
-				bias-pull-up;		/* PULL UP */
+				bias-disable = <0>;	/* No PULL */
 			};
 		};
 
-		bq24157_en_pin {
+		fan_en_pin {
 			qcom,pins = <&gp 2>;
 			qcom,num-grp-pins = <1>;
 			qcom,pin-func = <0>;
-			label = "bq24157_en_gpio";
+			label = "fan5405_en_gpio";
 		};
 
 		pa12200001_int_pin {

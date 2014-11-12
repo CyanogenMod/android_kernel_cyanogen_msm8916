@@ -1,0 +1,108 @@
+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/* manufacturer is π‚”Ó */
+
+qcom,CPLD-312-CC-data {
+	qcom,fcc-mah = <2500>;
+	qcom,default-rbatt-mohm = <189>;
+	qcom,rbatt-capacitive-mohm = <0>;
+	qcom,flat-ocv-threshold-uv = <3800000>;
+	qcom,max-voltage-uv = <4350000>;
+	qcom,v-cutoff-uv = <3400000>;
+	qcom,chg-term-ua = <100000>;
+	qcom,batt-id-kohm = <1>;
+	qcom,battery-type = "CPLD-312-CC";
+
+	qcom,rbatt-sf-lut {
+		qcom,lut-col-legend = <(-20) 0 25 40 60>;
+		qcom,lut-row-legend = <100 95 90 85 80>,
+				<75 70 65 60 55>,
+				<50 45 40 35 30>,
+				<25 20 15 10 9>,
+				<8 7 6 5 4>,
+				<3 2 1 0>;
+		qcom,lut-data = <1132 292 100 81 77>,
+				<1129 293 100 81 77>,
+				<1021 300 100 82 78>,
+				<958 300 102 83 78>,
+				<915 305 104 84 79>,
+				<826 303 110 87 81>,
+				<811 270 110 89 83>,
+				<801 277 108 91 83>,
+				<802 275 99 84 79>,
+				<819 276 98 82 78>,
+				<841 280 98 82 79>,
+				<867 293 99 83 79>,
+				<894 311 101 84 80>,
+				<923 333 102 85 81>,
+				<959 359 100 83 79>,
+				<1001 389 100 82 78>,
+				<1054 426 101 83 79>,
+				<1132 492 102 83 79>,
+				<1107 496 103 84 81>,
+				<1152 513 105 86 83>,
+				<1201 534 106 87 83>,
+				<1264 556 107 87 80>,
+				<1367 586 106 86 81>,
+				<1595 625 107 86 82>,
+				<1925 683 109 87 84>,
+				<2422 771 114 89 88>,
+				<3339 902 122 95 110>,
+				<6239 1385 148 112 2788>,
+				<68439 37753 18795 40357 35346>;
+	};
+
+	qcom,fcc-temp-lut {
+		qcom,lut-col-legend = <(-20) 0 25 40 60>;
+		qcom,lut-data = <2578 2580 2590 2584 2573>;
+	};
+
+	qcom,pc-temp-ocv-lut {
+		qcom,lut-col-legend = <(-20) 0 25 40 60>;
+		qcom,lut-row-legend = <100 95 90 85 80>,
+				<75 70 65 60 55>,
+				<50 45 40 35 30>,
+				<25 20 15 10 9>,
+				<8 7 6 5 4>,
+				<3 2 1 0>;
+		qcom,lut-data = <4331 4325 4319 4324 4314>,
+				<4226 4252 4257 4262 4256>,
+				<4156 4193 4201 4205 4200>,
+				<4103 4138 4146 4150 4144>,
+				<4052 4088 4094 4097 4091>,
+				<3962 4031 4050 4048 4041>,
+				<3913 3952 3983 3996 3994>,
+				<3871 3915 3942 3951 3947>,
+				<3838 3880 3897 3901 3898>,
+				<3816 3847 3864 3865 3863>,
+				<3800 3819 3837 3838 3836>,
+				<3784 3800 3815 3816 3813>,
+				<3770 3784 3797 3797 3794>,
+				<3755 3770 3779 3780 3774>,
+				<3740 3757 3762 3759 3747>,
+				<3723 3741 3746 3739 3724>,
+				<3702 3721 3728 3720 3704>,
+				<3673 3703 3705 3696 3682>,
+				<3633 3683 3686 3679 3666>,
+				<3620 3676 3684 3677 3663>,
+				<3607 3666 3680 3674 3656>,
+				<3589 3650 3671 3667 3633>,
+				<3567 3629 3649 3647 3599>,
+				<3540 3598 3612 3611 3555>,
+				<3507 3558 3566 3566 3499>,
+				<3463 3504 3508 3508 3426>,
+				<3399 3426 3430 3430 3325>,
+				<3289 3300 3313 3312 3190>,
+				<3000 3000 3000 3000 3000>;
+	};
+};
