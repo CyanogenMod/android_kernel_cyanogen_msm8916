@@ -21,12 +21,6 @@
 #include <linux/spinlock.h>
 #include <linux/spmi.h>
 
-#ifdef CONFIG_YL_POWEROFF_ALARM
-#include <linux/yl_params.h>
-
-#define YL_PARAM_BUF_SZ		512
-#endif
-
 /* RTC/ALARM Register offsets */
 #define REG_OFFSET_ALARM_RW	0x40
 #define REG_OFFSET_ALARM_CTRL1	0x46
@@ -295,9 +289,6 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	unsigned long secs, secs_rtc, irq_flags;
 	struct qpnp_rtc *rtc_dd = dev_get_drvdata(dev);
 	struct rtc_time rtc_tm;
-#ifdef CONFIG_YL_POWEROFF_ALARM
-	u8 param_buf[YL_PARAM_BUF_SZ] = "RETURNZERO";
-#endif
 
 	rtc_tm_to_time(&alarm->time, &secs);
 
@@ -321,23 +312,6 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	value[1] = (secs >> 8) & 0xFF;
 	value[2] = (secs >> 16) & 0xFF;
 	value[3] = (secs >> 24) & 0xFF;
-
-#ifdef CONFIG_YL_POWEROFF_ALARM
-	rc = yl_params_kernel_read(param_buf, YL_PARAM_BUF_SZ);
-	if (rc != YL_PARAM_BUF_SZ) {
-		dev_err(dev, "Read from ALARM params failed\n");
-		return -EFAULT;
-	}
-
-	param_buf[RETURNZERO_ALARM_ASSIGNED] = 1;
-	memcpy(&param_buf[RETURNZERO_ALARM_TIME], value, 4 * sizeof(u8));
-
-	rc = yl_params_kernel_write(param_buf, YL_PARAM_BUF_SZ);
-	if (rc != YL_PARAM_BUF_SZ) {
-		dev_err(dev, "Write to ALARM params failed\n");
-		return -EFAULT;
-	}
-#endif
 
 	spin_lock_irqsave(&rtc_dd->alarm_ctrl_lock, irq_flags);
 

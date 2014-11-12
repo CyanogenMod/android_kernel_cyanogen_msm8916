@@ -56,12 +56,3 @@ config APP_PROFILE
 	  Allow apps to set CPU/GPU frequencies
 
 endmenu
-
-menu "Yulong features"
-
-config YL_POWEROFF_ALARM
-	bool "Support Yulong power-off alarm"
-	help
-	  Use Yulong implementation of RTC wakeup alarms.
-
-endmenu
