@@ -1924,6 +1924,10 @@ out:
 	return NOTIFY_OK;
 }
 
+#ifdef CONFIG_YL_BQ24157_CHARGER
+extern int bq24157_enable_otg_mode(void);
+extern int bq24157_disable_otg_mode(void);
+#endif
 static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 {
 	int ret;
@@ -1952,14 +1956,22 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 	 */
 	if (on) {
 		msm_otg_notify_host_mode(motg, on);
+#ifdef CONFIG_YL_BQ24157_CHARGER
+		ret = bq24157_enable_otg_mode();
+#else
 		ret = regulator_enable(vbus_otg);
+#endif
 		if (ret) {
 			pr_err("unable to enable vbus_otg\n");
 			return;
 		}
 		vbus_is_on = true;
 	} else {
+#ifdef CONFIG_YL_BQ24157_CHARGER
+		ret = bq24157_disable_otg_mode();
+#else
 		ret = regulator_disable(vbus_otg);
+#endif
 		if (ret) {
 			pr_err("unable to disable vbus_otg\n");
 			return;
@@ -3045,6 +3057,9 @@ static void msm_otg_sm_work(struct work_struct *w)
 						OTG_STATE_B_PERIPHERAL;
 					break;
 				case USB_SDP_CHARGER:
+#ifdef CONFIG_MACH_YULONG
+					msm_otg_set_power(otg->phy, 500);
+#endif
 					msm_otg_start_peripheral(otg, 1);
 					otg->phy->state =
 						OTG_STATE_B_PERIPHERAL;
