@@ -329,7 +329,7 @@
 	pinctrl-names = "mdss_default", "mdss_sleep";
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
 	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
-	qcom,dsi-pref-prim-pan = <&dsi_hx8394a_lide_lg_hd_vid>;
+	qcom,dsi-pref-prim-pan = <&dsi_hx8394a_lide_lg_hd>;
 
 	qcom,platform-enable-gpio = <&msm_gpio 97 0>;
 	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
