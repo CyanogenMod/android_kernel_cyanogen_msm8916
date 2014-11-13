@@ -70,6 +70,10 @@ static int mdss_dsi_regulator_init(struct platform_device *pdev)
 	return rc;
 }
 
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+extern void tps65132_config_set_to_tablet_mode(void);
+extern void tps65132_config_proc(void);
+#endif
 static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 {
 	int ret = 0;
@@ -173,11 +177,18 @@ static int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 		!pdata->panel_info.mipi.lp11_init) {
 		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
 			pr_debug("reset enable: pinctrl not enabled\n");
-
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (pdata->panel_info.mipi.has_tps65132)
+			tps65132_config_set_to_tablet_mode();
+#endif
 		ret = mdss_dsi_panel_reset(pdata, 1);
 		if (ret)
 			pr_err("%s: Panel reset failed. rc=%d\n",
 					__func__, ret);
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (pdata->panel_info.mipi.has_tps65132)
+			tps65132_config_proc();
+#endif
 	}
 
 error:
@@ -618,7 +629,15 @@ int mdss_dsi_on(struct mdss_panel_data *pdata)
 	if (mipi->lp11_init) {
 		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
 			pr_debug("reset enable: pinctrl not enabled\n");
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (mipi->has_tps65132)
+			tps65132_config_set_to_tablet_mode();
+#endif
 		mdss_dsi_panel_reset(pdata, 1);
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (mipi->has_tps65132)
+			tps65132_config_proc();
+#endif
 	}
 
 	if (mipi->init_delay)
