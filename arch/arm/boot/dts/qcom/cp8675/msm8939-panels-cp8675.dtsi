@@ -174,7 +174,7 @@
 		qcom,mdss-dsi-reset-sequence = <1 10>, <0 2>, <1 10>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-himax-patchcode-enable;
+		qcom,has-tps65132;
 	};
 
 	dsi_hx8394a_yashi_cmi_hd: qcom,mdss_dsi_hx8394a_yashi_cmi_hd_video {
@@ -341,7 +341,7 @@
 		qcom,mdss-dsi-reset-sequence = <1 10>, <0 2>, <1 10>;
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <121>;
-		qcom,mdss-dsi-himax-patchcode-enable;
+		qcom,has-tps65132;
 	};
 
 	dsi_ili9881_yashi_cpt_hd_vid: qcom,mdss_dsi_ili9881_yashi_cpt_hd_video {
