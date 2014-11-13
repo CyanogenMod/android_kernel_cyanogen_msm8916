@@ -1800,6 +1800,8 @@ static int mdss_panel_parse_dt(struct device_node *np,
 		"qcom,mdss-dsi-off-command", "qcom,mdss-dsi-off-command-state");
 
 #ifdef CONFIG_MACH_YULONG
+	pinfo->mipi.has_tps65132 = of_property_read_bool(np,
+					"qcom,has-tps65132");
 	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->ce_cmds,
 		"qcom,panel-ce-cmds", "qcom,mdss-dsi-on-command-state");
 	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->ce_off_cmds,
