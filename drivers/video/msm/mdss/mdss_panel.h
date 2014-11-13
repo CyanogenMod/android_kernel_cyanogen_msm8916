@@ -285,6 +285,9 @@ struct mipi_panel_info {
 
 	char lp11_init;
 	u32  init_delay;
+#ifdef CONFIG_MACH_YULONG
+	char has_tps65132;
+#endif
 };
 
 struct edp_panel_info {
