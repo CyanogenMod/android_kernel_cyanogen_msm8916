@@ -57,7 +57,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #endif
-//#define  CONFIG_TW_GLOVE_SWITCH
+//#define  CONFIG_TOUCHSCREEN_YL_GT9XX_TW_GLOVE_SWITCH
 
 struct hall_info {
 	struct hall_platform_data *pdata;
@@ -82,9 +82,9 @@ static struct workqueue_struct *g_hall_work_queue;
 static void hall_detection_work(struct work_struct *work);
 static DECLARE_WORK(g_hall_work, hall_detection_work);
 
-#ifdef  CONFIG_TW_GLOVE_SWITCH
+#ifdef  CONFIG_TOUCHSCREEN_YL_GT9XX_TW_GLOVE_SWITCH
 extern int glove_windows_switch(int in_hall);
-#endif  //CONFIG_TW_GLOVE_SWITCH
+#endif  //CONFIG_TOUCHSCREEN_YL_GT9XX_TW_GLOVE_SWITCH
 
 #ifdef CONFIG_LPM_MODE
 extern unsigned int poweroff_charging;
@@ -103,7 +103,7 @@ ssize_t	hall_print_state(struct switch_dev *sdev, char *buf)
 	return res;
 }
 
-#ifdef  CONFIG_TW_GLOVE_SWITCH
+#ifdef  CONFIG_TOUCHSCREEN_YL_GT9XX_TW_GLOVE_SWITCH
 static void tw_mode_switch( int hall_status )
 {	
 	if (hall_status) {
@@ -123,7 +123,7 @@ static void tw_mode_switch( int hall_status )
 {
 	return;
 }
-#endif  //CONFIG_TW_GLOVE_SWITCH
+#endif  //CONFIG_TOUCHSCREEN_YL_GT9XX_TW_GLOVE_SWITCH
 
 static void hall_detection_work(struct work_struct *work)
 {

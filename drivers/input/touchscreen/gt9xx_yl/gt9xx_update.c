@@ -2118,6 +2118,13 @@ s32 gup_update_proc(void *dir)
     {       
     	gtp_irq_disable(ts);
   	}
+
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00, when enter update mode, switch off esd protect by liushilong@yulong.com on 2014-11-6 11:26*/
+#if GTP_ESD_PROTECT
+    gtp_esd_switch(ts->client, SWITCH_OFF);
+#endif
+/* end to transplant TW GTP_ESD_PROTECT code from 8675_C00, when enter update mode, switch off esd protect by liushilong@yulong.com on 2014-11-6 11:26*/
+
     ret = gup_enter_update_mode(i2c_connect_client);
     if(FAIL == ret)
     {
@@ -2221,6 +2228,13 @@ s32 gup_update_proc(void *dir)
     {
    		gtp_irq_enable(ts);
     }
+
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00, when update finish, switch on esd protect by liushilong@yulong.com on 2014-11-6 11:30 */
+#if GTP_ESD_PROTECT
+    gtp_esd_switch(ts->client, SWITCH_ON);
+#endif
+/* end to transplant TW GTP_ESD_PROTECT code from 8675_C00, when update finish, switch on esd protect by liushilong@yulong.com on 2014-11-6 11:30 */
+
 	_CLOSE_FILE(update_msg.file);
     return SUCCESS;
 
@@ -2231,6 +2245,13 @@ file_fail:
     {
    		gtp_irq_enable(ts);
     }
+
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00, when file fail, switch on esd protect by liushilong@yulong.com on 2014-11-6 11:31 */
+#if GTP_ESD_PROTECT
+    gtp_esd_switch(ts->client, SWITCH_ON);
+#endif
+/* end to transplant TW GTP_ESD_PROTECT code from 8675_C00, when file fail, switch on esd protect by liushilong@yulong.com on 2014-11-6 11:31 */
+
 	_CLOSE_FILE(update_msg.file);
 
     show_len = 200;

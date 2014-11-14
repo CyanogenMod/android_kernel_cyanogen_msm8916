@@ -461,17 +461,24 @@ static s32 goodix_tool_write(struct file *filp, const char __user *userbuf,
 	} else if (cmd_head.wr == GTP_RW_DISABLE_IRQ) { /* disable irq! */
 		gtp_irq_disable(i2c_get_clientdata(gt_client));
 
-		//#if GTP_ESD_PROTECT
-		//gtp_esd_switch(gt_client, SWITCH_OFF);
-		//#endif
+
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00 when write disable irq, switch off esd protect by liushilong@yulong.com on 2014-11-6 11:10*/
+#if GTP_ESD_PROTECT
+		gtp_esd_switch(gt_client, SWITCH_OFF);
+#endif
+/* end to transplant TW GTP_ESD_PROTECT code from 8675_C00 when write disable irq, switch off esd protect by liushilong@yulong.com on 2014-11-6 11:10*/
+
 		ret = CMD_HEAD_LENGTH;
 		goto exit;
 	} else if (cmd_head.wr == GTP_RW_ENABLE_IRQ) { /* enable irq! */
 		gtp_irq_enable(i2c_get_clientdata(gt_client));
 
-		//#if GTP_ESD_PROTECT
-		//gtp_esd_switch(gt_client, SWITCH_ON);
-		//#endif
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00 when write enable irq, switch on esd protect by liushilong@yulong.com on 2014-11-6 11:10*/
+#if GTP_ESD_PROTECT
+		gtp_esd_switch(gt_client, SWITCH_ON);
+#endif
+/* end to transplant TW GTP_ESD_PROTECT code from 8675_C00 when write disable irq, switch off esd protect by liushilong@yulong.com on 2014-11-6 11:10*/
+
 		ret = CMD_HEAD_LENGTH;
 		goto exit;
 	} else if (cmd_head.wr == GTP_RW_CHECK_RAWDIFF_MODE) {
