@@ -33,6 +33,7 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
+#include<linux/mutex.h>
 #include <linux/io.h>
 #include <mach/gpio.h>
 #include <linux/gpio.h>
@@ -63,9 +64,12 @@ struct goodix_ts_data {
     u8  gtp_rawdiff_mode;
     u8  gtp_cfg_len;
     u8  fixed_cfg;
+    spinlock_t esd_lock;
     u8  esd_running;
+    s32 clk_tick_cnt;
     u8  fw_error;
     struct mutex reset_mutex;
+    struct mutex doze_mutex;
     struct tw_platform_data *pdata;		
     struct pinctrl *ts_pinctrl;
 	struct pinctrl_state *gpio_state_active;
@@ -92,6 +96,9 @@ extern u16 total_len;
 #else
 #define TW_GLOVE_SWITCH  0
 #endif
+/* begin to add esd protect switch and set it open by liushilong@yulong.com on 2014-11-7 18:00*/
+#define GTP_ESD_PROTECT       1
+/* end to add esd protect switch and set it open by liushilong@yulong.com on 2014-11-7 18:00*/
 //Register define
 #define GTP_READ_COOR_ADDR    0x814E
 #define GTP_REG_SLEEP         0x8040
@@ -190,4 +197,5 @@ u8 gup_init_update_proc(struct goodix_ts_data *ts);
 s32 gup_enter_update_mode(struct i2c_client *client);
 void gup_leave_update_mode(void);
 s32 gup_update_proc(void *dir);
+void gtp_esd_switch(struct i2c_client *, s32);
 #endif /* _LINUX_GOODIX_TOUCH_H */

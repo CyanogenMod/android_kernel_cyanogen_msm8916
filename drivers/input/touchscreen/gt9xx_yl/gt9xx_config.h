@@ -13,7 +13,13 @@ const char * TW_IC_PREFIX_NAME = "GT9158";
 #define GTP_POWER_CTRL_SLEEP  0
 #define GTP_AUTO_UPDATE       1
 #define GTP_CHANGE_X2Y        0
-#define GTP_ESD_PROTECT       1
+
+
+/* begin to delete this macro and it will be define in include/linux/gt9xx.h by liushilong@yulong.com on 2014-11-6 14:57*/
+//#define GTP_ESD_PROTECT       1
+/* end to delete this macro and it will be define in include/linux/gt9xx.h by liushilong@yulong.com on 2014-11-6 14:57*/
+
+
 #define GTP_CREATE_WR_NODE    1
 #define GTP_ICS_SLOT_REPORT   0
 
@@ -25,7 +31,11 @@ const char * TW_IC_PREFIX_NAME = "GT9158";
 
 
 #define GTP_MAX_TOUCH         5
-#define GTP_ESD_CHECK_CIRCLE  2000
+
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00, 1s GTP_ESD_CHECK_CIRCLE * HZ, it will be transform to jiffy by liushilong@yulong.com on 2014-11-6 15:00*/
+#define GTP_ESD_CHECK_CIRCLE  2
+/* begin to transplant TW GTP_ESD_PROTECT code from 8675_C00, 1s GTP_ESD_CHECK_CIRCLE * HZ, it will be transform to jiffy by liushilong@yulong.com on 2014-11-6 15:00*/
+
 //#define TW_GLOVE_SWITCH       0
 
 #ifdef CONFIG_MACH_CP8675
