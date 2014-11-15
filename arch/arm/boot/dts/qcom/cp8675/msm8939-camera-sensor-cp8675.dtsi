@@ -46,7 +46,7 @@
 		qcom,actuator-src = <&actuator0>;
 		qcom,led-flash-src = <&led_flash0>;
 		qcom,mount-angle = <90>;
-		qcom,sensor-name = "imx135";
+		qcom,sensor-name = "imx135_cp8675";
 		cam_vdig-supply = <&pm8916_l5>;
 		cam_vio-supply = <&pm8916_l6>;
 		cam_vana-supply = <&pm8916_l6>;
