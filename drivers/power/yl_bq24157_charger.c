@@ -104,7 +104,8 @@ struct bq24157_chip {
 	struct pinctrl_state *int_state_suspend;
 	/* added for reporting batt info in suspend */
 	struct wake_lock wait_report_info_lock;
-
+	/* no suspend during charging */
+	struct wake_lock charging_wlock;
 };
 
 static struct bq24157_chip *this_chip;
@@ -1227,6 +1228,14 @@ static int bq24157_battery_is_writeable(struct power_supply *psy,
 	return rc;
 }
 
+void set_wake_lock(struct bq24157_chip *chip)
+{
+	if ((chip->set_ivbus_max <= 2) || chip->charging_disabled)
+		wake_unlock(&chip->charging_wlock);
+	else
+		wake_lock(&chip->charging_wlock);
+}
+
 static int bq24157_battery_set_property(struct power_supply *psy,
 				       enum power_supply_property prop,
 				       const union power_supply_propval *val)
@@ -1238,6 +1247,7 @@ static int bq24157_battery_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		chip->charging_disabled = !(val->intval); 	
 		bq24157_force_en_charging(chip, !chip->charging_disabled);
+		set_wake_lock(chip);
 		pr_info("chip->en_gpio value = %d  disabled = %d \n", gpio_get_value(chip->en_gpio), chip->charging_disabled);
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
@@ -1286,6 +1296,8 @@ static void bq24157_external_power_changed(struct power_supply *psy)
 
 
 	rc = bq24157_set_ivbus_max(chip, chip->set_ivbus_max); //VBUS CURRENT
+
+	set_wake_lock(chip);
 
 	power_supply_changed(&chip->batt_psy);
 	pr_info("current_limit = %d\n", chip->set_ivbus_max);
@@ -1585,6 +1597,7 @@ static int bq24157_probe(struct i2c_client *client, const struct i2c_device_id *
 	chip->batt_capa = ret.intval;
 
 	wake_lock_init(&chip->wait_report_info_lock, WAKE_LOCK_SUSPEND, "bq24157-report-info");
+	wake_lock_init(&chip->charging_wlock, WAKE_LOCK_SUSPEND, "bq24157-charging-wlock");
 	
 	/* register battery power supply */
 	chip->batt_psy.name		= chip->batt_psy_name;
@@ -1663,6 +1676,7 @@ unregister_batt_psy:
 	gpio_free(chip->en_gpio);	
 fail_hw_init:
 	wake_lock_destroy(&chip->wait_report_info_lock);
+	wake_lock_destroy(&chip->charging_wlock);
 		
 	return rc;
 }
