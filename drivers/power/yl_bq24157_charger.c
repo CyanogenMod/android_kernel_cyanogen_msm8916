@@ -182,8 +182,8 @@ enum batt_temp_threshold {
 	BATT_TEMP_COLD_THRESHOLD = 100,                 /* 10 celsius */
 	BATT_TEMP_COOL_THRESHOLD = 200,                 /* 20 celsius */
 	#ifdef CONFIG_CHARGING_DISABLE_IN_HIGH_TEMPERATURE_MICROMAX
-	BATT_TEMP_NUM_THRESHOLD = 500,                   /* 50 celsius, Micromax requested*/
-	BATT_TEMP_HOT_THRESHOLD = 570,                   /* 57 celsius, Micromax requested*/
+	BATT_TEMP_NUM_THRESHOLD = 520,                   /* 50 celsius (real temp), Micromax requested*/
+	BATT_TEMP_HOT_THRESHOLD = 590,                   /* 57 celsius (real temp), Micromax requested*/
 	#else
 	BATT_TEMP_NUM_THRESHOLD = 490,
 	BATT_TEMP_HOT_THRESHOLD = 600,
