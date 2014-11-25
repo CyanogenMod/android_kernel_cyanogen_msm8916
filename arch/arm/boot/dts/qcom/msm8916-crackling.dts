@@ -12,8 +12,9 @@
 
 /dts-v1/;
 
-#include "msm8916-cracking.dtsi"
+#include "msm8916-qrd-skui.dtsi"
 #include "msm8916-memory.dtsi"
+#include "crackling/msm8916-crackling.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. MSM 8916 QRD SKUI";
@@ -57,8 +58,8 @@
 			focaltech,family-id = <0x36>;
 			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
 			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
-			focaltech,display-coords = <0 0 480 854>;
-			focaltech,panel-coords = <0 0 480 950>;
+			focaltech,display-coords = <0 0 720 1280>;
+			focaltech,panel-coords = <0 0 720 1280>;
 			focaltech,button-map= <139 102 158>;
 			focaltech,no-force-update;
 			focaltech,i2c-pull-up;
@@ -80,10 +81,10 @@
 	gen-vkeys {
 		compatible = "qcom,gen-vkeys";
 		label = "ft5x06_ts";
-		qcom,disp-maxx = <480>;
-		qcom,disp-maxy = <854>;
-		qcom,panel-maxx = <480>;
-		qcom,panel-maxy = <946>;
+		qcom,disp-maxx = <720>;
+		qcom,disp-maxy = <1280>;
+		qcom,panel-maxx = <720>;
+		qcom,panel-maxy = <1600>;
 		qcom,key-codes = <139 172 158>;
 		qcom,y-offset = <0>;
 	};
@@ -101,7 +102,8 @@
 
 &usb_otg {
 	qcom,hsusb-otg-mode = <3>;
-	qcom,usbid-gpio = <&msm_gpio 110 0>;
+	qcom,usbid-gpio = <&msm_gpio 111 0>;
+	qcom,usbid-switch = <&msm_gpio 0 0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&usbid_default>;
 	vbus_otg-supply = <&smb1360_otg_supply>;

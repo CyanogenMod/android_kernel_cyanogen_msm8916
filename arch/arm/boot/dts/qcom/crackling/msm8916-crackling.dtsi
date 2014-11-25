@@ -14,6 +14,7 @@
 #include "dsi-panel-otm8019a-fwvga-video.dtsi"
 #include "msm8916-camera-sensor-qrd-skui.dtsi"
 #include "dsi-panel-trulyotm1288a-720p-video.dtsi"
+#include "msm8939-pinctrl-crackling.dtsi"
 
 &soc {
 	gpio-leds {
@@ -23,7 +24,7 @@
 		pinctrl-0 = <&button_backlight_off>;
 
 		keypad-backlight {
-			gpios = <&msm_gpio 119 0>;
+			gpios = <&msm_gpio 34 0>;
 			label = "button-backlight";
 			linux,default-trigger = "none";
 		};
@@ -82,6 +83,17 @@
 				"msm-dai-q6-dev.32773", "msm-dai-q6-dev.32770";
 		asoc-codec = <&stub_codec>, <&pm8916_tombak_dig>;
 		asoc-codec-names = "msm-stub-codec.1", "tombak_codec";
+	};
+
+	gpio_keys {
+		vol_down {
+			label = "volume_down";
+			gpios = <&msm_gpio 108 0x1>;
+			linux,input-type = <1>;
+			linux,code = <114>;
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
 	};
 };
 
@@ -218,5 +230,7 @@
 		1 &intc 0 221 0>;
 	interrupt-names = "hc_irq", "pwr_irq";
 	/delete-property/ cd-gpios;
+	/delete-property/ vdd-supply;
+	/delete-property/ qcom,vdd-voltage-level;
+	/delete-property/ qcom,vdd-current-level;
 };
-
