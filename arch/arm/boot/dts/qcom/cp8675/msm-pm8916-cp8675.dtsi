@@ -16,6 +16,14 @@
 			qcom,qpnp-rtc-alarm-pwrup = <1>;
 		};
 
+		pm8916_vadc: vadc@3100 {
+			qcom,vadc-recalib-check;
+		};
+
+		pm8916_adc_tm: vadc@3400 {
+			qcom,adc-tm-recalib-check;
+		};
+
 		pm8916_vbus: yl,vbus {
 			spmi-dev-container;
 			compatible = "yulong,yl_pm8916_vbus";
