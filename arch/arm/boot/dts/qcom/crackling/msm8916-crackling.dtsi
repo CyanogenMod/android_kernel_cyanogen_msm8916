@@ -127,7 +127,7 @@
 };
 
 &dsi_otm8019a_fwvga_video {
-       qcom,cont-splash-enabled;
+	qcom,cont-splash-enabled;
 };
 
 &tlmm_pinmux {
@@ -174,20 +174,7 @@
 		avago,ga-value = <768>;
 	};
 
-	bosch@18 { /* Accelerometer sensor */
-		compatible = "bosch,bma2x2";
-		reg = <0x18>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&bma2x2_int1_default &bma2x2_int2_default>;
-		interrupt-parent = <&msm_gpio>;
-		interrupts = <112 0x2002>;
-		vdd-supply = <&pm8916_l17>;
-		vio-supply = <&pm8916_l6>;
-		bosch,init-interval = <200>;
-		bosch,place = <2>;
-		bosch,gpio-int1 = <&msm_gpio 112 0x2002>;
-		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
-	};
+	/delete-node/ bosch@18;
 
 	memsic@30 { /* Magnetic field sensor */
 		compatible = "memsic,mmc3416x";
@@ -212,12 +199,61 @@
 		invn,gpio-int = <&msm_gpio 115 0x2>;
 		invn,place = "Portrait Up Back Side";
 	};
+
+	stk@48 {
+		compatible = "stk,stk3x1x";
+		reg = <0x48>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <113 0x2>;
+		vdd-supply = <&pm8916_l17>;
+		vio-supply = <&pm8916_l6>;
+		stk,irq-gpio = <&msm_gpio 113 0x02>;
+		stk,transmittance = <340>;
+		stk,state-reg = <0x00>;
+		stk,psctrl-reg = <0x71>;
+		stk,alsctrl-reg = <0x38>;
+		stk,ledctrl-reg = <0xFF>;
+		stk,wait-reg = <0x07>;
+		stk,ps-thdh = <150>;
+		stk,ps-thdl = <100>;
+		stk,use-fir;
+	};
+};
+
+&i2c_1{ /* blsp1 qup1 */
+		bosch@18 { /* accelerometer sensor */
+			compatible = "bosch,bma2x2";
+			reg = <0x18>;
+			vdd-supply = <&pm8916_l17>;
+			vio-supply = <&pm8916_l6>;
+			bosch,init-interval = <200>;
+			bosch,place = <2>;
+		};
+
+		bosch@68 { /* gyroscope sensor */
+			compatible = "bosch,bmg160";
+			reg = <0x68>;
+			vdd-supply = <&pm8916_l17>;
+			vio-supply = <&pm8916_l6>;
+			bosch,init-interval = <200>;
+			bosch,place = <2>;
+		};
+
+		bosch@10 {/* magnetic sensor */
+			compatible = "bosch,bmm050";
+			reg = <0x10>;
+			vdd-supply = <&pm8916_l17>;
+			vio-supply = <&pm8916_l6>;
+			bosch,init-interval = <200>;
+			bosch,layout = <0x6>;
+			bosch,auto-report;
+		};
 };
 
 &i2c_3{ /* BLSP1 QUP3 */
 		awinic@45 { /* Breath Light-Driven */
 			/*
-			led_Imax				current;         //0=omA, 1=5mA, 2=10mA, 3=15mA,
+			led_Imax				current;	 //0=omA, 1=5mA, 2=10mA, 3=15mA,
 			unsigned int			rise_time;      //0=0.13s, 1=0.26s, 2=0.52s, 3=1.04s, 4=2.08s, 5=4.16s, 6=8.32s, 7=16.64s
 			unsigned int			hold_time;     //0=0.13s, 1=0.26s, 2=0.52s, 3=1.04s, 4=2.08s, 5=4.16s,
 			unsigned int			fall_time;       //0=0.13s, 1=0.26s, 2=0.52s, 3=1.04s, 4=2.08s, 5=4.16s, 6=8.32s, 7=16.64s
