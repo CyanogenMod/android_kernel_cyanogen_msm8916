@@ -14,7 +14,8 @@
 #include "dsi-panel-otm8019a-fwvga-video.dtsi"
 #include "msm8916-camera-sensor-qrd-skui.dtsi"
 #include "dsi-panel-trulyotm1288a-720p-video.dtsi"
-#include "msm8939-pinctrl-crackling.dtsi"
+#include "msm8916-pinctrl-crackling.dtsi"
+#include "msm8916-camera-sensor-crackling.dtsi"
 
 &soc {
 	gpio-leds {
