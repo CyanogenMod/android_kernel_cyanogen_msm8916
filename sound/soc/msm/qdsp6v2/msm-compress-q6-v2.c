@@ -537,6 +537,10 @@ static void compr_event_handler(uint32_t opcode,
 		prtd->copied_total = prtd->bytes_received;
 		atomic_set(&prtd->error, 1);
 		wake_up(&prtd->drain_wait);
+		if (atomic_cmpxchg(&prtd->eos, 1, 0)) {
+			pr_debug("%s:unblock eos wait queues", __func__);
+			wake_up(&prtd->eos_wait);
+		}
 		spin_unlock_irqrestore(&prtd->lock, flags);
 		break;
 	default:
@@ -1263,7 +1267,8 @@ static int msm_compr_drain_buffer(struct msm_compr_audio *prtd,
 		prtd->cmd_interrupt = 0;
 	}
 	if (atomic_read(&prtd->error)) {
-		pr_err("%s: Got RESET EVENTS notification, return\n", __func__);
+		pr_err("%s: Got RESET EVENTS notification, return\n",
+			__func__);
 		rc = -ENETRESET;
 	}
 	return rc;
@@ -1571,7 +1576,9 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 
 		/* Wait indefinitely for  DRAIN. Flush can also signal this*/
 		rc = wait_event_interruptible(prtd->eos_wait,
-				      (prtd->eos_ack || prtd->cmd_interrupt));
+						(prtd->cmd_ack ||
+						prtd->cmd_interrupt ||
+						atomic_read(&prtd->error)));
 
 		if (rc < 0)
 			pr_err("%s: EOS wait failed\n", __func__);
@@ -1581,6 +1588,12 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 
 		if (prtd->cmd_interrupt)
 			rc = -EINTR;
+
+		if (atomic_read(&prtd->error)) {
+			pr_err("%s: Got RESET EVENTS notification, return\n",
+				__func__);
+			rc = -ENETRESET;
+		}
 
 		/*FIXME : what if a flush comes while PC is here */
 		if (rc == 0) {
