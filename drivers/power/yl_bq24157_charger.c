@@ -1144,6 +1144,12 @@ static int bq24157_get_prop_batt_temp(struct bq24157_chip *chip)
 	return ret.intval;
 }
 
+//add begin by sunxiaogang@yulong.com 2014.12.04
+//solve the problem of battery capacity goes down fast from 100% to 99%
+static bool batt_full_flag = false;
+#define CAPA_100 100
+#define CAPA_99  99
+//add end
 
 static int bq24157_get_prop_batt_capa(struct bq24157_chip *chip)
 {
@@ -1153,6 +1159,28 @@ static int bq24157_get_prop_batt_capa(struct bq24157_chip *chip)
 		/* if battery has been registered, use the type property */
 		chip->battery_psy->get_property(chip->battery_psy,
 					POWER_SUPPLY_PROP_CAPACITY, &ret);
+		
+        //add begin by sunxiaogang@yulong.lcom 2014.12.04
+        //solve the problem of battery capacity goes down fast from 100% to 99%
+		if(1 == get_yl_pm8916_vbus_status()) {
+			if((CAPA_100 == ret.intval)&&(1 == chip->charge_stat)) {
+				ret.intval = CAPA_99;
+				batt_full_flag = true;
+			}
+			else {
+				batt_full_flag = false;
+			}
+		}
+		else if((true == batt_full_flag)&&(CAPA_100 == ret.intval)) {
+			ret.intval = CAPA_99;
+		}
+		else {
+			batt_full_flag = false;
+		}
+		pr_info(" %s: charge_stat = %d, vbus_present = %d,val->capacity = %d,batt_full_flag = %d\n",
+		__func__,chip->charge_stat, chip->vbus_present,ret.intval,batt_full_flag);
+		//add end
+
 		chip->batt_capa = ret.intval;
 	} else {
 		pr_err("battery property is unregisted . \n");
