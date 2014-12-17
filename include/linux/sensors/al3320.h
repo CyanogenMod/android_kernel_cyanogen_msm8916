@@ -35,7 +35,7 @@
  *                   2. Correct the polling condition in initial.
  *                   3. Move up reset action to fix the always reset error.
  *                   Change to v1.03.
- * 06/06/13 YC		 Add functions for set delay of HAL.
+ * 06/06/13 YC		 Add functions for set delay of HAL.                       
  */
 
 #include <linux/module.h>
@@ -167,7 +167,7 @@
 								}
 
 struct al3320_data {
-        struct miscdevice misc_dev;
+        struct miscdevice misc_dev;	
 	struct i2c_client *client;
 	struct mutex lock;
 	u8 reg_cache[AL3320_NUM_CACHABLE_REGS];
@@ -181,7 +181,7 @@ struct al3320_data {
 };
 
 // AL3320 register
-static u8 al3320_reg[AL3320_NUM_CACHABLE_REGS] =
+static u8 al3320_reg[AL3320_NUM_CACHABLE_REGS] = 
 	{0x00,0x01,0x02,0x06,0x07,0x08,0x09,0x0a,0x22,0x23,0x30,0x31,0x32,0x33,0x34};
 
 // AL3320 range

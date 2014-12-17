@@ -6,7 +6,7 @@
 * Copyright (C) 2013 STMicroelectronics- AMS/High-End Sensors and Analog Division
 * Environmental Sensor Application Development Team
 * Lorenzo Sarchi (lorenzo.sarchi@st.com)
-* Version: 1.0.1, Date: 2013/Oct/18
+* Version: 1.0.1, Date: 2013/Oct/18 
 *
 * Based on the original work from Matteo Dameno and Carmine Iascone
 * (upated to revision 1.0.0 2012/Nov/21):

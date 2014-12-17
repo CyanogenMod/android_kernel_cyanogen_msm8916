@@ -103,7 +103,7 @@
 #define INT_FLAG_ALS_IF_L            (1<<13)
 #define INT_FLAG_ALS_IF_H            (1<<12)
 #define INT_FLAG_PS_IF_CLOSE         (1<<9)
-#define INT_FLAG_PS_IF_AWAY          (1<<8)
+#define INT_FLAG_PS_IF_AWAY          (1<<8)  
 
 extern unsigned int ps_kparam1;
 extern unsigned int ps_kparam2;
@@ -115,10 +115,10 @@ struct CM36682_platform_data {
 	int (*power)(int, uint8_t); /* power to the chip */
 	uint8_t slave_addr;
 	uint8_t ps_close_thd_set;
-	uint8_t ps_away_thd_set;
+	uint8_t ps_away_thd_set;	
 	uint16_t ls_cmd;
 	uint16_t ps_conf1_val;
-	uint16_t ps_conf3_val;
+	uint16_t ps_conf3_val;	
 };
 
 #endif

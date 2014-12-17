@@ -4,4 +4,4 @@ config YL_CM32131_ALSPROX
 	depends on I2C=y
 	help
 	  cm36682 ALS Driver
-
+	  

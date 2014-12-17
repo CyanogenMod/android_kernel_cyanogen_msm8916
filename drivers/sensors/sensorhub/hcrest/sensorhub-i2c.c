@@ -144,7 +144,7 @@ static int sensorhub_i2c_parse_dt(struct device *dev, struct sensorhub_platform_
     printk("gpio-sa0 = %d\n", pdata->gpio_wakeup);
     printk("gpio-gyro = %d\n", gpio_gyro);
     printk("gpio-mag = %d\n", gpio_mag);
-    if (pdata->gpio_interrupt < 0 || pdata->gpio_reset < 0 ||
+    if (pdata->gpio_interrupt < 0 || pdata->gpio_reset < 0 || 
             pdata->gpio_wakeup < 0 ) {
         return -EINVAL;
     }
@@ -1339,7 +1339,7 @@ static int sensorhub_i2c_probe(struct i2c_client * client,
 #ifdef CONFIG_OF
     if (client->dev.of_node) {
         pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-        if (!pdata) {
+        if (!pdata) { 
             dev_err(&client->dev, "Failed to allocate memory\n");
             return -ENOMEM;
         }

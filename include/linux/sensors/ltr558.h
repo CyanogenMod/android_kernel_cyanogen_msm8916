@@ -2,10 +2,10 @@
  **
  **  Copyright (C), 2013-2015, Yulong Tech. Co., Ltd.
  **  FileName:		ltr558.h
- **  Description:	Linux device driver for ltr558 ambient light and proximity sensors
+ **  Description:	Linux device driver for ltr558 ambient light and proximity sensors 
  **  Author:		longjiang
  **  Version:		1.00
- **  Date:             	2013-09-25
+ **  Date:             	2013-09-25                                              
  **
  ***********************************************************************/
 

@@ -54,7 +54,7 @@ struct cm32131_platform_data {
 	uint16_t levels[10];
 	uint16_t golden_adc;
 	int (*power)(int, uint8_t); /* power to the chip */
-	uint8_t ALS_slave_address;
+	uint8_t ALS_slave_address;  	
 	uint8_t check_interrupt_add;
 	uint16_t is_cmd;
 };

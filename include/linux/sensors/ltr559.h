@@ -2,10 +2,10 @@
  **
  **  Copyright (C), 2013-2015, Yulong Tech. Co., Ltd.
  **  FileName:		ltr559.h
- **  Description:	Linux device driver for ltr559 ambient light and proximity sensors
+ **  Description:	Linux device driver for ltr559 ambient light and proximity sensors 
  **  Author:		longjiang
  **  Version:		1.00
- **  Date:             	2013-09-25
+ **  Date:             	2013-09-25                                              
  **
  ***********************************************************************/
 
@@ -86,7 +86,7 @@
 #define LTR559_WAKEUP_DELAY	10
 
 #define LTR559_PROXIMITY_LOW_OFFSET0  100
-#define LTR559_PROXIMITY_HIGH_OFFSET0 120
+#define LTR559_PROXIMITY_HIGH_OFFSET0 120 
 #define LTR559_PROXIMITY_LOW_OFFSET1  130
 #define LTR559_PROXIMITY_HIGH_OFFSET1 150
 #define LTR559_PROXIMITY_LOW_OFFSET2  45

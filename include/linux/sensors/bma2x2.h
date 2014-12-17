@@ -32,7 +32,7 @@ struct bosch_accel_platform_data {
 	unsigned char axis_map_x;
 	unsigned char axis_map_y;
 	unsigned char axis_map_z;
-
+	
 	unsigned char negative_x;
 	unsigned char negative_y;
 	unsigned char negative_z;
@@ -40,7 +40,7 @@ struct bosch_accel_platform_data {
 	/* Use this variable to control the G range of
 	 * the accelerometer output. Use the macro definition
 	 * to select the desired G range.*/
-
+	
 	unsigned char acc_range;
 };
 

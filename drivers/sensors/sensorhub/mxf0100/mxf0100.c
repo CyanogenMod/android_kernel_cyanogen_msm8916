@@ -182,7 +182,7 @@ struct t38_config {
     u8 data[8];
 }__packed;
 
-#define MXT_T38_MG_NORM_CAL 0xD37EC7
+#define MXT_T38_MG_NORM_CAL 0xD37EC7 
 #define MXT_T38_MG_CTS_CAL 0xC75CA1
 
 /* Define for MXT_PROCI_TOUCHSUPPRESSION_T42 */
@@ -269,8 +269,8 @@ struct t38_config {
 #define MXT_ACCEL_MAX            12544/5
 #define MXT_ACCEL_NONE_CAL        0
 #define MXT_ACCEL_CAL_SUCCESS    1
-#define MXT_ACCEL_CAL_FAILED    2
-#define MXT_ACCEL_BIAS_MASK    0x5A
+#define MXT_ACCEL_CAL_FAILED    2 
+#define MXT_ACCEL_BIAS_MASK    0x5A 
 //#define MXT_HAS_EARLYSUSPEND
 
 struct mxt_info {
@@ -387,7 +387,7 @@ struct mxt_data {
     u8 T48_reportid;
     u8 T63_reportid_min;
     u8 T63_reportid_max;
-
+    
     u16 T75_address; /* add by Jay.HF */
     u8 T75_ctrl_backup;
     u16 T75_intval_backup[6];
@@ -421,7 +421,7 @@ struct mxt_data {
 
     /* Indicates whether device is in suspend */
     bool suspended;
-
+    
     struct mxt_config init_cfg;
 
     struct motion_sensing_object_t75_config t75_config;
@@ -462,7 +462,7 @@ static void mxt_late_resume(struct early_suspend *h);
 
 #ifdef CONFIG_OF
 static int mxt_parse_dt(struct device *dev, struct mxt_platform_data *pdata)
-{
+{    
     struct device_node *np = dev->of_node;
     enum of_gpio_flags flags;
 
@@ -639,7 +639,7 @@ static void mxt_debug_msg_add(struct mxt_data *data, u8 *msg)
         dev_err(dev, "[Jay.HF]********************Discarding %u messages\n", data->debug_msg_count);
         data->debug_msg_count = 0;
     }
-
+    
     mutex_unlock(&data->debug_msg_lock);
 
     sysfs_notify(&data->client->dev.kobj, NULL, "debug_notify");
@@ -1072,7 +1072,7 @@ static int mxt_get_init_config_t38(struct mxt_data *data,struct t38_config *cfg)
 {
     struct device *dev = &data->client->dev;
     int error;
-
+    
     error = __mxt_read_reg(data->client, data->T38_address,
         sizeof(*cfg), cfg);
     if (error) {
@@ -1474,13 +1474,13 @@ static void mxt_proc_t75_sensor_messages(struct mxt_data *data, u8 *msg)
     input_report_abs(data->input_dev, ABS_THROTTLE, msg[7]);
     input_sync(data->input_dev);
     if (data->debug_enabled) {
-        dev_info(dev, "x=%d, y=%d, z=%d\n", msg[1] | (msg[2] << 8),
+        dev_info(dev, "x=%d, y=%d, z=%d\n", msg[1] | (msg[2] << 8), 
 			msg[3] | (msg[4] << 8),
 			msg[5] | (msg[6] << 8));
     }
 #if defined(MXT_ACCEL_CALIBRATION_SUPPORT)
     /* add by Jay.HF */
-    if (atomic_read(&data->cal_enabled) &&
+    if (atomic_read(&data->cal_enabled) && 
         id == ACCEL && data->samples_cnt < MXT_SAMPLES_TIMES) {
         data->samples[data->samples_cnt].x = msg[1] | (msg[2] << 8);
         data->samples[data->samples_cnt].y = msg[3] | (msg[4] << 8);
@@ -1648,7 +1648,7 @@ static irqreturn_t mxt_process_messages_t44(struct mxt_data *data)
         if (ret < 0)
             goto end;
         else if (ret != num_left)
-            dev_warn(dev, "ret != num_left ret=%d num_left=%d Unexpected invalid message\n",
+            dev_warn(dev, "ret != num_left ret=%d num_left=%d Unexpected invalid message\n", 
                     ret, num_left);
     }
 
@@ -2351,7 +2351,7 @@ static int mxt_parse_object_table(struct mxt_data *data)
             break;
         case MXT_SPT_USERDATA_T38:
             data->T38_address = object->start_address;
-            break;
+            break;            
         case MXT_PROCI_TOUCHSUPPRESSION_T42:
             data->T42_reportid_min = min_id;
             data->T42_reportid_max = max_id;
@@ -2558,12 +2558,12 @@ static void mxt_enable(struct mxt_data *data)
     /* recovery sensors hub value */
     ret = __mxt_write_reg(data->client, data->T75_address, sizeof(data->t75_config), &data->t75_config);
     if (ret) {
-        dev_err(&data->client->dev,
+        dev_err(&data->client->dev, 
             "%s: write T75 failed, ret %d, line %d\n", __func__, ret, __LINE__);
     }
     ret = __mxt_write_reg(data->client, data->T76_address, sizeof(data->t76_config), &data->t76_config);
     if (ret) {
-        dev_err(&data->client->dev,
+        dev_err(&data->client->dev, 
             "%s: write T76 failed, ret %d, line %d\n", __func__, ret, __LINE__);
     }
 #if 0
@@ -2598,33 +2598,33 @@ static void mxt_disable(struct mxt_data *data)
     /* backup sensors hub value */
     ret = __mxt_read_reg(data->client, data->T75_address, sizeof(data->t75_config), &data->t75_config);
     if (ret) {
-        dev_err(&data->client->dev,
+        dev_err(&data->client->dev, 
             "%s: read T75 failed, ret %d, line %d\n", __func__, ret, __LINE__);
     }
     ret = __mxt_read_reg(data->client, data->T76_address, sizeof(data->t76_config), &data->t76_config);
     if (ret) {
-        dev_err(&data->client->dev,
+        dev_err(&data->client->dev, 
             "%s: read T76 failed, ret %d, line %d\n", __func__, ret, __LINE__);
     }
 #if 1
     dev_info(&data->client->dev, "t75_ctrl:0x%02x t76_ctrl:0x%02x acclrptint:%d linacrptint:%d gyrorptint:%d magrptint:%d tiltrptint:%d rotvcrptint:%d temprptint:%d\n",
-        data->t75_config.ctrl, data->t76_config.ctrl, data->t75_config.acclrptint,
-        data->t75_config.linacrptint, data->t75_config.gyrorptint,
-        data->t75_config.magrptint, data->t75_config.tiltrptint,
+        data->t75_config.ctrl, data->t76_config.ctrl, data->t75_config.acclrptint, 
+        data->t75_config.linacrptint, data->t75_config.gyrorptint, 
+        data->t75_config.magrptint, data->t75_config.tiltrptint, 
         data->t75_config.rotvcrptint, data->t75_config.temprptint);
 #endif
     /* disable sensors hub */
     t75.ctrl = data->t75_config.ctrl; /* don't clear T75 ctrl register */
     ret = __mxt_write_reg(data->client, data->T75_address, sizeof(t75), &t75);
     if (ret) {
-        dev_err(&data->client->dev,
+        dev_err(&data->client->dev, 
             "%s: write T75 failed, ret %d, line %d\n", __func__, ret, __LINE__);
     }
 
     t76.ctrl |= 0x03; /* don't clear T76 ctrl register */
     ret = __mxt_write_reg(data->client, data->T76_address, sizeof(t76), &t76);
     if (ret) {
-        dev_err(&data->client->dev,
+        dev_err(&data->client->dev, 
             "%s: write T76 failed, ret %d, line %d\n", __func__, ret, __LINE__);
     }
 #if 0
@@ -2878,7 +2878,7 @@ static int mxt_initialize(struct mxt_data *data)
     int error;
     bool alt_bootloader_addr = false;
     bool retry = false;
-#if defined(MXT_POWER_CONTROL_SUPPORT_AT_PROBE)
+#if defined(MXT_POWER_CONTROL_SUPPORT_AT_PROBE)    
     int retry_por = MXT_POWER_CONTROL_SUPPORT_AT_PROBE;
 #endif
 
@@ -2953,7 +2953,7 @@ static int mxt_configure_objects(struct mxt_data *data)
         dev_err(&client->dev, "Failed to initialize power cfg\n");
         return error;
     }
-
+    
     error = mxt_get_init_cfg(data);
       if (error) {
         dev_err(&client->dev, "Error %d get init cfg\n",
@@ -3293,7 +3293,7 @@ static int mxt_check_calibration_tag(struct mxt_data *data)
     dev_info(dev, "The current t38 flag is 0x%x\n",
         mflag);
 
-    if(mflag == MXT_T38_MG_NORM_CAL ||
+    if(mflag == MXT_T38_MG_NORM_CAL || 
         mflag == MXT_T38_MG_CTS_CAL)
         return -EEXIST;
 
@@ -3497,7 +3497,7 @@ static ssize_t mxt_gpio_ctrl_store(struct device *dev,
             gpio_direction_output(data->pdata->gpio_irq, 0);
         }
 
-        dev_info(dev, "reset power irq: %d %d %d\n", gpio_get_value(data->pdata->gpio_reset),
+        dev_info(dev, "reset power irq: %d %d %d\n", gpio_get_value(data->pdata->gpio_reset), 
                 gpio_get_value(data->pdata->gpio_pwr), gpio_get_value(data->pdata->gpio_irq));
         return count;
     } else {
@@ -3625,7 +3625,7 @@ static void mxt_start(struct mxt_data *data)
 
 static void mxt_stop(struct mxt_data *data)
 {
-    dev_info(&data->client->dev, "%s: sus%d, inboot%d, pre_sus%d\n",
+    dev_info(&data->client->dev, "%s: sus%d, inboot%d, pre_sus%d\n", 
         __func__, data->suspended, data->in_bootloader, data->prevent_suspend);
     if (data->suspended || data->in_bootloader || data->prevent_suspend)
         return;
@@ -3666,7 +3666,7 @@ static int mxt_handle_pdata(struct mxt_data *data)
     int error;
     if (data->client->dev.of_node) {
         data->pdata = kzalloc(sizeof(*data->pdata), GFP_KERNEL);
-        if (!data->pdata) {
+        if (!data->pdata) { 
             dev_err(&data->client->dev, "Failed to allocate memory\n");
             return -ENOMEM;
         }
@@ -3861,7 +3861,7 @@ static long mxt_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
             cal_info.value[2] = 0;
             cal_info.value[3] = 0;
         #endif
-            if (sizeof(cal_info) != sensparams_write_to_flash(SENSPARAMS_TYPE_ACCEL,
+            if (sizeof(cal_info) != sensparams_write_to_flash(SENSPARAMS_TYPE_ACCEL, 
                 (unsigned char *)&cal_info, sizeof(cal_info))) {
                 printk(KERN_ERR"%s: (%d) write accel bias to flash failed !\n", __func__, __LINE__);
                 return -1;
@@ -3895,7 +3895,7 @@ static int mxt_open(struct inode *inode, struct file *file) {
     data->cal_status = MXT_ACCEL_NONE_CAL;
 
     if ((sizeof(cal_info) == sensparams_read_from_flash(SENSPARAMS_TYPE_ACCEL, \
-        (u8 *)&cal_info, sizeof(cal_info))) &&
+        (u8 *)&cal_info, sizeof(cal_info))) && 
         MXT_ACCEL_BIAS_MASK == cal_info.value[0]) {
         printk(KERN_ERR"%s: read accel bias from yulong params\n", __func__);
         data->cal_status = cal_info.SensorCalStatus;

@@ -17,7 +17,7 @@
 #include <linux/timer.h>
 #include <asm/errno.h>
 #include <asm/delay.h>
-#include <linux/poll.h>
+#include <linux/poll.h> 
 #include <linux/wakelock.h>
 #include <linux/sensors/sensparams.h>
 #include <linux/yl_params.h>
@@ -44,27 +44,27 @@ int sensparams_write_to_flash(int type, unsigned char *in, int len) {
         case SENSPARAMS_TYPE_ACCEL:
             memcpy(&ptr->AccInfo, in, len);
             break;
-
+            
         case SENSPARAMS_TYPE_PROX:
             memcpy(&ptr->LightProxInfo, in, len);
             break;
-
+            
         case SENSPARAMS_TYPE_PRESS:
             memcpy(&ptr->PressInfo, in, len);
             break;
-
+            
         case SENSPARAMS_TYPE_RESV1:
             memcpy(&ptr->SensorReserved1, in, len);
             break;
-
+            
         case SENSPARAMS_TYPE_RESV2:
             memcpy(&ptr->SensorReserved2, in, len);
             break;
-
+            
         case SENSPARAMS_TYPE_RESV3:
             memcpy(&ptr->SensorReserved3, in, len);
             break;
-
+            
         default:
             printk(KERN_ERR"%s: %d type sensor is not support\n", __func__, type);
             return -1;
@@ -102,27 +102,27 @@ int sensparams_read_from_flash(int type, unsigned char *out, int len) {
         case SENSPARAMS_TYPE_ACCEL:
             memcpy(out, &ptr->AccInfo, len);
             break;
-
+            
         case SENSPARAMS_TYPE_PROX:
             memcpy(out, &ptr->LightProxInfo, len);
             break;
-
+            
         case SENSPARAMS_TYPE_PRESS:
             memcpy(out, &ptr->PressInfo, len);
             break;
-
+            
         case SENSPARAMS_TYPE_RESV1:
             memcpy(out, &ptr->SensorReserved1, len);
             break;
-
+            
         case SENSPARAMS_TYPE_RESV2:
             memcpy(out, &ptr->SensorReserved2, len);
             break;
-
+            
         case SENSPARAMS_TYPE_RESV3:
             memcpy(out, &ptr->SensorReserved3, len);
             break;
-
+            
         default:
             printk(KERN_ERR"%s: %d type sensor is not support\n", __func__, type);
             return -1;
