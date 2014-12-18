@@ -271,7 +271,7 @@ static void set_node_addr(struct f2fs_sb_info *sbi, struct node_info *ni,
 	e = __lookup_nat_cache(nm_i, ni->nid);
 	if (!e) {
 		e = grab_nat_entry(nm_i, ni->nid);
-		e->ni = *ni;
+		copy_node_info(&e->ni, ni);
 		f2fs_bug_on(sbi, ni->blk_addr == NEW_ADDR);
 	} else if (new_blkaddr == NEW_ADDR) {
 		/*
@@ -279,7 +279,7 @@ static void set_node_addr(struct f2fs_sb_info *sbi, struct node_info *ni,
 		 * previous nat entry can be remained in nat cache.
 		 * So, reinitialize it with new information.
 		 */
-		e->ni = *ni;
+		copy_node_info(&e->ni, ni);
 		f2fs_bug_on(sbi, ni->blk_addr != NULL_ADDR);
 	}
 
