@@ -2409,8 +2409,6 @@ static int msm8x16_asoc_machine_probe(struct platform_device *pdev)
 					__func__, ret);
 			goto err;
 		}
-	}
-
 #ifdef CONFIG_MACH_CP8675
 	pinctrl_info.cdc_lines_dmic_sus = pinctrl_lookup_state(pinctrl,
 		"cdc_lines_dmic_sus");
@@ -2425,6 +2423,8 @@ static int msm8x16_asoc_machine_probe(struct platform_device *pdev)
 							__func__);
 	}
 #endif
+	}
+
 
 	ret = of_property_read_string(pdev->dev.of_node,
 		hs_micbias_type, &type);
