@@ -36,7 +36,6 @@ enum yl_params_index {
 	YL_FCT_DIAG,
 	YL_RCP,
 	YL_RETURNZERO,
-	YL_VIRTOS_PASSWD,
 	YL_PARAMS_COUNT,
 };
 

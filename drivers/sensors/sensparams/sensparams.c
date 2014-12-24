@@ -29,7 +29,7 @@ int sensparams_write_to_flash(int type, unsigned char *in, int len) {
     int size = sizeof(param);
 
     if (in == NULL || len <= 0) {
-        printk(KERN_ERR"%s: error, in = %d, len = %d\n", __func__, (int)in, len);
+        printk(KERN_ERR"%s: error, in = %s, len = %d\n", __func__, in, len);
         return -1;
     }
 
@@ -87,7 +87,7 @@ int sensparams_read_from_flash(int type, unsigned char *out, int len) {
     int size = sizeof(param);
 
     if (out == NULL || len <= 0) {
-        printk(KERN_ERR"%s: error, out = %d, len = %d\n", __func__, (int)out, len);
+        printk(KERN_ERR"%s: error, out = %s, len = %d\n", __func__, out, len);
         return -1;
     }
 

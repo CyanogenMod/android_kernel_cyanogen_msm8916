@@ -1901,7 +1901,7 @@ int akm8963_compass_probe(
 		struct i2c_client *i2c,
 		const struct i2c_device_id *id)
 {
-	struct akm8963_platform_data *pdata;
+	struct akm8963_platform_data *pdata = NULL;
 	int err = 0;
 	int i;
 
