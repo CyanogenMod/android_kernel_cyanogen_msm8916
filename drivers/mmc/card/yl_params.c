@@ -239,7 +239,7 @@ static ssize_t yl_params_read_locked(char *buf)
 	if (len == ONE_BLOCK_SIZE)
 		memcpy(buf, yl_params[block], ONE_BLOCK_SIZE);
 	else
-		pr_err("read block %s failed, ret %d\n", buf, len);
+		pr_err("read block %s failed, ret %zu\n", buf, len);
 	return len;
 }
 
@@ -318,13 +318,13 @@ static ssize_t yl_params_read(struct file *file, char __user *buf,
 	size_t count_temp;
 
 	if (count <= TAG_LENGTH)
- 		pr_debug("%s read count %d\n", __func__, count);
+ 		pr_debug("%s read count %zu\n", __func__, count);
 
 	mutex_lock(&yl_param_lock);
 	count_temp = copy_from_user(kernel_buf, buf,
 			count < TAG_LENGTH ? count : TAG_LENGTH);
 	if (count_temp != 0)
-		pr_info("%s copy from left %d\n", __func__, count_temp);
+		pr_info("%s copy from left %zu\n", __func__, count_temp);
 
 	len = yl_params_read_locked(kernel_buf);
 	if (len > 0) {
@@ -332,7 +332,7 @@ static ssize_t yl_params_read(struct file *file, char __user *buf,
 			len = count;
 		count_temp = copy_to_user(buf + TAG_LENGTH, kernel_buf + TAG_LENGTH, len > TAG_LENGTH ? len - TAG_LENGTH : 0);
 		if (count_temp) {
-			pr_info("%s copy to left %d\n", __func__, count_temp);
+			pr_info("%s copy to left %zu\n", __func__, count_temp);
 			len -= count_temp;
 		}
 	}
@@ -346,7 +346,7 @@ static ssize_t yl_params_write(struct file *file, const char __user *buf,
 	ssize_t len;
 
 	if (count <= TAG_LENGTH)
- 		pr_debug("%s write count %d\n", __func__, count);
+ 		pr_debug("%s write count %zu\n", __func__, count);
 
 	/* We only support reading a maximum of a flash block */
 	if (count > ONE_BLOCK_SIZE)
@@ -358,7 +358,7 @@ static ssize_t yl_params_write(struct file *file, const char __user *buf,
 		ssize_t res;
 		res = copy_from_user(kernel_buf, buf, count);
 		if (res != 0)
-			pr_info("%s copy left %d\n", __func__, res);
+			pr_info("%s copy left %zu\n", __func__, res);
 		len = count - res;
 
 		res = yl_params_write_locked(kernel_buf);
@@ -382,8 +382,8 @@ static char *preload_str(enum preload_state state)
 
 ssize_t show_preload(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	int i;
-	int len = 0;
+	unsigned int i;
+	unsigned int len = 0;
 	mutex_lock(&yl_param_lock);
 	for (i = 0; i < YL_PARAMS_COUNT; i++)
 		len += sprintf(buf + len, "%16s\t%s\n",

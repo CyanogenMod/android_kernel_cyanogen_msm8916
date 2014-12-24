@@ -35,7 +35,6 @@
 #include <linux/interrupt.h>
 #include<linux/mutex.h>
 #include <linux/io.h>
-#include <mach/gpio.h>
 #include <linux/gpio.h>
 #include <linux/input/touchscreen_yl.h>
 

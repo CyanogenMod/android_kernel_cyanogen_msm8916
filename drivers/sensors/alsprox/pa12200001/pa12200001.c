@@ -30,7 +30,6 @@
 #include <linux/string.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
-#include <mach/gpio.h>
 #include <linux/gpio.h>
 #include <linux/fs.h>
 #include <linux/errno.h>
@@ -818,7 +817,7 @@ static int pa12200001_parse_configs(struct device *dev, char *name, u32 *array) 
 		return rc;
 	}
 
-	APS_DBG("%s size is %d\n", name, prop->length/sizeof(u32));
+	APS_DBG("%s size is %zu\n", name, prop->length/sizeof(u32));
 	for (i = 0; i < prop->length/sizeof(u32); i++) {
 		APS_DBG("arrary[%d]=%d, ", i, array[i]);
 	}

@@ -7,14 +7,13 @@
 #include <linux/delay.h>
 #include <linux/timer.h>
 #include <linux/list.h>
-#include <mach/subsystem_restart.h>
-#include <mach/msm_iomap.h>
-#include <mach/gpio.h>
 #include <linux/regulator/consumer.h>
 #include <linux/clk.h>
 #include <linux/sched.h>
 #include <linux/wakelock.h>
 #include <linux/io.h>
+
+#include <soc/qcom/subsystem_restart.h>
 
 struct mem_test {	
 	struct list_head mlist;

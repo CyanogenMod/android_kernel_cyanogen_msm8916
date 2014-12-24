@@ -24,9 +24,8 @@
 **  History:         
 **  <author>           <time>      <version >      <desc>
 **  shuaixinzhong      2010-12-20     1.00           ´´½¨
-**  changxuejian        2010-12-21     2.00           modify                               
+**  changxuejian        2010-12-21     2.00           modify
 **************************************************************************/
-#include <asm/mach-types.h>
 #include <asm/io.h>
 #include <linux/slab.h>
 #include <linux/io.h>
@@ -47,9 +46,8 @@
 #include <linux/switch.h>
 #include <linux/input.h>
 #include <linux/debugfs.h>
-#include <asm/gpio.h>
+#include <linux/gpio.h>
 #include <asm/atomic.h>
-#include <asm/mach-types.h>
 #include <linux/sensors/coolpad_hall.h>
 #include <linux/wakelock.h>
 
