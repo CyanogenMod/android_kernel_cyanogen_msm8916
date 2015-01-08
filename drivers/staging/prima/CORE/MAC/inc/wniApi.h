@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,7 +20,15 @@
  */
 
 /*
- * Airgo Networks, Inc proprietary. All rights reserved.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+
+
+
+/*
  * This file wniApi.h contains message definitions exported by
  * Sirius software modules.
  * NOTE: See projects/sirius/include/sirApi.h for structure
@@ -307,8 +295,8 @@ enum eWniMsgTypes
     eWNI_SME_FT_AGGR_QOS_RSP,
 #endif
 
-#if defined FEATURE_WLAN_CCX
-    eWNI_SME_CCX_ADJACENT_AP_REPORT,
+#if defined FEATURE_WLAN_ESE
+    eWNI_SME_ESE_ADJACENT_AP_REPORT,
 #endif
 
     eWNI_SME_REGISTER_MGMT_FRAME_REQ,
@@ -348,6 +336,9 @@ enum eWniMsgTypes
     eWNI_SME_MGMT_FRM_TX_COMPLETION_IND,
     eWNI_SME_TDLS_LINK_ESTABLISH_REQ,
     eWNI_SME_TDLS_LINK_ESTABLISH_RSP,
+// tdlsoffchan
+    eWNI_SME_TDLS_CHANNEL_SWITCH_REQ,
+    eWNI_SME_TDLS_CHANNEL_SWITCH_RSP,
 #endif
     //NOTE: If you are planning to add more mesages, please make sure that 
     //SIR_LIM_ITC_MSG_TYPES_BEGIN is moved appropriately. It is set as
@@ -380,7 +371,7 @@ enum eWniMsgTypes
     eWNI_SME_HANDOFF_REQ,/*upper layer requested handoff to driver in STA mode*/
     eWNI_SME_ROAM_SCAN_OFFLOAD_RSP,/*Fwd the LFR scan offload rsp from FW to SME*/
 #ifdef FEATURE_WLAN_LPHB
-    eWNI_SME_LPHB_WAIT_TIMEOUT_IND,
+    eWNI_SME_LPHB_IND,
 #endif /* FEATURE_WLAN_LPHB */
 
     eWNI_SME_GET_TSM_STATS_REQ,
@@ -392,6 +383,7 @@ enum eWniMsgTypes
 #endif /* FEATURE_WLAN_CH_AVOID */
     eWNI_SME_HT40_OBSS_SCAN_IND, /* START and UPDATE OBSS SCAN Indication*/
     eWNI_SME_HT40_STOP_OBSS_SCAN_IND, /* STOP OBSS SCAN indication */
+    eWNI_SME_MAC_SPOOF_ADDR_IND,
     eWNI_SME_MSG_TYPES_END
 };
 
@@ -431,9 +423,9 @@ enum eWniMsgTypes
 
 /*---------------------------------------------------------------------*/
 /* CFG to HDD message paramter indices                                 */
-/*                                                                     */
+
 /*   The followings are word indices starting from the message body    */
-/*                                                                     */
+
 /*   WNI_CFG_xxxx_xxxx_xxxx:         index of parameter                */
 /*                                                                     */
 /*   WNI_CFG_xxxx_xxxx_NUM:          number of parameters in message   */
