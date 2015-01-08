@@ -1,4 +1,5 @@
- * Copyright (c) 2014 The Linux Foundation. All rights reserved.
+ *
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -16,11 +17,17 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
+ *
 
+ *
  * This file was originally distributed by Qualcomm Atheros, Inc.
  * under proprietary terms before Copyright ownership was assigned
  * to the Linux Foundation.
+ *
 
+*
+
+*
 *
 * This is the data definition file for the CFG module.
 * Author:         Kevin Nguyen
@@ -2841,10 +2848,10 @@ LIM
 WNI_CFG_VHT_CSN_BEAMFORMEE_ANT_SUPPORTED  I    4    19
 V    RW    NP    
 LIM
-0    3    0
+0    4    0
 V    RW    NP    
 LIM
-0    3    0
+0    4    0
 
 *
 * Number of Sounding Dimensions indicates Number
@@ -3459,7 +3466,7 @@ LIM
 * Delete all Rx BA sessions in 2.4 GHz
 * when BTC requests to disable agg.
 *
-WNI_CFG_DEL_ALL_RX_BA_SESSIONS_2_4_G_BTC I    4    7
+WNI_CFG_DEL_ALL_RX_TX_BA_SESSIONS_2_4_G_BTC I    4    7
 V    RW    NP
 LIM
 0    1    0
@@ -4554,17 +4561,6 @@ NV    RW    NP
 HAL
 0    1    1
 *
-* Oxygen network data (prop IE for IBSS)
-*
-WNI_CFG_OXYGEN_NETWORK_DATA   I    2    0
-V    RW    NP
-SCH
-0    0x2000   0x2000
-V    RW    NP
-SCH
-0    0x2000   0x2000
-
-*
 * FlexConnect Power Factor
 * Default is set to 0 (disable)
 *
@@ -4593,19 +4589,27 @@ V    RW    NP
 HAL
 0    3    0
 
+* GO Link Monitor Timeout (TU)
 *
-* ATH Enable/Disable
-*
-WNI_CFG_ATH_DISABLE       I    4    7
+WNI_CFG_GO_LINK_MONITOR_TIMEOUT    I    4    7
 V    RW    NP
-NONE
-0    1    0
+HAL
+3   50    10
 V    RW    NP
-NONE
-0    1    0
+HAL
+3   50    10
 *
 *
 
+* ATH Enable/Disable
+*
+WNI_CFG_ATH_DISABLE	I    4    7
+V    RW    NP
+NONE
+0   1    0
+V    RW    NP
+NONE
+0   1    0
 * BTC Active WLAN Len
 *
 WNI_CFG_BTC_ACTIVE_WLAN_LEN    I    4    7
@@ -4635,10 +4639,10 @@ HAL
 WNI_CFG_BTC_SAP_ACTIVE_WLAN_LEN    I    4    7
 V    RW    NP
 HAL
-0    250000    60000
+0    250000    30000
 V    RW    NP
 HAL
-0    250000    60000
+0    250000    30000
 *
 *
 
@@ -4647,10 +4651,58 @@ HAL
 WNI_CFG_BTC_SAP_ACTIVE_BT_LEN    I    4    7
 V    RW    NP
 HAL
-0    250000    90000
+0    250000    30000
 V    RW    NP
 HAL
-0    250000    90000
+0    250000    30000
+*
+*
+
+* RMC action period frequency (milli seconds)
+*
+WNI_CFG_RMC_ACTION_PERIOD_FREQUENCY    I    4    7
+V    RW    NP
+HAL
+0   0xFFFFFFFF    300
+V    RW    NP
+HAL
+0   0xFFFFFFFF    300
+*
+*
+
+* Rssi probe interval (milli seconds)
+*
+WNI_CFG_ASD_PROBE_INTERVAL    I    4    7
+V    RW    NP
+HAL
+10    100    50
+V    RW    NP
+HAL
+10    100    50
+*
+*
+
+*Rssi threshold to trigger probing and slecting
+*
+WNI_CFG_ASD_TRIGGER_THRESHOLD    I    4    7
+V    RW    NP
+HAL
+0    120     45
+V    RW    NP
+HAL
+0    120    45
+*
+*
+
+*Rssi Hysteresis threshold for RSSI-RTT
+*
+WNI_CFG_ASD_RTT_RSSI_HYST_THRESHOLD    I    4    7
+V    RW    NP
+HAL
+0    100    0
+V    RW    NP
+HAL
+0    100    0
 *
 *
 
@@ -4663,42 +4715,16 @@ NONE
 V    RW    NP
 NONE
 0    1    0
-*
-*
 
-* GO Link Monitor Timeout (TU)
+* BTC CTS2S during SCO
 *
-WNI_CFG_GO_LINK_MONITOR_TIMEOUT I 4 7
+WNI_CFG_BTC_CTS2S_DURING_SCO    I    4    7
 V    RW    NP
 HAL
-3    50    10
+0    1     0
 V    RW    NP
 HAL
-3    50    10
-*
-*
-
-* RA filter enable/disable
-*
-WNI_CFG_RA_FILTER_ENABLE    I    4    7
-V    RW    NP
-HAL
-0    1     1
-V    RW    NP
-HAL
-0    1     1
-*
-*
-
-* RA filter rate interval
-*
-WNI_CFG_RA_RATE_LIMIT_INTERVAL    I    4    7
-V    RW    NP
-HAL
-0    60     60
-V    RW     NP
-HAL
-0    60     60
+0    1     0
 *
 *
 
@@ -4828,20 +4854,78 @@ NONE
 WNI_CFG_PMF_SA_QUERY_RETRY_INTERVAL    I    4    1
 V    RW   NP RESTART
 NONE
-0    2000 200
+10    2000 200
 V    RW   NP RESTART
 NONE
-0    2000 200
+10    2000 200
 
-* BTC CTS2S during SCO
+* RA filter enable/disable
 *
-WNI_CFG_BTC_CTS2S_DURING_SCO    I    4    7
+WNI_CFG_RA_FILTER_ENABLE    I    4    7
 V    RW    NP
 HAL
 0    1     0
 V    RW    NP
 HAL
 0    1     0
+*
+*
+
+* RA filter rate interval
+*
+WNI_CFG_RA_RATE_LIMIT_INTERVAL    I    4    7
+V    RW    NP
+HAL
+0    60     60
+V    RW     NP
+HAL
+0    60     60
+
+* BTC Fatal HID sniff block
+*
+WNI_CFG_BTC_FATAL_HID_NSNIFF_BLK_GUIDANCE    I    4    7
+V    RW    NP
+HAL
+0    2    2
+V    RW    NP
+HAL
+0    2    2
+*
+*
+
+* BTC Critical HID sniff block
+*
+WNI_CFG_BTC_CRITICAL_HID_NSNIFF_BLK_GUIDANCE    I    4    7
+V    RW    NP
+HAL
+0    1    1
+V    RW    NP
+HAL
+0    1    1
+*
+*
+
+* BTC DYN A2DP tx Q threshold
+*
+WNI_CFG_BTC_DYN_A2DP_TX_QUEUE_THOLD    I    4    7
+V    RW    NP
+HAL
+0    1    0
+V    RW    NP
+HAL
+0    1    0
+*
+*
+
+* BTC DYN OPP tx Q threshold
+*
+WNI_CFG_BTC_DYN_OPP_TX_QUEUE_THOLD    I    4    7
+V    RW    NP
+HAL
+0    3    1
+V    RW    NP
+HAL
+0    3    1
 *
 *
 
@@ -4856,3 +4940,93 @@ LIM
 V    RW    NP
 LIM
 0    1    0
+
+WNI_CFG_MAX_UAPSD_CONSEC_SP    I    4    7
+V    RW    NP
+HAL
+0    100     10
+V    RW    NP
+HAL
+0    100     10
+*
+*
+
+WNI_CFG_MAX_UAPSD_CONSEC_RX_CNT    I    4    7
+V    RW    NP
+HAL
+0    100     10
+V    RW    NP
+HAL
+0    100     10
+*
+*
+
+WNI_CFG_MAX_UAPSD_CONSEC_TX_CNT    I    4    7
+V    RW    NP
+HAL
+0    100     10
+V    RW    NP
+HAL
+0    100     10
+*
+*
+
+WNI_CFG_MAX_UAPSD_CONSEC_TX_CNT_MEAS_WINDOW    I    4    7
+V    RW    NP
+HAL
+0    100     10
+V    RW    NP
+HAL
+0    100     10
+*
+*
+
+WNI_CFG_MAX_UAPSD_CONSEC_RX_CNT_MEAS_WINDOW    I    4    7
+V    RW    NP
+HAL
+0    100     10
+V    RW    NP
+HAL
+0    100     10
+*
+*
+
+WNI_CFG_MAX_PSPOLL_IN_WMM_UAPSD_PS_MODE    I    4    7
+V    RW    NP
+HAL
+0    255     0
+V    RW    NP
+HAL
+0    255     0
+*
+*
+
+WNI_CFG_MAX_UAPSD_INACTIVITY_INTERVALS    I    4    7
+V    RW    NP
+HAL
+0    255     20
+V    RW    NP
+HAL
+0    255     20
+*
+*
+
+WNI_CFG_ENABLE_DYNAMIC_WMMPS    I    4    7
+V    RW    NP
+HAL
+0    1     1
+V    RW    NP
+HAL
+0    1     1
+*
+*
+
+WNI_CFG_BURST_MODE_BE_TXOP_VALUE    I    4    7
+V    RW    NP
+HAL
+0    12288    0
+V    RW    NP
+HAL
+0    12288    0
+*
+*
