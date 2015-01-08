@@ -1,29 +1,33 @@
 /*
-  * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
-  *
-  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
-  *
-  *
-  * Permission to use, copy, modify, and/or distribute this software for
-  * any purpose with or without fee is hereby granted, provided that the
-  * above copyright notice and this permission notice appear in all
-  * copies.
-  *
-  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
-  * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
-  * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
-  * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
-  * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
-  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-  * PERFORMANCE OF THIS SOFTWARE.
-*/
-/*
- * Copyright (c) 2011-2014 Qualcomm Atheros, Inc.
- * All Rights Reserved.
- * Qualcomm Atheros Confidential and Proprietary.
+ * Copyright (c) 2011-2014 The Linux Foundation. All rights reserved.
  *
- * Airgo Networks, Inc proprietary. All rights reserved.
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
+
+ *
  * limSendMessages.c: Provides functions to send messages or Indications to HAL.
  * Author:    Sunit Bhatia
  * Date:       09/21/2006
@@ -504,7 +508,8 @@ tSirRetStatus limSetLinkState(tpAniSirGlobal pMac, tSirLinkState state,tSirMacAd
     if (retCode != eSIR_SUCCESS)
     {
         vos_mem_free(pLinkStateParams);
-        limLog(pMac, LOGP, FL("Posting link state %d failed, reason = %x "), retCode);
+        limLog(pMac, LOGP, FL("Posting link state %d failed, reason = %x "),
+               state, retCode);
     }
     return retCode;
 }
@@ -549,7 +554,8 @@ state,tSirMacAddr bssId, tSirMacAddr selfMacAddr, int ft, tpPESession psessionEn
     if (retCode != eSIR_SUCCESS)
     {
         vos_mem_free(pLinkStateParams);
-        limLog(pMac, LOGP, FL("Posting link state %d failed, reason = %x "), retCode);
+        limLog(pMac, LOGP, FL("Posting link state %d failed, reason = %x "),
+               state, retCode);
     }
     return retCode;
 }
@@ -867,8 +873,9 @@ tSirRetStatus limSendModeUpdate(tpAniSirGlobal pMac,
     msgQ.reserved = 0;
     msgQ.bodyptr = pVhtOpMode;
     msgQ.bodyval = 0;
-    PELOG3(limLog( pMac, LOG3,
-                FL( "Sending WDA_UPDATE_OP_MODE" ));)
+    limLog( pMac, LOG1,
+                FL( "Sending WDA_UPDATE_OP_MODE, opMode = %d staid = %d" ),
+                                    pVhtOpMode->opMode,pVhtOpMode->staId);
     if(NULL == psessionEntry)
     {
         MTRACE(macTraceMsgTx(pMac, NO_SESSION, msgQ.type));

@@ -1,25 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-/*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -40,7 +20,12 @@
  */
 
 /*
- * Airgo Networks, Inc proprietary. All rights reserved.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
+ */
+
+/*
  * This file limProcessAssocReqFrame.cc contains the code
  * for processing Re/Association Request Frame.
  * Author:        Chandra Modumudi
@@ -342,6 +327,7 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                         1,
                         pHdr->sa,
                         subType, 0,psessionEntry);
+
         goto error;
     }
 
@@ -849,14 +835,14 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                 pMac->lim.gLimNumAssocReqDropInvldState++;
 #endif
                 limLog(pMac, LOG1, FL("received Assoc req in state "
-                   "%X from "), pStaDs->mlmStaContext.mlmState);
+                   "%d from "), pStaDs->mlmStaContext.mlmState);
             }
             else
             {     
 #ifdef WLAN_DEBUG    
                 pMac->lim.gLimNumReassocReqDropInvldState++;
 #endif
-                limLog(pMac, LOG1, FL("received ReAssoc req in state %X"
+                limLog(pMac, LOG1, FL("received ReAssoc req in state %d"
                             " from "), pStaDs->mlmStaContext.mlmState);
             }
             limPrintMacAddr(pMac, pHdr->sa, LOG1);
@@ -880,6 +866,12 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
             // start SA Query procedure, respond to Association Request
             // with try again later
             case DPH_SA_QUERY_NOT_IN_PROGRESS:
+                /*
+                 * We should reset the retry counter before we start
+                 * the SA query procedure, otherwise in next set of SA query
+                 * procedure we will end up using the stale value.
+                 */
+                pStaDs->pmfSaQueryRetryCount = 0;
                 limSendAssocRspMgmtFrame(pMac, eSIR_MAC_TRY_AGAIN_LATER, 1,
                                          pHdr->sa, subType, pStaDs, psessionEntry);
                 limSendSaQueryRequestFrame(
@@ -887,7 +879,6 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                     pHdr->sa, psessionEntry);
                 pStaDs->pmfSaQueryStartTransId = pStaDs->pmfSaQueryCurrentTransId;
                 pStaDs->pmfSaQueryCurrentTransId++;
-                pStaDs->pmfSaQueryRetryCount = 0;
 
                 // start timer for SA Query retry
                 if (tx_timer_activate(&pStaDs->pmfSaQueryTimer) != TX_SUCCESS)
@@ -921,7 +912,7 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                                           sizeof(tSirMacCapabilityInfo)))&&
                                          (subType == LIM_ASSOC))
         {
-            limLog(pMac, LOGE, FL(" Received Assoc req in state %X STAid=%d"),
+            limLog(pMac, LOGE, FL(" Received Assoc req in state %d STAid=%d"),
                                        pStaDs->mlmStaContext.mlmState,peerIdx);
             goto error;
         }
@@ -1229,23 +1220,15 @@ if (limPopulateMatchingRateSet(pMac,
                  * Received Re/Association Request from
                  * STA when UPASD is not supported.
                  */
-                limLog( pMac, LOGE, FL( "AP do not support UPASD "
-                                      "REASSOC Failed" ));
-                /* During wlan fuzz tests for softAP when mal-formed assoc req is
-                 * sent to AP due to delSTA is not done in firmnware UMAC is
-                 * stuck in some bad state.if we set this flag delsta will happen
-                 * and UMAC will recover*/
-                if (updateContext)
-                {
-                    pStaDs->mlmStaContext.updateContext = 1;
-                }
-                limRejectAssociation(pMac, pHdr->sa,
-                                     subType, true, authType, peerIdx, true,
-                                     (tSirResultCodes) eSIR_MAC_WME_REFUSED_STATUS, psessionEntry);
+               limLog( pMac, LOGE, FL( "AP do not support UAPSD so reply "
+                                       "to STA accordingly" ));
+               /* update UAPSD and send it to LIM to add STA */
+               pStaDs->qos.capability.qosInfo.acbe_uapsd = 0;
+               pStaDs->qos.capability.qosInfo.acbk_uapsd = 0;
+               pStaDs->qos.capability.qosInfo.acvo_uapsd = 0;
+               pStaDs->qos.capability.qosInfo.acvi_uapsd = 0;
+               pStaDs->qos.capability.qosInfo.maxSpLen =   0;
 
-
-                pAssocReq = psessionEntry->parsedAssocReq[pStaDs->assocId];
-                goto error;
             }
             else
             {
@@ -1283,6 +1266,10 @@ if (limPopulateMatchingRateSet(pMac,
                              peerIdx, false,
                              (tSirResultCodes) eSIR_MAC_UNSPEC_FAILURE_STATUS, psessionEntry);
         goto error;
+    }
+    if (WNI_CFG_PMF_SA_QUERY_RETRY_INTERVAL_APMIN > retryInterval)
+    {
+        retryInterval = WNI_CFG_PMF_SA_QUERY_RETRY_INTERVAL_APDEF;
     }
     if (tx_timer_create(&pStaDs->pmfSaQueryTimer, "PMF SA Query timer",
                         limPmfSaQueryTimerHandler, timerId.value,
