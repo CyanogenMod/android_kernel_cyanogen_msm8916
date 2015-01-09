@@ -87,7 +87,7 @@ unsigned long get_poweroff_alarm_time(void)
 {
 	return poweroff_alarm_secs;
 }
-EXPORT_SYMBOL(get_poweroff_alarm_secs);
+EXPORT_SYMBOL(get_poweroff_alarm_time);
 
 static int __init init_poweroff_alarm_time(char *s)
 {
