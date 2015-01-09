@@ -364,6 +364,9 @@ static int32_t imx135_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 }
 
 static struct msm_sensor_fn_t imx135_sensor_fn_t = {
+#ifdef CONFIG_COMPAT
+	.sensor_config32 = msm_sensor_config32,
+#endif
 	.sensor_config = msm_sensor_config,
 	.sensor_power_up = imx135_power_up,
 	.sensor_power_down = msm_sensor_power_down,

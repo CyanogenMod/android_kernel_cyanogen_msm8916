@@ -511,6 +511,9 @@ int ov5648_update_otp(struct msm_sensor_ctrl_t *s_ctrl)
 }
 
 static struct msm_sensor_fn_t ov5648_sensor_fn_t = {
+#ifdef CONFIG_COMPAT
+	.sensor_config32 = msm_sensor_config32,
+#endif
 	.sensor_config = msm_sensor_config,
 	.sensor_power_up = ov5648_power_up,
 	.sensor_power_down = ov5648_sensor_power_down,

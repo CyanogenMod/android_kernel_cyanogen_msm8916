@@ -633,7 +633,11 @@ long msm_sensor_subdev_fops_ioctl(struct file *file,
 	return video_usercopy(file, cmd, arg, msm_sensor_subdev_do_ioctl);
 }
 
+#ifdef CONFIG_MACH_YULONG
+int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+#else
 static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+#endif
 	void __user *argp)
 {
 	struct sensorb_cfg_data32 *cdata = (struct sensorb_cfg_data32 *)argp;
@@ -748,6 +752,19 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 		kfree(reg_setting);
 		break;
 	}
+#ifdef CONFIG_MACH_YULONG
+	case CFG_UPDATE_OTP: {
+		if(s_ctrl->func_tbl->sensor_update_otp) {
+			rc = s_ctrl->func_tbl->sensor_update_otp(s_ctrl);
+			if (rc) {
+				pr_err("sensor_update_otp failed\n");
+				break;
+			}
+			cdata->cfg.sensor_init_params.module_id = s_ctrl->module_id;
+		}
+		break;
+	}
+#endif
 	case CFG_SLAVE_READ_I2C: {
 		struct msm_camera_i2c_read_config read_config;
 		uint16_t local_data = 0;
@@ -871,6 +888,9 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 				break;
 			}
 			s_ctrl->sensor_state = MSM_SENSOR_POWER_UP;
+#ifdef CONFIG_MACH_YULONG
+			cdata->cfg.sensor_init_params.module_id = s_ctrl->module_id;
+#endif
 			CDBG("%s:%d sensor state %d\n", __func__, __LINE__,
 				s_ctrl->sensor_state);
 		} else {
