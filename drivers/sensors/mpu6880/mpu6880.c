@@ -50,7 +50,7 @@
 #define MPU6880_CAPTURE_TIMES           100
 #define MPU6880_ACCEL_SENSITIVE     -16384
 #define CAL_CONVERT 16384
-#define CAL_FUZZ    5000 //200//20
+#define CAL_FUZZ    9800    //5000 //200//20
 #define GYRO_CAL_FUZZ  8000
 
 int inv_debug = 0;
