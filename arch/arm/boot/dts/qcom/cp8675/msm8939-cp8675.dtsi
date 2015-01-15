@@ -84,9 +84,11 @@
 			yl,recharge-thresh-mv = <100>;
 			yl,vbus-ovp-mv = <6500>;
 			yl,recharge-capa = <99>;
-			yl,batt-temp-cold-negative = <1>; /* if we set cold temp is negative num, set it to 1 */
-			yl,batt-temp-hot = <490>; /* 49 celsius */
-			yl,batt-temp-cold = <30>;  /* 0 celsius */
+			yl,batt-temp-cold-negative = <0>; /* if we set cold temp is negative num, set it to 1 */
+			yl,batt-temp-hot = <520>; /* 52 celsius */
+			yl,batt-temp-too-hot = <570>; /* 57 celsius*/
+			yl,batt-temp-cold = <100>;  /* 10 celsius */
+			yl,batt-temp-too-cold = <0>;  /*3 celsius*/
 			yl,batt-psy-name = "battery";
 			yl,battery-psy-name = "lc709203_battery";
 		};

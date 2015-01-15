@@ -141,6 +141,17 @@ static void dump_registers(struct ncp6335d_info *dd,
 
 	ncp6335x_read(dd, reg, &val);
 	dev_dbg(dd->dev, "%s: NCP6335D: Reg = %x, Val = %x\n", func, reg, val);
+#ifdef CONFIG_MACH_YULONG
+	if (reg == 0x13 && val != 0x19) { // add by wangshujun 2014.12.17,
+		// some ncp chip reg 0x13 default value is not 0x19
+		// it will lead to system reboot,so we force modify it to 19h
+		pr_err("yulong:NCP6335D reg 0x%x val origin is 0x%x\n", reg, val);
+		val = 0x19;
+		ncp6335x_write(dd, reg, val);
+		ncp6335x_read(dd, reg, &val);
+		pr_err("yulong:NCP6335D reg 0x%x modify to 0x%x\n", reg, val);
+#endif
+	}
 }
 
 static void ncp633d_slew_delay(struct ncp6335d_info *dd,
@@ -634,6 +645,14 @@ static int ncp6335d_regulator_probe(struct i2c_client *client,
 	struct ncp6335d_info *dd;
 	const struct ncp6335d_platform_data *pdata;
 	struct regulator_config config = { };
+#ifdef CONFIG_MACH_YULONG
+	/* the i2c address of ncp6335d is somehow changed, trying to poll if failed.
+	   longxiaoming@yulong.com  2014-12-29*/
+	int i2c_addr_backup[3] = { 0x18, 0x10, 0x14};
+	int i_a = 0;
+
+	pr_err("%s:ncp addr is 0x%2x\n",__func__,client->addr);
+#endif
 
 	if (client->dev.of_node)
 		pdata = ncp6335d_get_of_platform_data(client);
@@ -668,10 +687,25 @@ static int ncp6335d_regulator_probe(struct i2c_client *client,
 		return PTR_ERR(dd->regmap);
 	}
 
+#ifdef CONFIG_MACH_YULONG
+AGAIN:
+#endif
 	rc = ncp6335x_read(dd, REG_NCP6335D_PID, &val);
 	if (rc) {
 		dev_err(&client->dev, "Unable to identify NCP6335D, rc(%d)\n",
 									rc);
+
+#ifdef CONFIG_MACH_YULONG
+		dev_err(&client->dev, "ncp addr is 0x%2x, force addr as 0x%2x and retry\n",
+				client->addr, i2c_addr_backup[i_a]);
+
+		while (i_a < 3) {
+			client->addr = i2c_addr_backup[i_a];
+			i_a++;
+			goto AGAIN;
+		}
+#endif
+
 		return rc;
 	}
 	dev_info(&client->dev, "Detected Regulator NCP6335D PID = %d\n", val);
