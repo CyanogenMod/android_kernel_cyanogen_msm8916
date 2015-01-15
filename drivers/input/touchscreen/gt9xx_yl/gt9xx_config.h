@@ -24,7 +24,11 @@ const char * TW_IC_PREFIX_NAME = "GT9158";
 #define GTP_ICS_SLOT_REPORT   0
 
 #define GUP_USE_HEADER_FILE   0
-#define GTP_SLIDE_WAKEUP      1
+
+//[YULONG BEGIN] Disable gesture ctrl fuction by litao3@yulong.com on 2015-01-04
+#define GTP_SLIDE_WAKEUP      0
+//[YULONG END]
+
 #define GTP_DBL_CLK_WAKEUP    0
 #define YL_COVER_SWITCH_FUNC  0
 
@@ -55,51 +59,53 @@ struct touch_panel_info
 	unsigned int   firmware_size; 
 };
 
+//[YULONG BEGIN] Upload new touchscreen configs to solve touchscreen failure in games occationally by litao3@yulong.com 2014-12-23
 #ifdef CONFIG_MACH_CP8675
 static unsigned char CTP_CFG_GROUP1[]=  
 {
-	#include "coolpad_8675_00_V45_20141008_finger.cfg"
+    #include "coolpad_8675_00_V46_20141111_finger.cfg"
 };
 static unsigned char CTP_CFG_GROUP1_glove[]=  
 {
-	#include "coolpad_8675_00_V45_20141008_glove.cfg"
+    #include "coolpad_8675_00_V46_20141111_glove.cfg"
 };
 #ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
 static unsigned char CTP_CFG_GROUP1_window[]=  
 {
-	#include "coolpad_8675_00_V45_20141008_window.cfg"
+    #include "coolpad_8675_00_V46_20141111_window.cfg"
 };
 #endif
 
 static unsigned char CTP_CFG_GROUP2[]=  
 {
-	#include "coolpad_8675_02_V45_20141008_finger.cfg"
+    #include "coolpad_8675_02_V46_20141111_finger.cfg"
 };
 static unsigned char CTP_CFG_GROUP2_glove[]=  
 {
-	#include "coolpad_8675_02_V45_20141008_glove.cfg"
+    #include "coolpad_8675_02_V46_20141111_glove.cfg"
 };
 #ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
 static unsigned char CTP_CFG_GROUP2_window[]=  
 {
-	#include "coolpad_8675_02_V45_20141008_window.cfg"
+    #include "coolpad_8675_02_V46_20141111_window.cfg"
 };
 #endif
 
 static unsigned char CTP_CFG_GROUP3[]=  
 {
-	#include "coolpad_8675_01_V45_20141008_finger.cfg"
+    #include "coolpad_8675_01_V46_20141111_finger.cfg"
 };
 static unsigned char CTP_CFG_GROUP3_glove[]=  
 {
-	#include "coolpad_8675_01_V45_20141008_glove.cfg"
+    #include "coolpad_8675_01_V46_20141111_glove.cfg"
 };
 #ifdef CONFIG_TOUCHSCREEN_YL_GT9XX_COVER_WINDOW_CFG
 static unsigned char CTP_CFG_GROUP3_window[]=  
 {
-	#include "coolpad_8675_01_V45_20141008_window.cfg"
+    #include "coolpad_8675_01_V46_20141111_window.cfg"
 };
 #endif
+//[YULONG END]
 
 struct touch_panel_info yl_cfg[] = {
   {0x00, "Boen", CTP_CFG_GROUP1, sizeof(CTP_CFG_GROUP1)},
