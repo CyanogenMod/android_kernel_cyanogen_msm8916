@@ -265,6 +265,16 @@
 };
 
 &i2c_0 { /* BLSP1 QUP2 */
+	di_ap3426@1e {
+		compatible = "di_ap3426";
+		reg = <0x1e>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <113 0x2002>;
+		vdd-supply = <&pm8916_l17>;
+		vio-supply = <&pm8916_l6>;
+		ap3426,irq-gpio= <&msm_gpio 113 0x2002>;
+	};
+
 	tps65132@3e {
 		compatible = "ti,tps65132";
 		reg = <0x3e>;
