@@ -1010,6 +1010,16 @@ config SECURE_TOUCH
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_GSL1688E
+	tristate "SLIEAD GSL1688E I2C Touchscreen support"
+	depends on I2C
+	help
+	  Say Y here if you have an EDT "Polytouch" touchscreen based
+	  on the SLIEAD GSL1688E family of controllers connected to
+	  your system.
+
+	  If unsure, say N.
+
 config TOUCHSCREEN_GT9XX
 	bool "Goodix touchpanel GT9xx series"
 	depends on I2C
