@@ -119,9 +119,10 @@ extern unsigned int gsl_read_test_config(unsigned int cmd);
 extern int gsl_obtain_array_data_ogv(unsigned short *ogv,int i_max,int j_max);
 extern int gsl_obtain_array_data_dac(unsigned int *dac,int i_max,int j_max);
 extern int gsl_tp_module_test(char *buf,int size);
-#define GSL_PARENT_PROC_NAME 	"msg-ito-test"	//"touchscreen"
+#define GSL_PARENT_PROC_NAME 	"silead-ito-test"	//"touchscreen"
 #define GSL_OPENHSORT_PROC_NAME "debug"			//"ctp_openshort_test"
 #endif
+static char tp_info[20];
 
 static void gsl_sw_init(struct i2c_client *client);
 
@@ -223,7 +224,7 @@ static int gsl_write_interface(struct i2c_client *client, const u8 reg, u8 *buf,
 //	return i2c_transfer(client->adapter, xfer_msg, 1) == 1 ? 0 : -EFAULT;
 }
 
-#ifdef GSL_TEST_TP
+#if 0
 static int gsl_ts_write(struct i2c_client *client, const u8 reg, u8 *buf, u32 num)
 {
 	struct i2c_msg xfer_msg[1];
@@ -268,6 +269,20 @@ static int gsl_ts_read(struct i2c_client *client, u8 reg, u8 *buf, u32 num)
 }
 #endif
 
+static int gsl_ts_read_version(void)
+{
+	u8  buf[4] = {0};
+	int ret = 0; 
+	buf[0] = 0x03;
+	gsl_write_interface(ddata->client, 0xf0, buf, 4);
+	gsl_read_interface(ddata->client, 0x04, buf, 4);
+	print_info("[%s] The firmware version is %x%x%x%x",__func__, buf[3], buf[2], buf[1] ,buf[0]);
+
+	ret = (buf[3]<<24) | (buf[2]<<16) | (buf[1]<<8) | (buf[0]);
+
+	return ret;
+}
+
 #ifdef GSL_GESTURE
 #define READ_LEN 64
 static unsigned int gsl_read_oneframe_data(unsigned int *data,
@@ -278,14 +293,14 @@ static unsigned int gsl_read_oneframe_data(unsigned int *data,
 	printk("tp-gsl-gesture %s\n",__func__);
 	printk("gsl_read_oneframe_data:::addr=%x,len=%x\n",addr,len);
 
-	#if 0
+	#if 1
 	for(i=0;i<len/2;i++){
 		buf[0] = ((addr+i*8)/0x80)&0xff;
 		buf[1] = (((addr+i*8)/0x80)>>8)&0xff;
 		buf[2] = (((addr+i*8)/0x80)>>16)&0xff;
 		buf[3] = (((addr+i*8)/0x80)>>24)&0xff;
 		gsl_write_interface(ddata->client,0xf0,buf,4);
-		gsl_read_interface(ddata->client,(addr+i*8)%0x80,(char *)&data[i*2],8);
+		gsl_read_interface(ddata->client,(addr+i*8)%0x80,(u8 *)&data[i*2],8);
 	}
 	if(len%2){
 		buf[0] = ((addr+len*4 - 4)/0x80)&0xff;
@@ -293,11 +308,11 @@ static unsigned int gsl_read_oneframe_data(unsigned int *data,
 		buf[2] = (((addr+len*4 - 4)/0x80)>>16)&0xff;
 		buf[3] = (((addr+len*4 - 4)/0x80)>>24)&0xff;
 		gsl_write_interface(ddata->client,0xf0,buf,4);
-		gsl_read_interface(ddata->client,(addr+len*4 - 4)%0x80,(char *)&data[len-1],4);
+		gsl_read_interface(ddata->client,(addr+len*4 - 4)%0x80,(u8 *)&data[len-1],4);
 	}
 	#endif
 
-	#if 1
+	#if 0
     i = 0;
     while(i < len)
     {
@@ -306,12 +321,18 @@ static unsigned int gsl_read_oneframe_data(unsigned int *data,
         buf[2] = (((addr + i*4)/0x80)>>16)&0xff;
         buf[3] = (((addr + i*4)/0x80)>>24)&0xff;
         gsl_write_interface(ddata->client, 0xf0, buf, 4);
-        if(len - i > READ_LEN)
+        if(len - i > READ_LEN){
+	printk("why===========gesture==============read begin:READ_LEN*4 == :%d\n",READ_LEN*4);
             gsl_read_interface(ddata->client, (addr+i*4)%0x80, (char *)&data[i], READ_LEN*4);
-        else
+	printk("why===========gesture==============read end : READ_LEN*4 == :%d\n",READ_LEN*4);
+		}
+        else{
+	printk("why===========gesture2=============rade begin:(len - i)*4 == :%d\n",(len - i)*4);
             gsl_read_interface(ddata->client, (addr+i*4)%0x80, (char *)&data[i], (len - i)*4);
+	printk("why===========gesture2=============read end\n");
         i += READ_LEN;
     }
+	}
 	#endif
 
 	#if 0
@@ -427,8 +448,13 @@ void gsl_I2C_ROnePage(unsigned int addr, char *buf)
 	tmp_buf[2]=(u8)(addr>>16);
 	tmp_buf[1]=(u8)(addr>>8);
 	tmp_buf[0]=(u8)(addr);
+	#if 0
 	gsl_ts_write(ddata->client,0xf0,tmp_buf,4);
 	gsl_ts_read(ddata->client,0,buf,128);
+	#else
+	gsl_write_interface(ddata->client,0xf0,tmp_buf,4);
+	gsl_read_interface(ddata->client,0,buf,128);
+	#endif
 }
 EXPORT_SYMBOL(gsl_I2C_ROnePage);
 void gsl_I2C_RTotal_Address(unsigned int addr,unsigned int *data)
@@ -438,8 +464,13 @@ void gsl_I2C_RTotal_Address(unsigned int addr,unsigned int *data)
 	tmp_buf[2]=(u8)((addr/0x80)>>16);
 	tmp_buf[1]=(u8)((addr/0x80)>>8);
 	tmp_buf[0]=(u8)((addr/0x80));
+	#if 0
 	gsl_ts_write(ddata->client,0xf0,tmp_buf,4);
 	gsl_ts_read(ddata->client,addr%0x80,tmp_buf,4);
+	#else
+	gsl_write_interface(ddata->client,0xf0,tmp_buf,4);
+	gsl_read_interface(ddata->client,addr%0x80,tmp_buf,4);
+	#endif
 	*data = tmp_buf[0]|(tmp_buf[1]<<8)|(tmp_buf[2]<<16)|(tmp_buf[3]<<24);
 }
 EXPORT_SYMBOL(gsl_I2C_RTotal_Address);
@@ -1219,7 +1250,6 @@ static int psensor_ps_set_enable(struct sensors_classdev *sensors_cdev, unsigned
 		{
 			i=0;
 			wake_lock(&ps_wake_lock);
-			print_info("why===:%s=======\n",__func__);
 			proximity_enable = 1;
 
 			ps_data_state[0] = 1;
@@ -1584,14 +1614,12 @@ static void gsl_report_work(struct work_struct *work)
 	  	if(tmp_prox == 0x01)		/* Closing */
 	  	{
 			ps_data_state[0] = 0;
-			print_info("why===:%s===========disable\n",__func__);
 			input_report_abs(ddata->input_dev_ps, ABS_DISTANCE, ps_data_state[0]);
 			input_sync(ddata->input_dev_ps);
 	  	}
 	  	else if(tmp_prox == 0x00) 	/* Leaving*/
 	  	{
 			ps_data_state[0] = 1;
-			print_info("why===:%s===========enable\n",__func__);
 			input_report_abs(ddata->input_dev_ps, ABS_DISTANCE, ps_data_state[0]);
 			input_sync(ddata->input_dev_ps);
 	  	}
@@ -1999,7 +2027,6 @@ static ssize_t gsl_test_show(void)
 		printk(" kzalloc  kernel  fail\n");
 		return 0;
 		}
-	printk("22222222222222222");
 	err = gsl_tp_module_test(tmp_buf,3*1024);
 
 	printk("enter gsl_test_show end\n");
@@ -2031,11 +2058,10 @@ static s32 gsl_openshort_proc_read(struct file *file, char __user *buf,size_t co
 		return 0;
 	}
 	*ppos += count;
-	#if 1
+
 	test_result = gsl_test_show();
-	#else
 	test_result = 1;
-	#endif
+
 	if(1 == test_result)
 	{
 		printk("tp test pass\n");
@@ -2048,7 +2074,7 @@ static s32 gsl_openshort_proc_read(struct file *file, char __user *buf,size_t co
 		//sprintf(ptr, "result=%d\n", 0);
 		ptr += sprintf(ptr, "%d\n", 0);
 	}
-	return count;
+	return test_result;
 }
 
 static s32 gsl_openshort_proc_write(struct file *filp, const char __user *userbuf,size_t count, loff_t *ppos)
@@ -2070,6 +2096,9 @@ void create_ctp_proc(void)
 {
 	struct proc_dir_entry *gsl_device_proc = NULL;
 	struct proc_dir_entry *gsl_openshort_proc = NULL;
+	//struct proc_dir_entry *gsl_rawdata_proc = NULL;
+
+	printk("why>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 
 	gsl_device_proc = proc_mkdir(GSL_PARENT_PROC_NAME, NULL);
 	if(gsl_device_proc == NULL)
@@ -2078,7 +2107,7 @@ void create_ctp_proc(void)
         	return;
     	}
 
-	gsl_openshort_proc = proc_create(GSL_OPENHSORT_PROC_NAME, 0666, gsl_device_proc, &gsl_openshort_procs_fops);
+	gsl_openshort_proc = proc_create(GSL_OPENHSORT_PROC_NAME, 0777, gsl_device_proc, &gsl_openshort_procs_fops);
     	if (gsl_openshort_proc == NULL)
     	{
         	printk("gsl915: create openshort_proc fail\n");
@@ -2092,11 +2121,14 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	int err = 0;
 	int ret;
+	int version;
 	
 	#ifdef GSL_PROXIMITY_SENSOR
 			struct input_dev *input_dev_ps;
 	#endif
 	
+	char *info = tp_info;
+
 	struct gsl_ts_platform_data *pdata;
 	print_info("%s\n",__func__);
 
@@ -2284,6 +2316,18 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 #ifdef GSL_GESTURE
 	enable_irq_wake(client->irq);
 #endif
+
+	//zhangpeng add for TW test.
+	//add for The hardware information begin
+	version = gsl_ts_read_version();
+	if( version == 0 ){
+		print_info("[%s] No firmware version information",__func__);
+	}
+
+	info += sprintf(info,"KOTL,");
+	info += sprintf(info,"GSL915,");
+	info += sprintf(info,"%x",version);
+	//end
 
 	//is_tp_driver_loaded = 1;
 	print_info("%s: ==probe over =\n",__func__);

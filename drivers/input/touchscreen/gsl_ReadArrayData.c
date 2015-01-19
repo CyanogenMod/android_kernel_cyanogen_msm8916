@@ -140,11 +140,11 @@ typedef struct
 static Judge_Rule Test_Rule={
 	//origin
 	{
-		{{5500,5500},		//up
-			{2500,2500}}  //low
+		{{8900,8900},		//up
+			{500,500}}  //low
 		,
-		{{2500,2500},     //up
-			{0,0}}		//low
+		{{8900,8900},     //up
+			{500,500}}		//low
 	},
 	//dac
 	{
@@ -679,7 +679,6 @@ static void DacRead(void)
 
 static unsigned char TestBase(char *str_result,int size)
 {
-//	char test_result[1000] ={'\0'};
 	int i=0,j=0;
 	unsigned char err_end = 1;
 	unsigned char OK_NG = 1,OK_NG_1 = 1,OK_NG_2 = 1;
@@ -692,32 +691,30 @@ static unsigned char TestBase(char *str_result,int size)
 		kfree(up_origin);
 		return OK_NG;
 	}
-////	char ch1 = '(',ch2 = ')';
-//	memset(test_result,'\0',sizeof(test_result));
+
 	memset(up_origin,'\0',sizeof(up_origin));
 	memset(low_origin,'\0',sizeof(low_origin));
-
 	memset(str_result,'\0',size);
+	
 	for (i=0;i<drv_num;i++)
 	{
 		for (j=0;j<sen_num;j++)
 		{
-			//if(gsl_ogv[i][j] > 9000)
+			printk("why=========%d>>>>>>>>>%d\n",gsl_ogv[i][j],Test_Rule.origin_limit[0].origin_up_limit[0]);
+			printk("why=========%d>>>>>>>>>%d\n",gsl_ogv[i][j],Test_Rule.origin_limit[0].origin_low_limit[0]);
 			if(gsl_ogv[i][j] > Test_Rule.origin_limit[0].origin_up_limit[0])
 			{
-				//sprintf(up_origin_temp,"(%2d,%2d)",i,j);
-				
 				GSL_STRCAT(up_origin,up_origin_temp,1024);
 				memset(up_origin_temp,'\0',sizeof(up_origin_temp));
 				OK_NG_1 = 0;
 				OK_NG = 0;		
 			}	
-			//if (gsl_ogv[i][j] < 0)
+
 			if (gsl_ogv[i][j] < Test_Rule.origin_limit[0].origin_low_limit[0])
 			{
 				//sprintf(low_origin_temp,"(%2d,%2d)",i,j);
 				GSL_STRCAT(low_origin,low_origin_temp,1024);
-//				strcat(low_origin,low_origin_temp);
+				//strcat(low_origin,low_origin_temp);
 				memset(low_origin_temp,'\0',sizeof(low_origin_temp));
 				OK_NG_2 = 0;
 				OK_NG = 0;
@@ -731,26 +728,31 @@ static unsigned char TestBase(char *str_result,int size)
 		if (!OK_NG_1)
 		{
 			err_end = 0;
-			GSL_STRCAT(str_result,"orgin lager:",size);
+			GSL_STRCAT(str_result,"orgin lager:\n",size);
 			GSL_STRCAT(str_result,up_origin,size);
+			printk("[%s] orgin lager:\n",__func__);
 		}else{
-			GSL_STRCAT(str_result,"origin lager test pass!",size);
+			GSL_STRCAT(str_result,"origin lager test pass!\n",size);
+			printk("[%s] origin lager test pass!\n",__func__);
 		}
 
 		if (!OK_NG_2)
 		{
 			err_end = 0;
-			GSL_STRCAT(str_result,"orgin lower:",size);
+			GSL_STRCAT(str_result,"orgin lower:\n",size);
 			GSL_STRCAT(str_result,low_origin,size);
+			printk("[%s] orgin lower:\n",__func__);
 		}
 		else
 		{
-			GSL_STRCAT(str_result,"orgin lower test pass!",size);
+			GSL_STRCAT(str_result,"orgin lower test pass!\n",size);
+			printk("[%s] orgin lower test pass!\n",__func__);
 		}
 	}
 	else
 	{
 		GSL_STRCAT(str_result,"Test Pass",size);
+		printk("[%s] Test Pass\n",__func__);
 	}
 	kfree(up_origin);
 	kfree(low_origin);
@@ -918,6 +920,25 @@ unsigned int gsl_read_test_config(unsigned int cmd)
 		ret = rule_buf[cmd];
 	return ret;
 }
+#if 1
+int gsl_obtain_array_data_ogv(unsigned int *gsl_ogv_new,int i_max,int j_max)
+{
+	int i,j;
+	unsigned int ret = 1;
+	int j_tmp = (j_max > 24 ? 24 : j_max);
+	int i_tmp = (i_max > 32 ? 32 : i_max);
+	printk("enter gsl_obtain_array_data_ogv\n");
+	for(i=0;i<i_tmp;i++){
+		for(j=0;j<j_tmp;j++){
+		gsl_ogv_new[i*11+j]=(int)gsl_ogv[i][j];
+		printk("%4d ",gsl_ogv_new[i*11+j]);
+		//mcpy(&ogv[i*j_max],gsl_ogv[i],j_tmp*(sizeof(unsigned short)));
+	}
+		printk("\n");
+		}
+	return ret;
+}
+#else
 int gsl_obtain_array_data_ogv(unsigned short *ogv,int i_max,int j_max)
 {
 	int i;
@@ -929,6 +950,7 @@ int gsl_obtain_array_data_ogv(unsigned short *ogv,int i_max,int j_max)
 	}
 	return ret;
 }
+#endif
 int gsl_obtain_array_data_dac(unsigned int *dac,int i_max,int j_max)
 {
 	int i;
@@ -951,16 +973,26 @@ int gsl_tp_module_test(char *buf,int size)
 		if(err == TRUE)
 			break;
 	}
-	if(err==FALSE)
+	if(err==FALSE){
+		printk("[%s] err==FALSE",__func__);
 		return -1;
+	}
+	
 	ReadFrame();
 	DacRead();
+	
 	tmp1 = TestBase(buf,ret);
 	buf[ret-1] = '\0';
+	printk("[%s] TestBase Result: %d\n",__func__,tmp1);
+	
 	tmp2 = TestDac(&buf[ret],ret);
 	buf[ret*2-1] = '\0';
+	printk("[%s] TestDac Result: %d\n",__func__,tmp2);
+	
 	tmp3 = TestRate(&buf[ret*2],ret);
 	buf[size] = '\0';
+	printk("[%s] TestRate Result: %d\n",__func__,tmp3);
+	
 	if(tmp1 && tmp2 && tmp3)
 		return 1;
 	return -1;	
