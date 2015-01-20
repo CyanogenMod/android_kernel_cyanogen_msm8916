@@ -191,7 +191,7 @@ enum support_gesture_e {
 								TW_SUPPORT_M_SLIDE_WAKEUP | TW_SUPPORT_DOUBLE_CLICK_WAKEUP)
 };
 
-u32 support_gesture = TW_SUPPORT_NONE_SLIDE_WAKEUP;
+u32 support_gesture = TW_SUPPORT_DOUBLE_CLICK_WAKEUP;
 char wakeup_slide[32];
 
 #endif
