@@ -47,6 +47,7 @@ typedef struct touchscreen_funcs {
  int (*debug)(int );				//开关调试模式
  int (*get_vendor)(char *);
  int (*get_wakeup_gesture)(char *);
+ int (*get_gesture_ctrl)(char *);
  int (*gesture_ctrl)(const char *);
  int (*get_charger_state)(char *);
  int (*set_charger_state)(const char *);
