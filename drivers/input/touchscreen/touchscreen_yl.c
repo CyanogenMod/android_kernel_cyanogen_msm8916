@@ -174,18 +174,18 @@ static ssize_t  touchscreen_type_show(struct device *dev,struct device_attribute
 {
 	int ret=0;
 
-	if(buf==NULL)
+	if (buf==NULL)
 	{
-		printk("BJ_BSP_Driver:CP_Touchscreen:buf is NULL!\n");
+		dev_dbg(dev, "BJ_BSP_Driver:CP_Touchscreen:buf is NULL!\n");
 		return -ENOMEM;
 	}
 
 	mutex_lock(&touchscreen_mutex);
-	if(TOUCH_IN_ACTIVE(0))
+	if (TOUCH_IN_ACTIVE(0))
 	{
 		ret = touchscreen_ops[0]->touch_type;
 	}
-	else if(TOUCH_IN_ACTIVE(1))
+	else if (TOUCH_IN_ACTIVE(1))
 	{
 		ret = touchscreen_ops[1]->touch_type;
 	}
@@ -963,6 +963,32 @@ static ssize_t  touchscreen_gesture_wakeup_show(struct device *dev,struct device
 	return sprintf(buf, "%s\n",gesture);
 }
 
+static ssize_t  touchscreen_gesture_ctrl_show(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	char gesture[64]={0};
+
+	if(buf==NULL)
+	{
+		printk("BJ_BSP_Driver:CP_Touchscreen:buf is NULL!\n");
+		return -ENOMEM;
+	}
+
+	mutex_lock(&touchscreen_mutex);
+	if(TOUCH_IN_ACTIVE(0))
+	{
+		if(touchscreen_ops[0]->get_gesture_ctrl)
+			touchscreen_ops[0]->get_gesture_ctrl(gesture);
+	}
+	else if(TOUCH_IN_ACTIVE(1))
+	{
+		if(touchscreen_ops[1]->get_gesture_ctrl)
+			touchscreen_ops[1]->get_gesture_ctrl(gesture);
+	}
+	mutex_unlock(&touchscreen_mutex);
+
+	return sprintf(buf, "%s\n", gesture);
+}
+
 static ssize_t  touchscreen_gesture_ctrl_store(struct device *dev,struct device_attribute *attr, const char *buf, size_t count)
 {
 	int ret = 0;
@@ -1054,7 +1080,7 @@ static DEVICE_ATTR(debug, 0224, NULL, touchscreen_debug_store);
 //static DEVICE_ATTR(get_rawdata, 0664, ft5x0x_rawdata_show, ft5x0x_rawdata_store);//add by Yun
 static DEVICE_ATTR(vendor, 0444, touchscreen_vendor_show, NULL);
 static DEVICE_ATTR(gesture_wakeup, 0444, touchscreen_gesture_wakeup_show, NULL);
-static DEVICE_ATTR(gesture_ctrl, 0220, NULL, touchscreen_gesture_ctrl_store);
+static DEVICE_ATTR(gesture_ctrl, 0664, touchscreen_gesture_ctrl_show, touchscreen_gesture_ctrl_store);
 static DEVICE_ATTR(charger_state, 0664, touchscreen_charger_state_show, touchscreen_charger_state_store);
 
 static const struct attribute *touchscreen_attrs[] = {
