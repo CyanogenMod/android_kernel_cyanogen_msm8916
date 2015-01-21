@@ -150,8 +150,8 @@ static void dump_registers(struct ncp6335d_info *dd,
 		ncp6335x_write(dd, reg, val);
 		ncp6335x_read(dd, reg, &val);
 		pr_err("yulong:NCP6335D reg 0x%x modify to 0x%x\n", reg, val);
-#endif
 	}
+#endif
 }
 
 static void ncp633d_slew_delay(struct ncp6335d_info *dd,
