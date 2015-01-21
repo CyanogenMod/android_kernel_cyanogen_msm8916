@@ -1872,6 +1872,25 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 		bpp = 4;
 		break;
 
+	case MDP_BGRA_8888:
+		fix->type = FB_TYPE_PACKED_PIXELS;
+		fix->xpanstep = 1;
+		fix->ypanstep = 1;
+		var->vmode = FB_VMODE_NONINTERLACED;
+		var->blue.offset = 0;
+		var->green.offset = 8;
+		var->red.offset = 16;
+		var->blue.length = 8;
+		var->green.length = 8;
+		var->red.length = 8;
+		var->blue.msb_right = 0;
+		var->green.msb_right = 0;
+		var->red.msb_right = 0;
+		var->transp.offset = 24;
+		var->transp.length = 8;
+		bpp = 4;
+		break;
+
 	case MDP_YCRYCB_H2V1:
 		fix->type = FB_TYPE_INTERLEAVED_PLANES;
 		fix->xpanstep = 2;
