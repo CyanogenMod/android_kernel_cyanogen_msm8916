@@ -382,6 +382,52 @@
 	};
 };
 
+&i2c_3 {
+
+	wm8998@1a {
+		compatible = "wlf,wm8998";
+		reg = <0x1a>;
+		wlf,clk-src = "BBCLK2";
+		wlf,clk-gpio = <&pm8916_gpios 2 0>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <9 0x2008>;
+		wlf,irq = <&msm_gpio 9 0x2008>;
+		wlf,reset = <&msm_gpio 16 0>;
+		wlf,irq_base = <700>;
+		AVDD-supply = <&pm8916_l6>;
+		wlf,AVDD-voltage = <1800000 1800000>;
+		wlf,AVDD-current = <25000>;
+		DBVDD1-supply = <&pm8916_l6>;
+		wlf,DBVDD1-voltage = <1800000 1800000>;
+		wlf,DBVDD1-current = <25000>;
+		DBVDD2-supply = <&pm8916_l6>;
+		wlf,DBVDD2-voltage = <1800000 1800000>;
+		wlf,DBVDD2-current = <25000>;
+		DBVDD3-supply = <&pm8916_l6>;
+		wlf,DBVDD3-voltage = <1800000 1800000>;
+		wlf,DBVDD3-current = <25000>;
+		CPVDD-supply = <&pm8916_l6>;
+		wlf,CPVDD-voltage = <1800000 1800000>;
+		wlf,CPVDD-current = <25000>;
+		SPKVDDL-supply = <&pm8916_l6>;
+		wlf,SPKVDDL-voltage = <1800000 1800000>;
+		wlf,SPKVDDL-current = <25000>;
+		SPKVDDR-supply = <&pm8916_l6>;
+		wlf,SPKVDDR-voltage = <1800000 1800000>;
+		wlf,SPKVDDR-current = <25000>;
+		wlf,clk32k_src = <2>;
+		wlf,micd_bias_start_time = <7>;
+		wlf,infinite_micd = <1>;
+		wlf,micd-rate = <6>;
+		wlf,micd-configs = <0x0000 2 1>;
+		wlf,micd-detect-debounce = <500>;
+		wlf,inmode = <0 0 0>;
+		wlf,micbias1 = <2200 1 1 0 1>;
+		wlf,micbias2 = <2200 1 1 0 1>;
+		wlf,micbias3 = <2200 1 1 0 1>;
+	 };
+};
+
 &sdhc_2 {
 	interrupts = <0 1>;
 	interrupt-map = <0 &intc 0 125 0
