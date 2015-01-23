@@ -1066,6 +1066,13 @@ static int smb1360_get_prop_batt_capacity(struct smb1360_chip *chip)
 	pr_debug("msys_soc_reg=0x%02x, fg_soc=%d batt_full = %d\n", reg,
 						soc, chip->batt_full);
 
+#ifdef CONFIG_MACH_T86519A1
+	if (soc == 100 && chip->batt_full == 0)
+		chip->batt_full = 1;
+	else if (soc < 100 && chip->batt_full == 1)
+		chip->batt_full = 0;
+#endif
+
 	chip->soc_now = (chip->batt_full ? 100 : bound(soc, 0, 100));
 
 	return chip->soc_now;
@@ -4560,6 +4567,10 @@ static int smb1360_resume(struct device *dev)
 	int i, rc;
 	struct i2c_client *client = to_i2c_client(dev);
 	struct smb1360_chip *chip = i2c_get_clientdata(client);
+
+#ifdef CONFIG_MACH_T86519A1
+	power_supply_changed(&chip->batt_psy);
+#endif
 
 	/* Restore the IRQ config */
 	for (i = 0; i < 3; i++) {
