@@ -1235,12 +1235,16 @@ static int ap3426_init_client(struct i2c_client *client)
     struct ap3426_data *data = i2c_get_clientdata(client);
     int i;
 
+    i2c_smbus_write_byte_data(client, 0x02, 0x80);
+
+
     LDBG("DEBUG ap3426_init_client..\n");
 		/*lsensor high low thread*/
     i2c_smbus_write_byte_data(client, 0x1A, 0);
     i2c_smbus_write_byte_data(client, 0x1B, 0);
-    i2c_smbus_write_byte_data(client, 0x1C, 0);
-    i2c_smbus_write_byte_data(client, 0x1D, 0);
+
+    i2c_smbus_write_byte_data(client, 0x1C, 0xFF);
+    i2c_smbus_write_byte_data(client, 0x1D, 0XFF);
 		/*psensor high low thread*/
 	//low
     i2c_smbus_write_byte_data(client, 0x2A, 0x50);
@@ -1313,7 +1317,7 @@ static void lsensor_work_handler(struct work_struct *w)
 	container_of(w, struct ap3426_data, lsensor_work);
     int value;
     value = ap3426_get_adc_value(data->client);
-    input_report_abs(data->lsensor_input_dev, ABS_MISC, value * 30);
+    input_report_abs(data->lsensor_input_dev, ABS_MISC, value);
     input_sync(data->lsensor_input_dev);
 }
 
