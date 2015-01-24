@@ -101,6 +101,8 @@ MOUNT OPTIONS
 background_gc_off      Turn off cleaning operations, namely garbage collection,
 		       triggered in background when I/O subsystem is idle.
 disable_roll_forward   Disable the roll-forward recovery routine
+norecovery             Disable the roll-forward recovery routine, mounted read-
+                       only (i.e., -o ro,disable_roll_forward)
 discard                Issue discard/TRIM commands when a segment is cleaned.
 no_heap                Disable heap-style segment allocation which finds free
                        segments for data from the beginning of main area, while
