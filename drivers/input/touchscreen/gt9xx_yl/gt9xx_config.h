@@ -25,9 +25,7 @@ const char * TW_IC_PREFIX_NAME = "GT9158";
 
 #define GUP_USE_HEADER_FILE   0
 
-//[YULONG BEGIN] Disable gesture ctrl fuction by litao3@yulong.com on 2015-01-04
-#define GTP_SLIDE_WAKEUP      0
-//[YULONG END]
+#define GTP_SLIDE_WAKEUP      1
 
 #define GTP_DBL_CLK_WAKEUP    0
 #define YL_COVER_SWITCH_FUNC  0
