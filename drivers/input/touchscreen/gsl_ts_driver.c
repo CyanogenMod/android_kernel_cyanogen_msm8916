@@ -2027,7 +2027,9 @@ static ssize_t gsl_test_show(void)
 		printk(" kzalloc  kernel  fail\n");
 		return 0;
 		}
+	printk("why=========%s::begin\n",__func__);
 	err = gsl_tp_module_test(tmp_buf,3*1024);
+	printk("why=========%s::end\n",__func__);
 
 	printk("enter gsl_test_show end\n");
 	if(err > 0){
@@ -2060,7 +2062,7 @@ static s32 gsl_openshort_proc_read(struct file *file, char __user *buf,size_t co
 	*ppos += count;
 
 	test_result = gsl_test_show();
-	test_result = 1;
+	//test_result = 1;
 
 	if(1 == test_result)
 	{
