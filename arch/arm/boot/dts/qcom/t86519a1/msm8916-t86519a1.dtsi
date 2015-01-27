@@ -192,10 +192,10 @@
 			"INT_LDO_H", "MCLK",
 			"MIC BIAS Internal1", "Handset Mic",
 			"MIC BIAS Internal2", "Headset Mic",
-			"MIC BIAS Internal1", "Secondary Mic",
+			"MIC BIAS Internal3", "Secondary Mic",
 			"AMIC1", "MIC BIAS Internal1",
 			"AMIC2", "MIC BIAS Internal2",
-			"AMIC3", "MIC BIAS Internal1",
+			"AMIC3", "MIC BIAS Internal3",
 			"Headphones", "HPOUTL",
 			"Headphones", "HPOUTR";
 		pinctrl-names = "cdc_lines_act",
