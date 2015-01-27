@@ -77,6 +77,7 @@ static unsigned int drv_key;
 static unsigned int sen_key;
 static unsigned int sen_scan_num;
 static unsigned int sen_order[24];
+static unsigned int ic_addr;
 
 //static unsigned int dac_able = 0x00;	//dac_able
 static unsigned int dac_sen_num = 0x0;; //dac_sen_num
@@ -149,7 +150,7 @@ static Judge_Rule Test_Rule={
 	//dac
 	{
 		{{95,95,95,95},	  //up	
-			{65,65,65,65}}  //low	
+			{30,30,30,30}}  //low	
 		,
 		{{4,3,2,1},	  //up	
 			{0,0,0,0}}      //low	
@@ -312,6 +313,8 @@ static int InitGather(void)//初始化的函数，读出行列数。
 	gsl_I2C_RTotal_Address(CONF_PAGE_2680(2)*0x80+0x7c,&sen_key);
 	gsl_I2C_RTotal_Address(CONF_PAGE_2680(4)*0x80+0x7c,&sen_scan_num);
 	gsl_I2C_RTotal_Address(CONF_PAGE_2680(1)*0X80+0X7C,&dac_sen_num);
+	gsl_I2C_RTotal_Address(0xff050080,&ic_addr);
+	printk("why====ic_addr: ===0x%04x::\n",ic_addr);
 	for(i=0;i<6;i++)
 		gsl_I2C_RTotal_Address(CONF_PAGE_2680(3)*0x80+i*4,&data.data_int[i]);
 		//data_int[i] = ReadCPU(CONF_PAGE_2680(3),i*4);
@@ -416,15 +419,15 @@ static void ReadFrame(void)//
 	{
 		if(read_type == GATHER_DATA_BASE)
 		{
-			ReadDataShort(0x5580 + ori_frame*26*14*2);
+			ReadDataShort(ic_addr + ori_frame*26*14*2);
 		}
 		else if(read_type == GATHER_DATA_REFE)
 		{	
-			ReadDataShort(0x5580+26*14*2*2);
+			ReadDataShort(ic_addr+26*14*2*2);
 		}
 		else if(read_type == GATHER_DATA_SUB)
 		{
-			ReadDataInt(0x5580+26*14*2*4,16,TRUE);
+			ReadDataInt(ic_addr+26*14*2*4,16,TRUE);
 		}
 	}
 	else if(cpu_type == CPU_TYPE_968)
@@ -783,7 +786,7 @@ static unsigned char TestDac(char *str_result,int size)
 		{
 			if (dac_data[i][j] > Test_Rule.dac_limit[0].dac_up_limit[i]) 
 			{
-				//sprintf(up_dac_temp,"(%d,%d)",i,j);
+				printk("why======>>>>>>>>>>>%d::(%d,%d)\n",dac_data[i][j],i,j);
 				GSL_STRCAT(up_dac,up_dac_temp,1024);
 				memset(up_dac_temp,'\0',sizeof(up_dac_temp));
 				
@@ -792,7 +795,7 @@ static unsigned char TestDac(char *str_result,int size)
 			}
 			if (dac_data[i][j] < Test_Rule.dac_limit[0].dac_low_limit[i]) 
 			{
-				//sprintf(low_dac_temp,"(%d,%d)",i,j);
+				printk("why======<<<<<<<<<<%d::(%d,%d)\n",dac_data[i][j],i,j);
 				GSL_STRCAT(low_dac,low_dac_temp,1024);
 				memset(low_dac_temp,'\0',sizeof(low_dac_temp));
 
@@ -978,8 +981,11 @@ int gsl_tp_module_test(char *buf,int size)
 		return -1;
 	}
 	
+	printk("why====%s::111111111111\n",__func__);
 	ReadFrame();
+	printk("why====%s::222222222222\n",__func__);
 	DacRead();
+	printk("why====%s::333333333333\n",__func__);
 	
 	tmp1 = TestBase(buf,ret);
 	buf[ret-1] = '\0';
