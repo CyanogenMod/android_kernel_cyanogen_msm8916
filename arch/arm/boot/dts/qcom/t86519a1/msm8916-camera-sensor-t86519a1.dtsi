@@ -33,7 +33,7 @@
 	eeprom0: qcom,eeprom@6c {
 		cell-index = <3>;
 		reg = <0x6c>;
-		qcom,eeprom-name = "sunny_q8v18a";
+		qcom,eeprom-name = "sunny_q8v18a_t86519a1";
 		compatible = "qcom,eeprom";
 		qcom,slave-addr = <0x6c>;
 		qcom,cci-master = <0>;
