@@ -164,6 +164,7 @@ extern void gsl_DataInit(int *ret);
 extern unsigned int gsl_mask_tiaoping(void);
 extern int gsl_obtain_gesture(void);
 extern void gsl_FunIICRead(unsigned int (*fun) (unsigned int *,unsigned int,unsigned int));
+extern void gsl_GestureExternInt(unsigned int *model, int len);
 
 #endif
 

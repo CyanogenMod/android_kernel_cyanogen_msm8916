@@ -1688,7 +1688,7 @@ static void gsl_report_work(struct work_struct *work)
 				//input_report_key(tpd->dev,key_data,0);
 				input_report_key(idev,KEY_POWER,0);
 				input_sync(idev);
-                            msleep(300);
+                            msleep(50);
 			}
 			goto schedule;
 		}
@@ -1891,7 +1891,9 @@ static void gsl_ts_resume(void)
 	gsl_start_core(client);
 	msleep(20);
 	check_mem_data(client);
+#ifndef GSL_GESTURE
 	enable_irq(client->irq);
+#endif
 	
 #ifdef TPD_PROC_DEBUG
 	if(gsl_proc_flag == 1){
@@ -2233,6 +2235,7 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	/*gesture resume*/
 	#ifdef GSL_GESTURE
+		gsl_GestureExternInt(gsl_model_extern,sizeof(gsl_model_extern) / sizeof(unsigned int) / 18);
 		gsl_FunIICRead(gsl_read_oneframe_data);
 	#endif
 	
