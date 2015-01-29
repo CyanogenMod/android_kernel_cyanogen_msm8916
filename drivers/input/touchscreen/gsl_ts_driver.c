@@ -711,7 +711,7 @@ static void gsl_timer_check_func(struct work_struct *work)
 	u8 read_buf[4]  = {0};
 	char init_chip_flag = 0;
 
-	print_info("----------------gsl_monitor_worker------i2c_lock==d%-----------\n",i2c_lock_flag);	
+	print_info("----------------gsl_monitor_worker------i2c_lock==%d-----------\n",i2c_lock_flag);	
 
 	if(i2c_lock_flag != 0)
 		goto queue_monitor_work;
@@ -1057,7 +1057,7 @@ static ssize_t gsl_sysfs_version_show(struct device *dev,struct device_attribute
 #endif
 	buf_tmp[0]=0x3;buf_tmp[1]=0;buf_tmp[2]=0;buf_tmp[3]=0;
 	gsl_write_interface(ddata->client,0xf0,buf_tmp,4);
-	gsl_read_interface(ddata->client,0,buf_tmp,4);
+	gsl_read_interface(ddata->client,4,buf_tmp,4);
 	count += scnprintf(buf+count,PAGE_SIZE-count,"%02x%02x%02x%02x\n",
 		buf_tmp[3],buf_tmp[2],buf_tmp[1],buf_tmp[0]);
 
@@ -1335,7 +1335,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	gpio_set_value(GSL_RST_GPIO_NUM,0);
 	msleep(20);
 	gpio_set_value(GSL_RST_GPIO_NUM,1);
-	msleep(5);
+	msleep(20);
 	
 	buf[0] = 0xa;
 	buf[1] = 0;
@@ -1378,11 +1378,15 @@ static ssize_t gsl_sysfs_tpgesture_show(struct device *dev,
 static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
+	struct gsl_ts_data *ts = ddata;
+	struct i2c_client *gsl_client = ts->client;
 #if 1
 	if(buf[0] == '0'){
 		gsl_gesture_flag = 0;  
+		disable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '1'){
 		gsl_gesture_flag = 1;
+		enable_irq_wake(gsl_client->irq);
 	}
 #endif
 	return count;
@@ -1792,9 +1796,9 @@ static irqreturn_t gsl_ts_interrupt(int irq, void *dev_id)
 static void gsl_ts_suspend(void)
 {
 	u32 tmp;
-#ifndef GSL_GESTURE
+//#ifndef GSL_GESTURE
 	struct i2c_client *client = ddata->client;
-#endif
+//#endif
 	print_info("==gslX68X_ts_suspend=\n");
 	//version info
 	print_info("[tp-gsl]the last time of debug:%x\n",TPD_DEBUG_TIME);
@@ -1833,6 +1837,11 @@ static void gsl_ts_suspend(void)
 		if(gsl_gesture_flag == 1){
 			gsl_enter_doze(ddata);
 			return;
+		}
+		else
+		{
+			disable_irq_nosync(client->irq);
+			gpio_set_value(GSL_RST_GPIO_NUM, 0);		
 		}
 #endif
 
@@ -1875,25 +1884,21 @@ static void gsl_ts_resume(void)
 		if(gsl_gesture_flag == 1){
 			gsl_quit_doze(ddata);
 		}
-	#endif
-
-	gpio_set_value(GSL_RST_GPIO_NUM, 1);
-	msleep(20);
-	gsl_reset_core(client);
-
-	/*Gesture Resume*/
-	#ifdef GSL_GESTURE	
-		#ifdef GSL_ALG_ID
-			gsl_DataInit(gsl_config_data_id);
-		#endif
+		else
+		{
+			gpio_set_value(GSL_RST_GPIO_NUM, 1);
+			msleep(20);
+			enable_irq(client->irq);		
+		}
+	#else
+		gpio_set_value(GSL_RST_GPIO_NUM, 1);
+		msleep(20);
+		enable_irq(client->irq);
 	#endif
 	
+	gsl_reset_core(client);	
 	gsl_start_core(client);
-	msleep(20);
 	check_mem_data(client);
-#ifndef GSL_GESTURE
-	enable_irq(client->irq);
-#endif
 	
 #ifdef TPD_PROC_DEBUG
 	if(gsl_proc_flag == 1){
