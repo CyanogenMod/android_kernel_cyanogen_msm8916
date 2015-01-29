@@ -59,7 +59,7 @@
 #define GSL_PRESSURE				50
 
 /*debug of time*/
-#define TPD_DEBUG_TIME				0x20141209
+#define TPD_DEBUG_TIME				0x20150128
 
 /*define screen of resolution ratio*/
 #define GSL_MAX_X		720
