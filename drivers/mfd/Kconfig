@@ -1049,6 +1049,7 @@ config MFD_FLORIDA
 config MFD_VEGAS
 	bool "Support Wolfson Microelectronics Vegas"
 	depends on MFD_ARIZONA
+	select SND_SOC_VEGAS
 	help
 	  Support for Wolfson Microelectronics Vegas low power audio SoC
 
