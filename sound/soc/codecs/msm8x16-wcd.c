@@ -4319,11 +4319,14 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"MIC BIAS External2", NULL, "INT_LDO_H"},
 	{"MIC BIAS Internal1", NULL, "MICBIAS_REGULATOR"},
 	{"MIC BIAS Internal2", NULL, "MICBIAS_REGULATOR"},
-#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_SPIRIT)
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_SPIRIT) || defined(CONFIG_MACH_T86519A1)
 	{"MIC BIAS Internal3", NULL, "MICBIAS_REGULATOR"},
 #endif
 	{"MIC BIAS External", NULL, "MICBIAS_REGULATOR"},
 	{"MIC BIAS External2", NULL, "MICBIAS_REGULATOR"},
+#if defined(CONFIG_MACH_T86519A1)
+	{"MIC BIAS External3", NULL, "MICBIAS_REGULATOR"},
+#endif
 };
 
 static int msm8x16_wcd_startup(struct snd_pcm_substream *substream,

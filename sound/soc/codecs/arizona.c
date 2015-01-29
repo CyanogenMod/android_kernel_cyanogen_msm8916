@@ -812,8 +812,9 @@ int arizona_init_gpio(struct snd_soc_codec *codec)
 		break;
 	}
 
+#ifndef CONFIG_MACH_T86519A1
 	snd_soc_dapm_disable_pin(&codec->dapm, "DRC1 Signal Activity");
-
+#endif
 	for (i = 0; i < ARRAY_SIZE(arizona->pdata.gpio_defaults); i++) {
 		switch (arizona->pdata.gpio_defaults[i] & ARIZONA_GPN_FN_MASK) {
 		case ARIZONA_GP_FN_DRC1_SIGNAL_DETECT:
