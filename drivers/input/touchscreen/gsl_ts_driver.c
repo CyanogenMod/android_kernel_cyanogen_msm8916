@@ -1471,7 +1471,7 @@ static void gsl_report_point(struct input_dev *idev, struct gsl_touch_info *cinf
 		input_report_key(idev, BTN_TOUCH, 0);
 		//input_report_abs(idev, ABS_MT_TOUCH_MAJOR, 0);
 		//input_report_abs(idev, ABS_MT_WIDTH_MAJOR, 0);
-		//input_mt_sync(idev);
+		input_mt_sync(idev);
 	#endif
 	}
 
