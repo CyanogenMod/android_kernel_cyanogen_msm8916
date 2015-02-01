@@ -415,6 +415,7 @@ static void gtp_touch_up(struct goodix_ts_data* ts, s32 id)
     GTP_DEBUG("Touch id[%2d] release!", id);
 #else
     input_report_key(ts->input_dev, BTN_TOUCH, 0);
+    input_mt_sync(ts->input_dev);
 #endif
 }
 
@@ -507,6 +508,7 @@ static void gtp_pen_up(s32 id)
 #else
     
     input_report_key(ts->pen_dev, BTN_TOUCH, 0);
+    input_mt_sync(ts->input_dev);
 #endif
 
 }
