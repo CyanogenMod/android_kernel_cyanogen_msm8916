@@ -1287,7 +1287,9 @@ void pl_timer_callback(unsigned long pl_data)
     {
 	queue_work(data->lsensor_wq, &data->lsensor_work);
     }
-    ret = mod_timer(&private_pl_data->pl_timer, jiffies + msecs_to_jiffies(PL_TIMER_DELAY));
+
+	if(1 == misc_ps_opened || 1 == misc_ls_opened) // add by zhaoxiaohan 150202,disable mod_timer when p/l sensor disabled
+    	ret = mod_timer(&private_pl_data->pl_timer, jiffies + msecs_to_jiffies(PL_TIMER_DELAY));
 
     if(ret) 
     {
