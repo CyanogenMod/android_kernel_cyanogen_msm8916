@@ -1247,11 +1247,10 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 	}
 
 #ifdef CONFIG_MACH_YULONG
-    if (msm_sensor_is_probed(sensor_board_info->sensor_info->position)) {
+	if (msm_sensor_is_probed(sensor_board_info->sensor_info->position)) {
 		CDBG("current sensor is already probed\n");
-
 		for (index = 0; index < ctrl->gpio_conf->cam_gpio_req_tbl_size; index++) {
-			CDBG("current gpio lable is :%s\n",
+			CDBG("current gpio label is :%s\n",
 				ctrl->gpio_conf->cam_gpio_req_tbl[index].label);
 			if (!strcmp(ctrl->gpio_conf->cam_gpio_req_tbl[index].label,"CAMIF_MCLK")) {
 				CDBG("request mclk gpio\n");
@@ -1611,18 +1610,22 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
 	}
 	ctrl->cam_pinctrl_status = 0;
 #ifdef CONFIG_MACH_YULONG
-	CDBG("current sensor use system power,so do not release gpios,just release mclk gpio\n");
-	for (index = 0; index < ctrl->gpio_conf->cam_gpio_req_tbl_size; index++) {
-		CDBG("current gpio lable is :%s\n",ctrl->gpio_conf->cam_gpio_req_tbl[index].label);
-		if (!strcmp(ctrl->gpio_conf->cam_gpio_req_tbl[index].label,"CAMIF_MCLK")) {
-			CDBG("release mclk gpio\n");
-			gpio_free(ctrl->gpio_conf->cam_gpio_req_tbl[index].gpio);
+	if (msm_sensor_is_probed(sensor_board_info->sensor_info->position)) {
+		CDBG("current sensor use system power,so do not release gpios,just release mclk gpio\n");
+		for (index = 0; index < ctrl->gpio_conf->cam_gpio_req_tbl_size; index++) {
+			CDBG("current gpio label is :%s\n",ctrl->gpio_conf->cam_gpio_req_tbl[index].label);
+			if (!strcmp(ctrl->gpio_conf->cam_gpio_req_tbl[index].label,"CAMIF_MCLK")) {
+				CDBG("release mclk gpio\n");
+				gpio_free(ctrl->gpio_conf->cam_gpio_req_tbl[index].gpio);
+			}
 		}
-	}
-#else
+	} else {
+#endif
 	msm_camera_request_gpio_table(
 		ctrl->gpio_conf->cam_gpio_req_tbl,
 		ctrl->gpio_conf->cam_gpio_req_tbl_size, 0);
+#ifdef CONFIG_MACH_YULONG
+	}
 #endif
 	CDBG("%s exit\n", __func__);
 	return 0;
