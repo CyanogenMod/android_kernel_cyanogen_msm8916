@@ -44,9 +44,9 @@
 #include <linux/sensors/sensparams.h>
 
 #define MPU_DEVICE_NAME "mpu6880"
-#define MPU6880_POLL_INTERVAL                  100
-#define MPU6880_POLL_INTERVAL_MIN       5
-#define MPU6880_POLL_INTERVAL_MAX   500
+#define MPU6880_POLL_INTERVAL                  200
+#define MPU6880_POLL_INTERVAL_MIN       1
+#define MPU6880_POLL_INTERVAL_MAX   5000
 #define MPU6880_CAPTURE_TIMES           100
 #define MPU6880_ACCEL_SENSITIVE     -16384
 #define CAL_CONVERT 16384
@@ -835,11 +835,16 @@ static void mpu6880_read_sensors_data(struct mpu6880_device *device)
 static void mpu6880_report_value(struct mpu6880_device *device)
 {
     struct mpu6880_device *dev = device;
+    ktime_t timestamp;
+
+    timestamp = ktime_get();
 
     if (dev->accel_status) {
         input_report_abs(dev->input_dev->input,ABS_X,   dev->accel_data[0]-dev->accel_offset[0]);
         input_report_abs(dev->input_dev->input, ABS_Y,  dev->accel_data[1]-dev->accel_offset[1]);
         input_report_abs(dev->input_dev->input,ABS_Z,  dev->accel_data[2]-dev->accel_offset[2]);
+        input_event(dev->input_dev->input, EV_SYN, SYN_TIME_SEC, ktime_to_timespec(timestamp).tv_sec);
+        input_event(dev->input_dev->input, EV_SYN, SYN_TIME_NSEC, ktime_to_timespec(timestamp).tv_nsec);
         input_sync(dev->input_dev->input);
     }
 
@@ -847,6 +852,8 @@ static void mpu6880_report_value(struct mpu6880_device *device)
         input_report_abs(dev->input_dev->input,ABS_RX, dev->gyro_data[0]-dev->gyro_offset[0]);
         input_report_abs(dev->input_dev->input, ABS_RY, dev->gyro_data[1]-dev->gyro_offset[1]);
         input_report_abs(dev->input_dev->input,ABS_RZ, dev->gyro_data[2]-dev->gyro_offset[2]);
+        input_event(dev->input_dev->input, EV_SYN, SYN_TIME_SEC, ktime_to_timespec(timestamp).tv_sec);
+        input_event(dev->input_dev->input, EV_SYN, SYN_TIME_NSEC, ktime_to_timespec(timestamp).tv_nsec);
         input_sync(dev->input_dev->input);
     }
 }
