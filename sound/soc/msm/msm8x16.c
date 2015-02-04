@@ -43,7 +43,6 @@
 #define MSM_WM8998_SYS_CLK_FREQ ( 48000 * 512 * 2 )
 static struct snd_soc_codec *wm8998;
 static int previous_bias_level = SND_SOC_BIAS_OFF;
-extern int msm8x16_quat_mi2s_clocks(bool enable);
 #endif
 
 #define SAMPLING_RATE_48KHZ 48000
@@ -81,14 +80,6 @@ static int msm8909_auxpcm_rate = 8000;
 
 static atomic_t quat_mi2s_clk_ref;
 static atomic_t auxpcm_mi2s_clk_ref;
-
-#ifdef CONFIG_MACH_T86519A1
-static int quatmi2s_clk_get(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol);
-
-static int quatmi2s_clk_put(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol);
-#endif
 
 static int msm8x16_enable_codec_ext_clk(struct snd_soc_codec *codec, int enable,
 					bool dapm);
@@ -906,16 +897,6 @@ static int msm8x16_enable_codec_ext_clk_wm8998(struct snd_soc_codec *codec,
 				pr_err("Couldn't get wm_mclk clock\n");
 				return PTR_ERR(wm_clk);
 			}
-			/* Enable IRIS XO */
-			rc = clk_prepare_enable(wm_clk);
-			if (rc) {
-				pr_err("clk enable failed\n");
-				goto fail;
-			}
-
-			clk_disable_unprepare(wm_clk);
-
-			mdelay(50);
 
 			rc = clk_prepare_enable(wm_clk);
 			if (rc) {
@@ -928,6 +909,8 @@ static int msm8x16_enable_codec_ext_clk_wm8998(struct snd_soc_codec *codec,
 	} else {
 		if (wm_clk != NULL) {
 			clk_disable_unprepare(wm_clk);
+			clk_put(wm_clk);
+			wm_clk = NULL;
 		}
 	}
 	return rc;
@@ -1035,10 +1018,6 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 		     msm_btsco_rate_get, msm_btsco_rate_put),
 	SOC_ENUM_EXT("MI2S_RX SampleRate", msm_snd_enum[3],
 			mi2s_rx_sample_rate_get, mi2s_rx_sample_rate_put),
-#ifdef CONFIG_MACH_T86519A1
-	SOC_ENUM_EXT("QUATMI2S CLK", msm_snd_enum[4],
-			quatmi2s_clk_get, quatmi2s_clk_put),
-#endif
 };
 
 static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
@@ -1356,67 +1335,6 @@ static int conf_int_codec_mux_quat(struct msm8916_asoc_mach_data *pdata)
 	iowrite32(val, vaddr);
 	return 0;
 }
-
-#ifdef CONFIG_MACH_T86519A1
-static int quatmi2s_clk_get(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] = atomic_read(&quat_mi2s_clk_ref);
-	return 0;
-}
-
-static int quatmi2s_clk_put(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	int ret = -EINVAL;
-	struct msm8916_asoc_mach_data *pdata = NULL;
-	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-
-	pdata = snd_soc_card_get_drvdata(codec->card);
-	pr_debug("%s: enter\n", __func__);
-	switch (ucontrol->value.integer.value[0]) {
-	case 1:
-		if (atomic_read(&quat_mi2s_clk_ref) == 0) {
-			pr_debug("enter>>>%s, quat_mi2s_clk_ref = %d\n", __func__,
-				atomic_read(&quat_mi2s_clk_ref));
-			ret = conf_int_codec_mux_quat(pdata);
-			if (ret < 0) {
-				return ret;
-			}
-			pinctrl_select_state(pinctrl_info.pinctrl,pinctrl_info.cdc_lines_act);
-			mi2s_rx_clk.clk_val1 = Q6AFE_LPASS_IBIT_CLK_1_P536_MHZ;
-
-			ret = afe_set_lpass_clock(AFE_PORT_ID_QUATERNARY_MI2S_RX, &mi2s_rx_clk);
-			if (ret < 0) {
-				pr_err("%s: afe_set_lpass_clock failed\n", __func__);
-				return ret;
-			}
-			msm8x16_quat_mi2s_clocks(1);
-		}
-		ret = 0;
-		break;
-	case 0:
-		if (atomic_read(&quat_mi2s_clk_ref) == 0) {
-			pr_debug("enter>>>%s, quat_mi2s_clk_ref = %d\n", __func__,
-				atomic_read(&quat_mi2s_clk_ref));
-			msm8x16_quat_mi2s_clocks(0);
-			mi2s_rx_clk.clk_val1 = Q6AFE_LPASS_IBIT_CLK_DISABLE;
-			ret = afe_set_lpass_clock(AFE_PORT_ID_QUATERNARY_MI2S_RX, &mi2s_rx_clk);
-			if (ret < 0) {
-				pr_err("%s: afe_set_lpass_clock failed\n", __func__);
-				return ret;
-			}
-		}
-		ret = 0;
-		break;
-	default:
-		pr_err("%s: Unexpected input value\n", __func__);
-		break;
-	}
-	pr_debug("%s: leave\n", __func__);
-	return ret;
-}
-#endif
 
 static int msm_quat_mi2s_snd_startup(struct snd_pcm_substream *substream)
 {
