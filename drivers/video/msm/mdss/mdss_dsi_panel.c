@@ -35,6 +35,11 @@
 
 #define MIN_REFRESH_RATE 30
 
+#ifdef CONFIG_MACH_T86519A1
+#define TPS65132_GPIO_POS_EN 902
+#define TPS65132_GPIO_NEG_EN 903
+#endif
+
 DEFINE_LED_TRIGGER(bl_led_trigger);
 
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
@@ -648,6 +653,11 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_MACH_T86519A1
+	gpio_set_value(TPS65132_GPIO_POS_EN, 1);
+	gpio_set_value(TPS65132_GPIO_NEG_EN, 1);
+#endif
+
 	pinfo = &pdata->panel_info;
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
@@ -679,6 +689,11 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 		pr_err("%s: Invalid input data\n", __func__);
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_MACH_T86519A1
+	gpio_set_value(TPS65132_GPIO_POS_EN, 0);
+	gpio_set_value(TPS65132_GPIO_NEG_EN, 0);
+#endif
 
 	pinfo = &pdata->panel_info;
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
