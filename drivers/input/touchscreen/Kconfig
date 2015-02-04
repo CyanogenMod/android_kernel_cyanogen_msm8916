@@ -1112,6 +1112,22 @@ config TOUCHSCREEN_BU21150
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_MSG2XXX
+	bool "Mstar msg2xxx touchpanel"
+	depends on I2C
+	help
+	 Say Y here if you have a Mstar Msg2XXX touchscreen.
+	 Msg2XXX controllers are multi touch controllers which can
+	 report 2 or 5 touches at a time.
+
+	 If unsure, say N.
+
+config TOUCHSCREEN_PROXIMITY_SENSOR
+	tristate "Touchscreen proximity support"
+	default n
+	help
+	 select for proximity sensor support.
+
 config INPUT_MT_WRAPPER
 	tristate "Input Multitouch Wrapper"
 	help
