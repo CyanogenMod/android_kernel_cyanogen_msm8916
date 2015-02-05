@@ -39,7 +39,7 @@
 
 	qcom,camera@21 {
 		cell-index = <0>;
-		compatible = "qcom,imx135";
+		compatible = "qcom,imx135", "qcom,camera";
 		reg = <0x21>;
 		qcom,slave-id = <0x20 0x0016 0x135>;
 		qcom,csiphy-sd-index = <0>;
@@ -79,32 +79,6 @@
 			"CAM_VANA",
 			"CAM_VDIG",
 			"CAM_AF_PWDM";
-		qcom,cam-power-seq-type = "sensor_gpio",
-			"sensor_gpio",
-			"sensor_gpio",
-			"sensor_gpio",
-			"sensor_vreg",
-			"sensor_gpio",
-			"sensor_gpio",
-			"sensor_vreg",
-			"sensor_gpio",
-			"sensor_gpio",
-			"sensor_clk",
-			"sensor_i2c_mux";
-		qcom,cam-power-seq-val = "sensor_gpio_standby",
-			"sensor_gpio_af_pwdm",
-			"sensor_gpio_vana",
-			"sensor_gpio_vdig",
-			"cam_vio",
-			"sensor_gpio_vana",
-			"sensor_gpio_vdig",
-			"cam_vaf",
-			"sensor_gpio_standby",
-			"sensor_gpio_af_pwdm",
-			"sensor_cam_mclk",
-			"none";
-		qcom,cam-power-seq-cfg-val = <0 0 0 0 0 1 1 0 1 1 24000000 0>;
-		qcom,cam-power-seq-delay = <5 5 5 5 5 5 5 5 5 5 5 5>;
 		qcom,csi-lane-assign = <0x4320>;
 		qcom,csi-lane-mask = <0x1f>;
 		qcom,sensor-position = <0>;
@@ -118,7 +92,7 @@
 
 	qcom,camera@22 {
 		cell-index = <0>;
-		compatible = "qcom,imx214";
+		compatible = "qcom,imx214", "qcom,camera";
 		reg = <0x20>;
 		qcom,slave-id = <0x20 0x0016 0x0214>;
 		qcom,csiphy-sd-index = <0>;
@@ -169,7 +143,7 @@
 
 	qcom,camera@6c {
 		cell-index = <1>;
-		compatible = "ovti,ov5648";
+		compatible = "ovti,ov5648", "qcom,camera";
 		reg = <0x6c>;
 		qcom,slave-id = <0x6c 0x300a 0x5648>;
 		qcom,csiphy-sd-index = <1>;
@@ -201,24 +175,6 @@
 			"CAM_RESET",
 			"CAM_STANDBY",
 			"CAM_VANA";
-		qcom,cam-power-seq-type = "sensor_gpio",
-			"sensor_gpio",
-			"sensor_vreg",
-			"sensor_gpio",
-			"sensor_gpio",
-			"sensor_gpio",
-			"sensor_clk",
-			"sensor_i2c_mux";
-		qcom,cam-power-seq-val = "sensor_gpio_reset",
-			"sensor_gpio_standby",
-			"cam_vio",
-			"sensor_gpio_vana",
-			"sensor_gpio_standby",
-			"sensor_gpio_reset",
-			"sensor_cam_mclk",
-			"none";
-		qcom,cam-power-seq-cfg-val = <0 0 0 1 1 1 24000000 0>;
-		qcom,cam-power-seq-delay = <5 5 5 5 5 5 10 5>;
 		qcom,csi-lane-assign = <0x4320>;
 		qcom,csi-lane-mask = <0x07>;
 		qcom,sensor-position = <1>;
