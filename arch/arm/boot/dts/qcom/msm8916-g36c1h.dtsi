@@ -28,7 +28,7 @@
 
 	sound {
 		compatible = "qcom,msm8x16-audio-codec";
-		qcom,model = "msm8x16-skui-snd-card";
+		qcom,model = "msm8x16-rendang-snd-card";
 		qcom,msm-snd-card-id = <0>;
 		qcom,msm-ext-pa = "primary";
 		qcom,msm-codec-type = "internal";
