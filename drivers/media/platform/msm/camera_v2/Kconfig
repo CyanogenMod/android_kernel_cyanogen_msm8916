@@ -120,15 +120,6 @@ config IMX134
 		HFR @60fps and @120fps,
 		Video HDR support.
 
-config IMX135
-	bool "Sensor IMX135 (BAYER 13M)"
-	depends on MSMB_CAMERA
-	---help---
-		Sony 13 MP Bayer Sensor with auto focus, uses
-		4 mipi lanes full resolution @30fps and
-		HFR @60fps and @120fps,
-		Video HDR support.
-
 config IMX132
 	bool "Sensor IMX132 (BAYER 2M)"
 	depends on MSMB_CAMERA
