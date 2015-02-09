@@ -771,18 +771,16 @@ static void goodix_ts_work_func(struct work_struct *work)
     key_value = point_data[3 + 8 * touch_num];
 //	input_report_key(ts->input_dev, BTN_TOUCH, (touch_num || key_value));
 
-    if(key_value || pre_key)
+    if (atomic_read(&gt_keypad_enable) && (key_value || pre_key))
     {
         for (i = 0; i < GTP_MAX_KEY_NUM; i++)
         {
-		if (atomic_read(&gt_keypad_enable)) {
             input_report_key(ts->input_dev, touch_key_array[i], key_value & (0x01<<i));
 			GTP_DEBUG("input_report_key:%d, touch_key_arr:%d\n", i, touch_key_array[i]);
 				#ifdef YL_TW_DEBUG
 					if (key_value & (0x01<<i))
 					GTP_INFO("%s KEY press.", key_name[i]);
 				#endif
-		}
         }
         touch_num = 0;
         pre_touch = 0;
