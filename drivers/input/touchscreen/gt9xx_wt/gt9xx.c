@@ -1682,6 +1682,14 @@ static s8 gtp_i2c_test(struct i2c_client *client)
     return ret;
 }
 
+static s8 gtp_release_io_port(struct goodix_ts_data *ts)
+{
+    GTP_DEBUG_FUNC();
+    GTP_GPIO_FREE(gtp_rst_gpio);
+    GTP_GPIO_FREE(gtp_int_gpio);
+    return 0;
+}
+
 /*******************************************************
 Function:
     Request gpio(INT & RST) ports.
@@ -1700,7 +1708,7 @@ static s8 gtp_request_io_port(struct goodix_ts_data *ts)
     if (ret < 0) 
     {
         GTP_ERROR("Failed to request GPIO:%d, ERRNO:%d", (s32)gtp_int_gpio, ret);
-        ret = -ENODEV;
+        return -ENODEV;
     }
     else
     {
@@ -1712,20 +1720,15 @@ static s8 gtp_request_io_port(struct goodix_ts_data *ts)
     if (ret < 0) 
     {
         GTP_ERROR("Failed to request GPIO:%d, ERRNO:%d",(s32)gtp_rst_gpio,ret);
-        ret = -ENODEV;
+        GTP_GPIO_FREE(gtp_int_gpio);
+        return -ENODEV;
     }
 
     GTP_GPIO_AS_INPUT(gtp_rst_gpio);
 
     gtp_reset_guitar(ts->client, 20);
-    
-    if(ret < 0)
-    {
-        GTP_GPIO_FREE(gtp_rst_gpio);
-        GTP_GPIO_FREE(gtp_int_gpio);
-    }
 
-    return ret;
+    return 0;
 }
 
 /*******************************************************
@@ -2328,47 +2331,26 @@ int gtp_parse_dt_cfg(struct device *dev, u8 *cfg, int *cfg_len, u8 sid)
  */
 static int gtp_power_switch(struct i2c_client *client, int on)
 {
-	static struct regulator *vdd_ana;
-	static struct regulator *vcc_i2c;
 	int ret;
-	
-	if (!vdd_ana) {
-		vdd_ana = regulator_get(&client->dev, "vdd");
-		if (IS_ERR(vdd_ana)) {
-			GTP_ERROR("regulator get of vdd_ana failed");
-			ret = PTR_ERR(vdd_ana);
-			vdd_ana = NULL;
+    struct goodix_ts_data *ts = i2c_get_clientdata(client);
+
+	if (regulator_count_voltages(ts->vdd_ana) > 0) {
+		ret = regulator_set_voltage(ts->vdd_ana, 2700000,
+				3300000);
+		if (ret) {
+			dev_err(&ts->client->dev,
+					"regulator set_vtg failed ret=%d\n", ret);
 			return ret;
 		}
 	}
 
-	if (!vcc_i2c) {
-		vcc_i2c = regulator_get(&client->dev, "vcc_i2c");
-		if (IS_ERR(vcc_i2c)) {
-			GTP_ERROR("regulator get of vcc_i2c failed");
-			ret = PTR_ERR(vcc_i2c);
-			vcc_i2c = NULL;
-			goto ERR_GET_VCC;
-		}
-	}
-
-	if (regulator_count_voltages(vdd_ana) > 0) {
-		ret = regulator_set_voltage(vdd_ana, 2700000,
-				3300000);
-		if (ret) {
-			dev_err(&client->dev,
-					"regulator set_vtg failed ret=%d\n", ret);
-			goto ERR_GET_VCC;
-		}
-	}
-
-	if (regulator_count_voltages(vcc_i2c) > 0) {
-		ret = regulator_set_voltage(vcc_i2c, 1800000,
+	if (regulator_count_voltages(ts->vcc_i2c) > 0) {
+		ret = regulator_set_voltage(ts->vcc_i2c, 1800000,
 				1800000);
 		if (ret) {
-			dev_err(&client->dev,
+			dev_err(&ts->client->dev,
 					"regulator set_vtg failed ret=%d\n", ret);
-			goto ERR_GET_VCC;
+			return ret;
 		}
 	}
 
@@ -2390,10 +2372,6 @@ static int gtp_power_switch(struct i2c_client *client, int on)
 
 
 
-	return ret;
-	
-ERR_GET_VCC:
-	regulator_put(vdd_ana);
 	return ret;
 }
 #endif
@@ -2434,6 +2412,23 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
         GTP_ERROR("Alloc GFP_KERNEL memory failed.");
         return -ENOMEM;
     }
+    i2c_set_clientdata(client, ts);
+
+    ts->vdd_ana = regulator_get(&client->dev, "vdd");
+    if (IS_ERR(ts->vdd_ana)) {
+        GTP_ERROR("regulator get of vdd_ana failed");
+        ret = PTR_ERR(ts->vdd_ana);
+        ts->vdd_ana = NULL;
+        goto exit_failed;
+    }
+
+    ts->vcc_i2c = regulator_get(&client->dev, "vcc_i2c");
+    if (IS_ERR(ts->vcc_i2c)) {
+        GTP_ERROR("regulator get of vcc_i2c failed");
+        ret = PTR_ERR(ts->vcc_i2c);
+        ts->vcc_i2c = NULL;
+        goto exit_vreg_failed;
+    }
 
 #ifdef GTP_CONFIG_OF	/* device tree support */
     if (client->dev.of_node) {
@@ -2442,7 +2437,7 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
     ret = gtp_power_switch(client, 1);
 	if (ret) {
 		GTP_ERROR("GTP power on failed.");
-		return -EINVAL;
+		goto exit_vreg_failed;
 	}
 #else			/* use gpio defined in gt9xx.h */
 	gtp_rst_gpio = GTP_RST_PORT;
@@ -2459,14 +2454,12 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
     spin_lock_init(&ts->esd_lock);
     // ts->esd_lock = SPIN_LOCK_UNLOCKED;
 #endif
-    i2c_set_clientdata(client, ts);   
     ts->gtp_rawdiff_mode = 0;
     ret = gtp_request_io_port(ts);
     if (ret < 0)
     {
         GTP_ERROR("GTP request IO port failed.");
-        kfree(ts);
-        return ret;
+        goto exit_vreg_failed;
     }
     
 #if GTP_COMPATIBLE_MODE
@@ -2477,6 +2470,7 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
         if (FAIL == ret)
         {
             GTP_INFO("Failed to init GT9XXF.");
+            goto exit_init_failed;
         }
     }
 #endif
@@ -2485,23 +2479,21 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
     if (ret < 0)
     {
         GTP_ERROR("I2C communication ERROR!");
-		return ret;
+        goto exit_init_failed;
     }
 
     ret = gtp_read_version(client, &version_info);
     if (ret < 0)
     {
         GTP_ERROR("Read version failed.");
-		return ret;
+        goto exit_init_failed;
     }
     
     ret = gtp_init_panel(ts);
     if (ret < 0)
     {
         GTP_ERROR("GTP init panel failed.");
-        ts->abs_x_max = GTP_MAX_WIDTH;
-        ts->abs_y_max = GTP_MAX_HEIGHT;
-        ts->int_trigger_type = GTP_INT_TRIGGER;
+        goto exit_init_failed;
     }
     
     // Create proc file system
@@ -2558,6 +2550,15 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
     init_wr_node(client);
 #endif
     return 0;
+
+exit_init_failed:
+    gtp_release_io_port(ts);
+exit_vreg_failed:
+    if (ts->vdd_ana) regulator_put(ts->vdd_ana);
+    if (ts->vcc_i2c) regulator_put(ts->vcc_i2c);
+exit_failed:
+    kfree(ts);
+    return ret;
 }
 
 

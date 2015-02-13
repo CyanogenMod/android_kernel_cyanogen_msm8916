@@ -105,6 +105,8 @@ struct goodix_ts_data {
     int  gtp_cfg_len;
     u8  fw_error;
     u8  pnl_init_error;
+    struct regulator *vdd_ana;
+    struct regulator *vcc_i2c;
 
 #if   defined(CONFIG_FB)
 	struct notifier_block notifier;
