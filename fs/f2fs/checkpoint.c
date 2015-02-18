@@ -74,7 +74,6 @@ repeat:
 		goto repeat;
 	}
 out:
-	mark_page_accessed(page);
 	return page;
 }
 

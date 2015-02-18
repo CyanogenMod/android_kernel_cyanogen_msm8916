@@ -81,7 +81,7 @@ static struct bio *__bio_alloc(struct f2fs_sb_info *sbi, block_t blk_addr,
 	bio = bio_alloc(GFP_NOIO, npages);
 
 	bio->bi_bdev = sbi->sb->s_bdev;
-	bio->bi_sector = SECTOR_FROM_BLOCK(blk_addr);
+	bio->bi_iter.bi_sector = SECTOR_FROM_BLOCK(blk_addr);
 	bio->bi_end_io = is_read ? f2fs_read_end_io : f2fs_write_end_io;
 	bio->bi_private = sbi;
 
@@ -927,7 +927,7 @@ static void f2fs_write_failed(struct address_space *mapping, loff_t to)
 	struct inode *inode = mapping->host;
 
 	if (to > inode->i_size) {
-		truncate_pagecache(inode, 0, inode->i_size);
+		truncate_pagecache(inode, inode->i_size);
 		truncate_blocks(inode, inode->i_size, true);
 	}
 }
@@ -1069,10 +1069,9 @@ static int f2fs_write_end(struct file *file,
 }
 
 static int check_direct_IO(struct inode *inode, int rw,
-		const struct iovec *iov, loff_t offset, unsigned long nr_segs)
+		struct iov_iter *iter, loff_t offset)
 {
 	unsigned blocksize_mask = inode->i_sb->s_blocksize - 1;
-	int i;
 
 	if (rw == READ)
 		return 0;
@@ -1080,20 +1079,19 @@ static int check_direct_IO(struct inode *inode, int rw,
 	if (offset & blocksize_mask)
 		return -EINVAL;
 
-	for (i = 0; i < nr_segs; i++)
-		if (iov[i].iov_len & blocksize_mask)
-			return -EINVAL;
+	if (iov_iter_alignment(iter) & blocksize_mask)
+		return -EINVAL;
+
 	return 0;
 }
 
 static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
-				const struct iovec *iov, loff_t offset,
-				unsigned long nr_segs)
+		struct iov_iter *iter, loff_t offset)
 {
 	struct file *file = iocb->ki_filp;
 	struct address_space *mapping = file->f_mapping;
 	struct inode *inode = mapping->host;
-	size_t count = iov_length(iov, nr_segs);
+	size_t count = iov_iter_count(iter);
 	int err;
 
 	/* we don't need to use inline_data strictly */
@@ -1103,13 +1101,12 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
 			return err;
 	}
 
-	if (check_direct_IO(inode, rw, iov, offset, nr_segs))
+	if (check_direct_IO(inode, rw, iter, offset))
 		return 0;
 
 	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
 
-	err = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
-							get_data_block);
+	err = blockdev_direct_IO(rw, iocb, inode, iter, offset, get_data_block);
 	if (err < 0 && (rw & WRITE))
 		f2fs_write_failed(mapping, offset + count);
 
@@ -1118,11 +1115,12 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
 	return err;
 }
 
-static void f2fs_invalidate_data_page(struct page *page, unsigned long offset)
+static void f2fs_invalidate_data_page(struct page *page, unsigned int offset,
+				      unsigned int length)
 {
 	struct inode *inode = page->mapping->host;
 
-	if (offset % PAGE_CACHE_SIZE)
+	if (offset % PAGE_CACHE_SIZE || length != PAGE_CACHE_SIZE)
 		return;
 
 	if (PageDirty(page))
