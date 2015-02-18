@@ -1,7 +1,9 @@
-# Yulong/Coolpad configuration options
+menu "Yulong/Coolpad specific drivers"
 
 config MACH_RENDANG_MSM8916
         bool "Rendang MSM8916"
         depends on ARCH_MSM8916
         help
           Support for Rendang 8916 device
+
+endmenu
