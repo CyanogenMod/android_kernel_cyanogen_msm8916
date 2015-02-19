@@ -35,7 +35,7 @@
 			qcom,fg-batt-capacity-mah = <2230>;
 			qcom,fg-cc-soc-coeff = <0x8359>;
 			qcom,fg-delta-soc = <1>;
-			qcom,fg-cutoff-voltage-mv = <3400>;
+			qcom,fg-cutoff-voltage-mv = <3300>;
 			qcom,fg-iterm-ma = <150>;
 			qcom,fg-ibatt-standby-ma = <200>;
 			qcom,fg-cc-to-cv-mv = <4350>;
