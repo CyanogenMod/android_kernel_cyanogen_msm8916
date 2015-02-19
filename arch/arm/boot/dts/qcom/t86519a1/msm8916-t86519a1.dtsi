@@ -204,7 +204,7 @@
 		qcom,msm-ext-pa = "quaternary";
 		qcom,msm-codec-type = "internal";
 		qcom,msm-mbhc-hphl-swh = <1>;
-		qcom,msm-mbhc-gnd-swh = <1>;
+		qcom,msm-mbhc-gnd-swh = <0>;
 		qcom,msm-hs-micbias-type = "internal";
 		qcom,audio-routing =
 			"RX_BIAS", "MCLK",
