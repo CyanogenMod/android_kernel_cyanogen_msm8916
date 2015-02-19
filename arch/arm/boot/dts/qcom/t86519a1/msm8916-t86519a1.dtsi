@@ -342,7 +342,7 @@
 
 	tps65132-en-pin {
 		qcom,pins = <&gp 1>, <&gp 0>;
-		qcom,num-grp-pins = <1>;
+		qcom,num-grp-pins = <2>;
 		label = "tps65132_en_pins";
 		qcom,pin-func = <0>;
 		tps65132_en_default: en-default {
