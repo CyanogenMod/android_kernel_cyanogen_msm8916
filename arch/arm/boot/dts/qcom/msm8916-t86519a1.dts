@@ -81,6 +81,12 @@
 };
 
 &spmi_bus {
+	qcom,pm8916@0 {
+		pm8916_leds {
+			status = "disabled";
+		};
+	};
+
 	qcom,pm8916@1 {
 		qcom,vibrator@c000 {
 			status = "okay";
