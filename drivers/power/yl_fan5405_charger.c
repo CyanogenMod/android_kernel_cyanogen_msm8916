@@ -1433,6 +1433,30 @@ static int fan5405_int_pinctrl_init(struct fan5405_chip *chip)
 	return 0;
 }
 
+int fan5405_enable_otg_mode(bool enable)
+{
+	int rc = 0;
+
+	if (this_chip == NULL) {
+		return 0;
+	}
+
+	//OPA:1 HZ:0   ==> boost mode
+	//OPA:0 HZ:0   ==> charge mode
+
+	fan5405_masked_write(this_chip, FAN5405_CONTROL1,
+			OPA_MODE_MASK, 1);
+	fan5405_masked_write(this_chip, FAN5405_CONTROL1,
+			HZ_MODE_MASK, 0);
+
+	rc = fan5405_masked_write(this_chip, FAN5405_OREG,
+				OTG_EN, enable ? 1 : 0);
+	if (rc < 0)
+		dev_err(this_chip->dev, "Couldn't %s OTG mode rc=%d\n",
+				enable ? "enable" : "disable", rc);
+	return rc;
+}
+
 #define FAN5405_IC_VENDER     0x04
 static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
