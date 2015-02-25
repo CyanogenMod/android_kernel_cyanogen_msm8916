@@ -1115,9 +1115,16 @@ static ssize_t pa12200001_store_ps_calibration(struct device *dev,
                 struct device_attribute *attr, const char *buf, size_t count)//csl modify 20140107
 {
     struct i2c_client *client = to_i2c_client(dev);//csl modify 20140107
-    ssize_t ret;
-    ret = pa12200001_run_calibration(client);
-    return ret;
+    int xtalk;
+    u8 prox_param[4];
+
+    xtalk = pa12200001_run_calibration(client);
+    prox_param[0] = xtalk;
+    prox_param[1] = this_data->pdata->pa12_ps_th_high;
+    prox_param[2] = this_data->pdata->pa12_ps_th_low;
+    prox_param[3] = this_data->crosstalk;
+    sensparams_write_to_flash(SENSPARAMS_TYPE_PROX, prox_param, 4);
+    return xtalk;
 }
 static ssize_t pa12200001_show_ps_calibration(struct device *dev,
                 struct device_attribute *attr, char *buf)//csl modify 20140107
