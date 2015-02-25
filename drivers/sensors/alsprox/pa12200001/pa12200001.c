@@ -654,7 +654,6 @@ static int pa12200001_fast_run_calibration(struct i2c_client *client)
     u16 sum_of_pdata = 0;
         u8 temp_pdata[4];//csl modify 20140107
     u8 cfg0data=0, cfg2data=0, cfg3data=0;
-    static int last_fast_cal = 0;
 
         int xtalk_data=0;
 
@@ -695,21 +694,14 @@ static int pa12200001_fast_run_calibration(struct i2c_client *client)
     if((xtalk_data>=data->crosstalk) && (xtalk_data < (data->crosstalk + this_data->pdata->pa12_fast_cal_tolerance))){    //Max Value is 150,and must be grater than x-talk cal value
         APS_LOG("%s: sum_of_pdata = %d   cross_talk = %d\n",
                         __func__, sum_of_pdata, xtalk_data);
-        last_fast_cal = xtalk_data;
         /*Write offset value to 0x10*/
          mutex_lock(&data->lock);
         i2c_write_reg(client, REG_PS_OFFSET,xtalk_data);
-
          mutex_unlock(&data->lock);
     }else{
         APS_LOG("%s: invalid calibrated data\n", __func__);
          mutex_lock(&data->lock);
-         if (last_fast_cal == 0) {
-             i2c_write_reg(client, REG_PS_OFFSET,
-                     data->crosstalk + (this_data->pdata->pa12_fast_cal_tolerance / 2));
-         } else {
-             i2c_write_reg(client, REG_PS_OFFSET, last_fast_cal);
-         }
+        i2c_write_reg(client, REG_PS_OFFSET,data->crosstalk);
          mutex_unlock(&data->lock);
     }
 
