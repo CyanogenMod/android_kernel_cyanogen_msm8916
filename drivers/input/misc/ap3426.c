@@ -760,38 +760,41 @@ static int ap3426_power_ctl(struct ap3426_data *data, bool on)
 
 	if (!on && data->power_enabled)
 	{
-		ret = regulator_disable(data->vdd);
-		if (ret) 
-		{
-			dev_err(&data->client->dev,
-				"Regulator vdd disable failed ret=%d\n", ret);
-			return ret;
+		if (!IS_ERR(data->vdd)) {
+			ret = regulator_disable(data->vdd);
+			if (ret) {
+				dev_err(&data->client->dev,
+					"Regulator vdd disable failed ret=%d\n", ret);
+				return ret;
+			}
 		}
 
-		ret = regulator_disable(data->vio);
-		if (ret) 
-		{
-			dev_err(&data->client->dev,
-				"Regulator vio disable failed ret=%d\n", ret);
-			ret = regulator_enable(data->vdd);
-			if (ret) 
-			{
+		if (!IS_ERR(data->vio)) {
+			ret = regulator_disable(data->vio);
+			if (ret) {
 				dev_err(&data->client->dev,
-					"Regulator vdd enable failed ret=%d\n",
-					ret);
-			}			
-			return ret;
+					"Regulator vio disable failed ret=%d\n", ret);
+				if (!IS_ERR(data->vdd)) {
+					ret = regulator_enable(data->vdd);
+					if (ret) {
+						dev_err(&data->client->dev,
+							"Regulator vdd enable failed ret=%d\n",
+							ret);
+					}
+				}
+				return ret;
+			}
 		}
 
 		data->power_enabled = on;
 		printk(KERN_INFO "%s: disable ap3426 power", __func__);
 		dev_dbg(&data->client->dev, "ap3426_power_ctl on=%d\n",
 				on);
-	} 
-	else if (on && !data->power_enabled) 
+	}
+	else if (on && !data->power_enabled)
 	{
 		ret = regulator_enable(data->vdd);
-		if (ret) 
+		if (ret)
 		{
 			dev_err(&data->client->dev,
 				"Regulator vdd enable failed ret=%d\n", ret);
@@ -826,22 +829,25 @@ static int ap3426_power_init(struct ap3426_data*data, bool on)
 
 	if (!on)
 	{
-		if (regulator_count_voltages(data->vdd) > 0)
-			regulator_set_voltage(data->vdd,
-					0, AP3426_VDD_MAX_UV);
+		if (!IS_ERR(data->vdd)) {
+			if (regulator_count_voltages(data->vdd) > 0)
+				regulator_set_voltage(data->vdd, 0, AP3426_VDD_MAX_UV);
+			regulator_put(data->vdd);
+			data->vdd = ERR_PTR(-EINVAL);
+		}
 
-		regulator_put(data->vdd);
+		if (!IS_ERR(data->vio)) {
+			if (regulator_count_voltages(data->vio) > 0)
+				regulator_set_voltage(data->vio, 0, AP3426_VIO_MAX_UV);
 
-		if (regulator_count_voltages(data->vio) > 0)
-			regulator_set_voltage(data->vio,
-					0, AP3426_VIO_MAX_UV);
-
-		regulator_put(data->vio);
-	} 
-	else 
+			regulator_put(data->vio);
+			data->vio = ERR_PTR(-EINVAL);
+		}
+	}
+	else
 	{
 		data->vdd = regulator_get(&data->client->dev, "vdd");
-		if (IS_ERR(data->vdd)) 
+		if (IS_ERR(data->vdd))
 		{
 			ret = PTR_ERR(data->vdd);
 			dev_err(&data->client->dev,
@@ -1657,8 +1663,8 @@ static int ap3426_suspend(struct device *dev)
 		ps_data->rels_enable = 1;
 	}
 		
-	ap3426_power_init(ps_data,false);
 	ap3426_power_ctl(ps_data,false);
+	ap3426_power_init(ps_data,false);
 	
         return 0;
 }
