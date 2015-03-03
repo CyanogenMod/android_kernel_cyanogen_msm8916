@@ -14,6 +14,9 @@
 #include "msm8916-camera-sensor-crackling.dtsi"
 #include "../dsi-panel-otm8019a-fwvga-video.dtsi"
 #include "dsi-panel-trulyotm1288a-720p-video.dtsi"
+#include "dsi-panel-dijingILI9881C-720p-video.dtsi"
+#include "dsi-panel-booyiOTM1287-720p-video.dtsi"
+
 
 / {
 
