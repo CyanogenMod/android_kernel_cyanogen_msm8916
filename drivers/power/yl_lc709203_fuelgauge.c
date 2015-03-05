@@ -89,6 +89,8 @@ struct lc709203_chip {
 };
 
 /* LC709203 standard data commands */
+/*add by sunxiaogang@yulong.com 2015.01.16 for the capacity jump when insert battery*/
+#define LC709203_REG_SET_BEFORE_RSOC    0x04
 #define LC709203_REG_SET_THERMB	0x06
 #define LC709203_REG_INIT_RSOC		0x07
 #define LC709203_REG_CELL_TEMP		0x08
@@ -667,16 +669,25 @@ static int lc709203_parse_dt(struct lc709203_chip *chip)
 static int lc709203_hw_init_by_battery(struct lc709203_chip *chip)
 {
 	s16 ic_ver = 0;
+        int rc = 0;     //add by sunxiaogagn@yulong.com 2015.01.16 for the capacity jump when isert battery
 
 	set_battery_data(chip);
-	
+        /*add begin by sunxiaogagn@yulong.com 2015.01.16 for the capacity jump when isert battery*/
+        rc = lc709203_read_reg(LC709203_REG_ADJ_APPLI, chip);
+        pr_info("warm reset register value = 0x%x\n",rc);
+        if(chip->battery_data->spec_battery_data->battery_appli != rc)
+        {
+                lc709203_reg_write(LC709203_REG_SET_BEFORE_RSOC, 0xAA55, chip);
+                pr_info("LC709203_REG_SET_BEFORE_RSOC is set\n");
+                udelay(100);
+        }
+        /*add end by sunxiaogagn@yulong.com 2015.01.16*/
+
 	lc709203_reg_write(LC709203_REG_ADJ_APPLI, chip->battery_data->spec_battery_data->battery_appli, chip);
 
 	ic_ver = lc709203_read_reg(LC709203_REG_IC_VER, chip);
 	udelay(66);
 	pr_info("IC_VERSION is 0x%02X\n",ic_ver);
-
-
 	return 0;
 }
 
