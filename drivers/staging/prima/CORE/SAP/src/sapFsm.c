@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,11 +18,25 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
 /*===========================================================================
@@ -196,9 +210,6 @@ sapGotoChannelSel
         { /*if a valid channel is returned then use concurrent channel.
                   Else take whatever comes from configuartion*/
             sapContext->channel = channel;
-            sme_SelectCBMode(hHal,
-                             sapConvertSapPhyModeToCsrPhyMode(sapContext->csrRoamProfile.phyMode),
-                             channel);
         }
     }
 
@@ -234,8 +245,6 @@ sapGotoChannelSel
         scanRequest.ChannelInfo.ChannelList = channelList;
 
         scanRequest.requestType = eCSR_SCAN_SOFTAP_CHANNEL_RANGE;
-
-        sapContext->numofChannel = numOfChannels;
 
         sapContext->channelList = channelList;
 
@@ -952,14 +961,6 @@ sapFsm
                     }
                 }
             }
-            if (msg == eSAP_CHANNEL_SELECTION_FAILED)
-            {
-                 /* Set SAP device role */
-                sapContext->sapsMachine = eSAP_CH_SELECT;
-
-                /* Perform sme_ScanRequest */
-                vosStatus = sapGotoChannelSel(sapContext, sapEvent);
-            }
             else
             {
                 VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
@@ -1120,8 +1121,6 @@ eCsrPhyMode sapConvertSapPhyModeToCsrPhyMode( eSapPhyMode sapPhyMode )
       case (eSAP_DOT11_MODE_11ac):
          return eCSR_DOT11_MODE_11ac;
 #endif
-      case (eSAP_DOT11_MODE_11a):
-         return eCSR_DOT11_MODE_11a;
       default:
          return eCSR_DOT11_MODE_AUTO;
     }
@@ -1362,100 +1361,49 @@ static VOS_STATUS sapGetChannelList(ptSapContext sapContext,
         return VOS_STATUS_E_FAULT;
     }
 
-    if ( eCSR_BAND_ALL == sapContext->scanBandPreference)
-    {
-
-        ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_START_CHANNEL, &startChannelNum);
-        ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_END_CHANNEL, &endChannelNum);
-        ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_OPERATING_BAND, &operatingBand);
-
-        VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO,
-                "%s:sapGetChannelList: startChannel %d,EndChannel %d,Operatingband:%d",
-                __func__,startChannelNum,endChannelNum,operatingBand);
-
-        switch(operatingBand)
-        {
-        case eSAP_RF_SUBBAND_2_4_GHZ:
-            bandStartChannel = RF_CHAN_1;
-            bandEndChannel = RF_CHAN_14;
-            break;
-
-        case eSAP_RF_SUBBAND_5_LOW_GHZ:
-            bandStartChannel = RF_CHAN_36;
-            bandEndChannel = RF_CHAN_64;
-            break;
-
-        case eSAP_RF_SUBBAND_5_MID_GHZ:
-            bandStartChannel = RF_CHAN_100;
-            bandEndChannel = RF_CHAN_140;
-            break;
-
-        case eSAP_RF_SUBBAND_5_HIGH_GHZ:
-            bandStartChannel = RF_CHAN_149;
-            bandEndChannel = RF_CHAN_165;
-            break;
-
-        case eSAP_RF_SUBBAND_5_ALL_GHZ:
-            bandStartChannel = RF_CHAN_36;
-            bandEndChannel = RF_CHAN_165;
-            break;
-
-        default:
-            VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
-                    "sapGetChannelList:OperatingBand not valid ");
-            /* assume 2.4 GHz */
-            bandStartChannel = RF_CHAN_1;
-            bandEndChannel = RF_CHAN_14;
-            break;
-        }
-        VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO,
-                "%s: expanded startChannel %d,EndChannel %d,Operatingband:%d",
-                __func__,startChannelNum,endChannelNum,operatingBand);
-    }
-    else
-    {
-        if ( sapContext->allBandScanned == eSAP_FALSE )
-        {
-            //first band scan
-            sapContext->currentPreferredBand = sapContext->scanBandPreference;
-        }
-        else
-        {
-            //scan next band
-            if ( eCSR_BAND_24 == sapContext->scanBandPreference )
-                sapContext->currentPreferredBand = eCSR_BAND_5G;
-            else
-                sapContext->currentPreferredBand = eCSR_BAND_24;
-        }
-        switch(sapContext->currentPreferredBand)
-        {
-        case eCSR_BAND_24:
-            bandStartChannel = RF_CHAN_1;
-            bandEndChannel = RF_CHAN_14;
-            startChannelNum = 1;
-            endChannelNum = 14;
-            break;
-
-        case eCSR_BAND_5G:
-            bandStartChannel = RF_CHAN_36;
-            bandEndChannel = RF_CHAN_165;
-            startChannelNum = 36;
-            endChannelNum = 165;
-            break;
-
-        default:
-            VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
-                    "sapGetChannelList:bandPreference not valid ");
-            /* assume 2.4 GHz */
-            bandStartChannel = RF_CHAN_1;
-            bandEndChannel = RF_CHAN_14;
-            startChannelNum = 1;
-            endChannelNum = 14;
-            break;
-        }
-    }
-
+    ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_START_CHANNEL, &startChannelNum);
+    ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_END_CHANNEL, &endChannelNum);
+    ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_OPERATING_BAND, &operatingBand);
     ccmCfgGetInt(hHal, WNI_CFG_ENABLE_LTE_COEX, &enableLTECoex);
+
+    VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO,
+             "%s:sapGetChannelList: startChannel %d,EndChannel %d,Operatingband:%d",
+             __func__,startChannelNum,endChannelNum,operatingBand);
+
+    switch(operatingBand)
+    {
+        case RF_SUBBAND_2_4_GHZ:
+           bandStartChannel = RF_CHAN_1;
+           bandEndChannel = RF_CHAN_14;
+           break;
+
+        case RF_SUBBAND_5_LOW_GHZ:
+           bandStartChannel = RF_CHAN_36;
+           bandEndChannel = RF_CHAN_64;
+           break;
+
+        case RF_SUBBAND_5_MID_GHZ:
+           bandStartChannel = RF_CHAN_100;
+#ifndef FEATURE_WLAN_CH144
+           bandEndChannel = RF_CHAN_140;
+#else
+           bandEndChannel = RF_CHAN_144;
+#endif /* FEATURE_WLAN_CH144 */
+           break;
+
+        case RF_SUBBAND_5_HIGH_GHZ:
+           bandStartChannel = RF_CHAN_149;
+           bandEndChannel = RF_CHAN_165;
+           break;
+
+        default:
+           VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
+             "sapGetChannelList:OperatingBand not valid ");
+           /* assume 2.4 GHz */
+           bandStartChannel = RF_CHAN_1;
+           bandEndChannel = RF_CHAN_14;
+           break;
+    }
     /*Check if LTE coex is enabled and 2.4GHz is selected*/
     if (enableLTECoex && (bandStartChannel == RF_CHAN_1)
        && (bandEndChannel == RF_CHAN_14))
@@ -1527,13 +1475,6 @@ static VOS_STATUS sapGetChannelList(ptSapContext sapContext,
     {
        *channelList = NULL;
         vos_mem_free(list);
-    }
-
-    for (loopCount = 0; loopCount <channelCount; loopCount ++ )
-    {
-        VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_DEBUG,
-             "%s: channel number: %d",
-             __func__,list[loopCount]);
     }
     return VOS_STATUS_SUCCESS;
 }

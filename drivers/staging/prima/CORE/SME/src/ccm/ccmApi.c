@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,11 +18,25 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
 #include "palTypes.h"
@@ -76,7 +90,7 @@ static tANI_U32 * encodeCfgReq(tHddHandle hHdd, tANI_U32 *pl, tANI_U32 cfgId, tA
     }
     else
     {
-        vos_mem_copy((void *)pl, (void *)pBuf, length);
+        palCopyMemory(hHdd, (void *)pl, (void *)pBuf, length);
         pl += (CFGOBJ_ALIGN(length) / CFGOBJ_ALIGNTO);
     }
     return pl ;
@@ -110,8 +124,8 @@ static eHalStatus sendCfg(tpAniSirGlobal pMac, tHddHandle hHdd, tCfgReq *req, tA
                                  CFGOBJ_LEN_SIZE +
                                  CFGOBJ_ALIGN(req->length)) ;
 
-    msg = vos_mem_malloc(msgLen);
-    if ( NULL != msg )
+    status = palAllocateMemory(hHdd, (void **)&msg, msgLen);
+    if (status == eHAL_STATUS_SUCCESS)
     {
         if( fRsp )
         {
@@ -134,8 +148,7 @@ static eHalStatus sendCfg(tpAniSirGlobal pMac, tHddHandle hHdd, tCfgReq *req, tA
     }
     else
     {
-        smsLog( pMac, LOGW, FL("failed to allocate memory(len=%d)"), msgLen );
-        status = eHAL_STATUS_FAILURE;
+        smsLog( pMac, LOGW, FL("palAllocateMemory(len=%d)"), msgLen );
     }
 
     return status ;
@@ -151,8 +164,7 @@ static tCfgReq * allocateCfgReq(tHddHandle hHdd, tANI_U32 type, tANI_S32 length)
         alloc_len += length ;
     }
 
-    req = vos_mem_malloc(alloc_len);
-    if ( NULL == req )
+    if (palAllocateMemory(hHdd, (void **)&req, alloc_len) != eHAL_STATUS_SUCCESS)
     {
         return NULL ;
     }
@@ -164,7 +176,7 @@ static tCfgReq * allocateCfgReq(tHddHandle hHdd, tANI_U32 type, tANI_S32 length)
 
 static void freeCfgReq(tHddHandle hHdd, tCfgReq *req)
 {
-    vos_mem_free(req);
+    palFreeMemory(hHdd, (void*)req) ;
 }
 
 static void add_req_tail(tCfgReq *req, struct ccmlink *q)
@@ -293,7 +305,7 @@ static eHalStatus cfgSetSub(tpAniSirGlobal pMac, tHddHandle hHdd, tANI_U32 cfgId
         }
         else
         {
-            vos_mem_copy((void *)req->ccmPtr, (void *)ccmPtr, length);
+            palCopyMemory(hHdd, (void*)req->ccmPtr, (void*)ccmPtr, length); 
         }
 
         palSpinLockTake(hHdd, pMac->ccm.lock);
@@ -401,7 +413,7 @@ eHalStatus ccmOpen(tHalHandle hHal)
     tHddHandle hHdd = halHandle2HddHandle(hHal);
     tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
 
-    vos_mem_set(&pMac->ccm, sizeof(tCcm), 0);
+    (void)palZeroMemory(hHdd, &pMac->ccm, sizeof(tCcm)) ;
     return palSpinLockAlloc(hHdd, &pMac->ccm.lock);
 }
 
@@ -669,8 +681,8 @@ eHalStatus ccmCfgGetStr(tHalHandle hHal, tANI_U32 cfgId, tANI_U8 *pBuf, tANI_U32
 
     if (req && req->state == eCCM_REQ_DONE && (tANI_U32)req->length <= *pLength)
     {
-        *pLength = req->length ;
-        vos_mem_copy((void *)pBuf, (void *)req->ccmPtr, req->length);
+        *pLength = req->length ; 
+        palCopyMemory(hHdd, (void*)pBuf, (void*)req->ccmPtr, req->length); 
     }
     else
     {
@@ -739,12 +751,11 @@ static eHalStatus cfgUpdate(tpAniSirGlobal pMac, tHddHandle hHdd, tCcmCfgSetCall
     pMac->ccm.replay.callback    = callback ;
     pMac->ccm.replay.done        = NULL ;
 
-    msg = vos_mem_malloc(msgLen);
-    if ( NULL == msg )
+    status = palAllocateMemory(hHdd, (void **)&msg, msgLen) ;
+    if (status != eHAL_STATUS_SUCCESS)
     {
         pMac->ccm.replay.started = 0 ;
-        status = eHAL_STATUS_FAILURE;
-        goto end;
+        goto end ; 
     }
 
     msg->type   = pal_cpu_to_be16(WNI_CFG_SET_REQ);

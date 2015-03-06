@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -20,12 +40,7 @@
  */
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-/*
+ * Airgo Networks, Inc proprietary. All rights reserved.
  * This file limSendSmeRspMessages.cc contains the functions
  * for sending SME response/notification messages to applications
  * above MAC software.
@@ -262,6 +277,8 @@ tANI_U32 limGetMaxRateFlags(tpDphHashNode pStaDs, tpPESession psessionEntry)
                     rate_flags |= eHAL_TX_RATE_VHT20;
            }
         }
+        else
+            rate_flags |= eHAL_TX_RATE_VHT20;
 #endif
     }
 
@@ -342,7 +359,7 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 #ifdef WLAN_FEATURE_VOWIFI_11R
             psessionEntry->RICDataLen +
 #endif
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX            
             psessionEntry->tspecLen + 
 #endif            
             sizeof(tSirSmeJoinRsp) - sizeof(tANI_U8) ;
@@ -385,7 +402,7 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
 #ifdef WLAN_FEATURE_VOWIFI_11R
         pSirSmeJoinRsp->parsedRicRspLen = 0;
 #endif
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX            
         pSirSmeJoinRsp->tspecIeLen = 0;
 #endif
         
@@ -437,7 +454,7 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
                 PELOG1(limLog(pMac, LOG1, FL("RicLength=%d"), pSirSmeJoinRsp->parsedRicRspLen);)
             }
 #endif
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX            
             if(psessionEntry->tspecIes != NULL)
             {
                 pSirSmeJoinRsp->tspecIeLen = psessionEntry->tspecLen;
@@ -447,7 +464,7 @@ limSendSmeJoinReassocRsp(tpAniSirGlobal pMac, tANI_U16 msgType,
                               psessionEntry->tspecIes, pSirSmeJoinRsp->tspecIeLen);
                 vos_mem_free(psessionEntry->tspecIes);
                 psessionEntry->tspecIes = NULL;
-                PELOG1(limLog(pMac, LOG1, FL("ESE-TspecLen=%d"), psessionEntry->tspecLen);)
+                PELOG1(limLog(pMac, LOG1, FL("CCX-TspecLen=%d"), psessionEntry->tspecLen);)
             }
 #endif            
             pSirSmeJoinRsp->aid = psessionEntry->limAID;
@@ -1274,8 +1291,7 @@ limSendSmeDisassocNtf(tpAniSirGlobal pMac,
     switch (disassocTrigger)
     {
         case eLIM_PEER_ENTITY_DISASSOC:
-            if (reasonCode != eSIR_SME_STA_NOT_ASSOCIATED)
-                return;
+            return;
 
         case eLIM_HOST_DISASSOC:
             /**
@@ -1866,7 +1882,7 @@ limSendSmeWmStatusChangeNtf(tpAniSirGlobal pMac, tSirSmeStatusChangeCode statusC
             vos_mem_copy( (tANI_U8 *)&pSirSmeWmStatusChangeNtf->statusChangeInfo,
                           (tANI_U8 *)pStatusChangeInfo, infoLen);
         }
-        limLog(pMac, LOGE, FL("***---*** StatusChg: code %d, length %d ***---***"),
+        limLog(pMac, LOGE, FL("***---*** StatusChg: code 0x%x, length %d ***---***"),
                statusChangeCode, infoLen);
         break;
     }
@@ -2480,7 +2496,7 @@ limSendSmePEStatisticsRsp(tpAniSirGlobal pMac, tANI_U16 msgType, void* stats)
 
 } /*** end limSendSmePEStatisticsRsp() ***/
 
-#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_ESE || defined(FEATURE_WLAN_LFR)
+#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_CCX || defined(FEATURE_WLAN_LFR)
 /**
  * limSendSmePEGetRoamRssiRsp()
  *
@@ -2542,9 +2558,9 @@ limSendSmePEGetRoamRssiRsp(tpAniSirGlobal pMac, tANI_U16 msgType, void* stats)
 #endif
 
 
-#if defined(FEATURE_WLAN_ESE) && defined(FEATURE_WLAN_ESE_UPLOAD)
+#if defined(FEATURE_WLAN_CCX) && defined(FEATURE_WLAN_CCX_UPLOAD)
 /**
- * limSendSmePEEseTsmRsp()
+ * limSendSmePECcxTsmRsp()
  *
  *FUNCTION:
  * This function is called to send tsm stats response to HDD.
@@ -2559,7 +2575,7 @@ limSendSmePEGetRoamRssiRsp(tpAniSirGlobal pMac, tANI_U16 msgType, void* stats)
  */
 
 void
-limSendSmePEEseTsmRsp(tpAniSirGlobal pMac, tAniGetTsmStatsRsp *pStats)
+limSendSmePECcxTsmRsp(tpAniSirGlobal pMac, tAniGetTsmStatsRsp *pStats)
 {
     tSirMsgQ            mmhMsg;
     tANI_U8             sessionId;
@@ -2583,8 +2599,8 @@ limSendSmePEEseTsmRsp(tpAniSirGlobal pMac, tAniGetTsmStatsRsp *pStats)
     }
 
     pPeStats->msgType = eWNI_SME_GET_TSM_STATS_RSP;
-    pPeStats->tsmMetrics.RoamingCount = pPeSessionEntry->eseContext.tsm.tsmMetrics.RoamingCount;
-    pPeStats->tsmMetrics.RoamingDly = pPeSessionEntry->eseContext.tsm.tsmMetrics.RoamingDly;
+    pPeStats->tsmMetrics.RoamingCount = pPeSessionEntry->ccxContext.tsm.tsmMetrics.RoamingCount;
+    pPeStats->tsmMetrics.RoamingDly = pPeSessionEntry->ccxContext.tsm.tsmMetrics.RoamingDly;
 
     mmhMsg.type = eWNI_SME_GET_TSM_STATS_RSP;
     mmhMsg.bodyptr = pStats;
@@ -2593,9 +2609,9 @@ limSendSmePEEseTsmRsp(tpAniSirGlobal pMac, tAniGetTsmStatsRsp *pStats)
     limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
 
     return;
-} /*** end limSendSmePEEseTsmRsp() ***/
+} /*** end limSendSmePECcxTsmRsp() ***/
 
-#endif /* FEATURE_WLAN_ESE) && FEATURE_WLAN_ESE_UPLOAD */
+#endif /* FEATURE_WLAN_CCX) && FEATURE_WLAN_CCX_UPLOAD */
 
 
 void
