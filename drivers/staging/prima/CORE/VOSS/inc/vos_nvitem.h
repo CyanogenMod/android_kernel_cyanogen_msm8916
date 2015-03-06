@@ -18,25 +18,11 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 #if !defined( __VOS_NVITEM_H )
@@ -63,6 +49,19 @@
 #include "vos_status.h"
 #include "wlan_nv.h"
 #include "wlan_nv2.h"
+
+/* Maximum number of channels per country can be ignored */
+#define MAX_CHANNELS_IGNORE 10
+#define MAX_COUNTRY_IGNORE 5
+
+typedef struct sCsrIgnoreChannels
+{
+   tANI_U8 countryCode[NV_FIELD_COUNTRY_CODE_SIZE];
+   tANI_U16 channelList[MAX_CHANNELS_IGNORE];
+   tANI_U16 channelCount;
+}tCsrIgnoreChannels;
+
+extern tCsrIgnoreChannels countryIgnoreList[];
 
 /*--------------------------------------------------------------------------
   Preprocessor definitions and constants
@@ -121,6 +120,8 @@ ADD_VNV_ITEM( VNV_TABLE_VIRTUAL_RATE, 1, 4, VNV_TABLE_VIRTUAL_RATE_I ) \
 
 #define VOS_COUNTRY_CODE_LEN  2
 #define VOS_MAC_ADDRESS_LEN   6
+#define VOS_MAC_ADDR_LAST_3_BYTES   3
+#define VOS_MAC_ADDR_FIRST_3_BYTES   3
 #define VOS_NV_FREQUENCY_FOR_1_3V_SUPPLY_3P2MH 0   //3.2 Mhz
 #define VOS_NV_FREQUENCY_FOR_1_3V_SUPPLY_1P6MH 1   //1.6 Mhz
 
@@ -756,4 +757,34 @@ eNvVersionType vos_nv_getNvVersion
   \sa
   -------------------------------------------------------------------------*/
 v_U16_t vos_chan_to_freq(v_U8_t chanNum);
+
+/**------------------------------------------------------------------------
+  \brief vos_is_nv_country_non_zero -
+  \param   NONE
+  \return Success if default Country is Non-Zero
+  \sa
+  -------------------------------------------------------------------------*/
+
+v_BOOL_t vos_is_nv_country_non_zero
+(
+   void
+);
+
+#ifdef CONFIG_ENABLE_LINUX_REG
+/**------------------------------------------------------------------------
+  \brief vos_getCurrentCountryCode -
+  \param   countrycode
+  \return None
+  \sa
+  -------------------------------------------------------------------------*/
+
+void vos_getCurrentCountryCode
+(
+   tANI_U8 *cc
+);
+#endif
+
+int vos_update_nv_table_from_wiphy_band(void *hdd_ctx,
+                                         void *wiphy,v_U8_t nBandCapability);
+
 #endif // __VOS_NVITEM_H
