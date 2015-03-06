@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,11 +18,25 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
 /**=========================================================================
@@ -69,8 +83,6 @@
 #include "wlan_hdd_main.h"
 #include <linux/vmalloc.h>
 #include "wlan_hdd_cfg80211.h"
-
-#include <linux/wcnss_wlan.h>
 
 #include "sapApi.h"
 #include "vos_trace.h"
@@ -228,7 +240,7 @@ VOS_STATUS vos_preClose( v_CONTEXT_t *pVosContext )
        SYS, MAC, SME, WDA and TL.
       
   
-  \param  devHandle: pointer to the OS specific device handle
+  \param  hddContextSize: Size of the HDD context to allocate.
  
   
   \return VOS_STATUS_SUCCESS - Scheduler was successfully initialized and 
@@ -243,7 +255,7 @@ VOS_STATUS vos_preClose( v_CONTEXT_t *pVosContext )
   \sa vos_preOpen()
   
 ---------------------------------------------------------------------------*/
-VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, void *devHandle )
+VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, v_SIZE_t hddContextSize )
 
 {
    VOS_STATUS vStatus      = VOS_STATUS_SUCCESS;
@@ -329,7 +341,7 @@ VOS_STATUS vos_open( v_CONTEXT_t *pVosContext, void *devHandle )
    */
    macOpenParms.frameTransRequired = 1;
    macOpenParms.driverType         = eDRIVER_TYPE_PRODUCTION;
-   vStatus = WDA_open( gpVosContext, devHandle, &macOpenParms );
+   vStatus = WDA_open( gpVosContext, gpVosContext->pHDDContext, &macOpenParms );
 
    if (!VOS_IS_STATUS_SUCCESS(vStatus))
    {
@@ -684,8 +696,7 @@ VOS_STATUS vos_start( v_CONTEXT_t vosContext )
      vos_event_reset( &(gpVosContext->wdaCompleteEvent) );
      if (vos_is_logp_in_progress(VOS_MODULE_ID_VOSS, NULL))
      {
-       if (isSsrPanicOnFailure())
-           VOS_BUG(0);
+         VOS_BUG(0);
      }
      WDA_setNeedShutdown(vosContext);
      return VOS_STATUS_E_FAILURE;
@@ -699,11 +710,7 @@ VOS_STATUS vos_start( v_CONTEXT_t vosContext )
   if ( vStatus != VOS_STATUS_SUCCESS )
   {
      VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-                 "%s: Failed to start WDA - WDA_shutdown needed", __func__);
-     if ( vStatus == VOS_STATUS_E_TIMEOUT )
-      {
-         WDA_setNeedShutdown(vosContext);
-      }
+                 "%s: Failed to start WDA", __func__);
      return VOS_STATUS_E_FAILURE;
   }
   VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
@@ -1940,7 +1947,7 @@ v_BOOL_t vos_is_apps_power_collapse_allowed(void* pHddCtx)
   return hdd_is_apps_power_collapse_allowed((hdd_context_t*) pHddCtx);
 }
 
-void vos_abort_mac_scan(v_U8_t sessionId)
+void vos_abort_mac_scan(void)
 {
     hdd_context_t *pHddCtx = NULL;
     v_CONTEXT_t pVosContext        = NULL;
@@ -1959,9 +1966,10 @@ void vos_abort_mac_scan(v_U8_t sessionId)
        return;
     }
 
-    hdd_abort_mac_scan(pHddCtx, sessionId, eCSR_SCAN_ABORT_DEFAULT);
+    hdd_abort_mac_scan(pHddCtx, eCSR_SCAN_ABORT_DEFAULT);
     return;
 }
+
 /*---------------------------------------------------------------------------
 
   \brief vos_shutdown() - shutdown VOS
@@ -2201,34 +2209,4 @@ v_VOID_t vos_fwDumpReq(tANI_U32 cmd, tANI_U32 arg1, tANI_U32 arg2,
                         tANI_U32 arg3, tANI_U32 arg4)
 {
    WDA_HALDumpCmdReq(NULL, cmd, arg1, arg2, arg3, arg4, NULL);
-}
-
-v_U64_t vos_get_monotonic_boottime(void)
-{
-    struct timespec ts;
-    wcnss_get_monotonic_boottime(&ts);
-    return (((v_U64_t)ts.tv_sec * 1000000) + (ts.tv_nsec / 1000));
-}
-
-/**---------------------------------------------------------------------------
-
-  \brief vos_randomize_n_bytes() - HDD Random Mac Addr Generator
-
-  This generates the random mac address for WLAN interface
-
-  \param  - mac_addr - pointer to Mac address
-
-  \return -  0 for success, < 0 for failure
-
-  --------------------------------------------------------------------------*/
-
-VOS_STATUS  vos_randomize_n_bytes(void *start_addr, tANI_U32 n)
-{
-
-    if (start_addr == NULL )
-        return VOS_STATUS_E_FAILURE;
-
-    get_random_bytes( start_addr, n);
-
-    return eHAL_STATUS_SUCCESS;
 }

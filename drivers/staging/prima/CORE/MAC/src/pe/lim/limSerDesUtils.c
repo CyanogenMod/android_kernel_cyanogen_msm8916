@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -20,13 +40,8 @@
  */
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-/*
- *
+ * Airgo Networks, Inc proprietary. All rights reserved. 
+ * 
  * This file limSerDesUtils.cc contains the serializer/deserializer
  * utility functions LIM uses while communicating with upper layer
  * software entities
@@ -229,7 +244,7 @@ limGetBssDescription( tpAniSirGlobal pMac, tSirBssDescription *pBssDescription,
 #endif
 #endif
 
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
     pBssDescription->QBSSLoad_present = limGetU16(pBuf);
     pBuf += sizeof(tANI_U16);
     len  -= sizeof(tANI_U16);
@@ -646,12 +661,6 @@ limStartBssReqSerDes(tpAniSirGlobal pMac, tpSirSmeStartBssReq pStartBssReq, tANI
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
         return eSIR_FAILURE;
 
-    // Extract isCoalesingInIBSSAllowed
-    pStartBssReq->isCoalesingInIBSSAllowed = *pBuf++;
-    len--;
-    if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-        return eSIR_FAILURE;
-
     // Extract bssPersona
     pStartBssReq->bssPersona = *pBuf++;
     len--;
@@ -665,6 +674,11 @@ limStartBssReqSerDes(tpAniSirGlobal pMac, tpSirSmeStartBssReq pStartBssReq, tANI
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
         return eSIR_FAILURE;
 
+    // Extract oxygenNwkIniFeatureEnabled
+    pStartBssReq->oxygenNwkIniFeatureEnabled = *pBuf++;
+    len--;
+    if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
+       return eSIR_FAILURE;
 #ifdef WLAN_FEATURE_11W
     // Extract MFP capable/required
     pStartBssReq->pmfCapable = *pBuf++;
@@ -738,6 +752,7 @@ limStartBssReqSerDes(tpAniSirGlobal pMac, tpSirSmeStartBssReq pStartBssReq, tANI
         pBuf += pStartBssReq->extendedRateSet.numRates;
         len  -= pStartBssReq->extendedRateSet.numRates;
     }
+
 
     if (len)
     {
@@ -1040,7 +1055,7 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
         }
     }
 
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
     // Extract CCKM IE
     pJoinReq->cckmIE.length = limGetU16(pBuf);
     pBuf += sizeof(tANI_U16);
@@ -1162,9 +1177,9 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
     }
 #endif
 
-#ifdef FEATURE_WLAN_ESE
-    //ESE version IE
-    pJoinReq->isESEFeatureIniEnabled = (tAniBool)limGetU32(pBuf);
+#ifdef FEATURE_WLAN_CCX
+    //CCX version IE
+    pJoinReq->isCCXFeatureIniEnabled = (tAniBool)limGetU32(pBuf);
     pBuf += sizeof(tAniBool);
     len -= sizeof(tAniBool);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
@@ -1173,8 +1188,8 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
        return eSIR_FAILURE;
     }
 
-    //isESEconnection;
-    pJoinReq->isESEconnection = (tAniBool)limGetU32(pBuf);
+    //isCCXconnection;
+    pJoinReq->isCCXconnection = (tAniBool)limGetU32(pBuf);
     pBuf += sizeof(tAniBool);
     len -= sizeof(tAniBool);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
@@ -1184,12 +1199,12 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
     }
 
     // TSPEC information
-    pJoinReq->eseTspecInfo.numTspecs = *pBuf++;
+    pJoinReq->ccxTspecInfo.numTspecs = *pBuf++;
     len -= sizeof(tANI_U8);
-    vos_mem_copy((void*)&pJoinReq->eseTspecInfo.tspec[0], pBuf,
-                 (sizeof(tTspecInfo)* pJoinReq->eseTspecInfo.numTspecs));
-    pBuf += sizeof(tTspecInfo)*SIR_ESE_MAX_TSPEC_IES;
-    len  -= sizeof(tTspecInfo)*SIR_ESE_MAX_TSPEC_IES;
+    vos_mem_copy((void*)&pJoinReq->ccxTspecInfo.tspec[0], pBuf,
+                 (sizeof(tTspecInfo)* pJoinReq->ccxTspecInfo.numTspecs));
+    pBuf += sizeof(tTspecInfo)*SIR_CCX_MAX_TSPEC_IES;
+    len  -= sizeof(tTspecInfo)*SIR_CCX_MAX_TSPEC_IES;
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
     {
         limLog(pMac, LOGE, FL("remaining len %d is too short"), len);
@@ -1197,7 +1212,7 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
     }
 #endif
     
-#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_ESE || defined(FEATURE_WLAN_LFR)
+#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_CCX || defined(FEATURE_WLAN_LFR)
     //isFastTransitionEnabled;
     pJoinReq->isFastTransitionEnabled = (tAniBool)limGetU32(pBuf);
     pBuf += sizeof(tAniBool);
@@ -1229,7 +1244,7 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
         limLog(pMac, LOGE, FL("remaining len %d is too short"), len);
         return eSIR_FAILURE;
     }
-#ifdef WLAN_FEATURE_11AC
+
     //txBFIniFeatureEnabled
     pJoinReq->txBFIniFeatureEnabled= *pBuf++;
     len--;
@@ -1247,16 +1262,6 @@ limJoinReqSerDes(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq, tANI_U8 *pBuf)
         limLog(pMac, LOGE, FL("remaining len %d is too short"), len);
         return eSIR_FAILURE;
     }
-
-    //MuBformee
-    pJoinReq->txMuBformee= *pBuf++;
-    len--;
-    if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-    {
-        limLog(pMac, LOGE, FL("remaining len %d is too short"), len);
-        return eSIR_FAILURE;
-    }
-#endif
 
     pJoinReq->isAmsduSupportInAMPDU= *pBuf++;
     len--;
@@ -1887,7 +1892,6 @@ limSetContextReqSerDes(tpAniSirGlobal pMac, tpSirSmeSetContextReq pSetContextReq
         do {
             tANI_U32 keySize   = limGetKeysInfo(pMac, (tpSirKeys) pKeys,
                                        pBuf);
-            vos_mem_zero(pBuf, keySize);
             pBuf         += keySize;
             pKeys        += sizeof(tSirKeys);
             totalKeySize += (tANI_U16) keySize;
@@ -2374,44 +2378,44 @@ limIsSmeGetAssocSTAsReqValid(tpAniSirGlobal pMac, tpSirSmeGetAssocSTAsReq pGetAs
     pBuf += sizeof(tANI_U16);
 
     if (len < (tANI_S16) sizeof(tANI_U32))
-        return eANI_BOOLEAN_FALSE;
+        return eSIR_FAILURE;
 
     len -= sizeof(tANI_U32); // skip message header
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-        return eANI_BOOLEAN_FALSE;
+        return eSIR_FAILURE;
 
     // Extract bssId
     vos_mem_copy( (tANI_U8 *) pGetAssocSTAsReq->bssId, pBuf, sizeof(tSirMacAddr));
     pBuf += sizeof(tSirMacAddr);
     len  -= sizeof(tSirMacAddr);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-        return eANI_BOOLEAN_FALSE;
+        return eSIR_FAILURE;
 
     // Extract modId
     pGetAssocSTAsReq->modId = limGetU16(pBuf);
     pBuf += sizeof(tANI_U16);
     len  -= sizeof(tANI_U16);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-        return eANI_BOOLEAN_FALSE;
+        return eSIR_FAILURE;
 
     // Extract pUsrContext
-    vos_mem_copy((tANI_U8 *)pGetAssocSTAsReq->pUsrContext, pBuf, sizeof(void*));
-    pBuf += sizeof(void*);
-    len  -= sizeof(void*);
+    pGetAssocSTAsReq->pUsrContext = (void *)limGetU32(pBuf);
+    pBuf += sizeof(tANI_U32);
+    len  -= sizeof(tANI_U32);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-        return eANI_BOOLEAN_FALSE;
+        return eSIR_FAILURE;
 
     // Extract pSapEventCallback
-    vos_mem_copy((tANI_U8 *)pGetAssocSTAsReq->pSapEventCallback, pBuf, sizeof(void*));
-    pBuf += sizeof(void*);
-    len  -= sizeof(void*);
+    pGetAssocSTAsReq->pSapEventCallback = (void *)limGetU32(pBuf);
+    pBuf += sizeof(tANI_U32);
+    len  -= sizeof(tANI_U32);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
-        return eANI_BOOLEAN_FALSE;
+        return eSIR_FAILURE;
 
     // Extract pAssocStasArray
-    vos_mem_copy((tANI_U8 *)pGetAssocSTAsReq->pAssocStasArray, pBuf, sizeof(void*));
-    pBuf += sizeof(void*);
-    len  -= sizeof(void*);
+    pGetAssocSTAsReq->pAssocStasArray = (void *)limGetU32(pBuf);
+    pBuf += sizeof(tANI_U32);
+    len  -= sizeof(tANI_U32);
 
     PELOG1(limLog(pMac, LOG1, FL("SME_GET_ASSOC_STAS_REQ length consumed %d bytes "), len);)
 
@@ -2548,16 +2552,16 @@ limIsSmeGetWPSPBCSessionsReqValid(tpAniSirGlobal pMac, tSirSmeGetWPSPBCSessionsR
         return eSIR_FAILURE;
 
    // Extract pUsrContext
-    vos_mem_copy((tANI_U8 *)pGetWPSPBCSessionsReq->pUsrContext, pBuf, sizeof(void*));
-    pBuf += sizeof(void*);
-    len  -= sizeof(void*);
+    pGetWPSPBCSessionsReq->pUsrContext = (void *)limGetU32(pBuf);
+    pBuf += sizeof(tANI_U32);
+    len  -= sizeof(tANI_U32);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
         return eSIR_FAILURE;
 
     // Extract pSapEventCallback
-    vos_mem_copy((tANI_U8 *)pGetWPSPBCSessionsReq->pSapEventCallback, pBuf, sizeof(void*));
-    pBuf += sizeof(void*);
-    len  -= sizeof(void*);
+    pGetWPSPBCSessionsReq->pSapEventCallback = (void *)limGetU32(pBuf);
+    pBuf += sizeof(tANI_U32);
+    len  -= sizeof(tANI_U32);
     if (limCheckRemainingLength(pMac, len) == eSIR_FAILURE)
         return eSIR_FAILURE;
 

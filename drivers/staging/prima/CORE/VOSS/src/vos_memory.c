@@ -18,11 +18,25 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
 /*===========================================================================
@@ -189,9 +203,6 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
    struct s_vos_mem_struct* memStruct;
    v_VOID_t* memPtr = NULL;
    v_SIZE_t new_size;
-   int flags = GFP_KERNEL;
-   unsigned long IrqFlags;
-
 
    if (size > (1024*1024))
    {
@@ -202,7 +213,9 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
 
    if (in_interrupt())
    {
-      flags = GFP_ATOMIC;
+       VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "%s cannot be "
+                 "called from interrupt context!!!", __func__);
+       return NULL;
    }
 
    if (!memory_dbug_flag)
@@ -216,12 +229,12 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
                return pmem;
       }
 #endif
-      return kmalloc(size, flags);
+      return kmalloc(size, GFP_KERNEL);
    }
 
    new_size = size + sizeof(struct s_vos_mem_struct) + 8; 
 
-   memStruct = (struct s_vos_mem_struct*)kmalloc(new_size, flags);
+   memStruct = (struct s_vos_mem_struct*)kmalloc(new_size,GFP_KERNEL);
 
    if(memStruct != NULL)
    {
@@ -234,9 +247,9 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
       vos_mem_copy(&memStruct->header[0], &WLAN_MEM_HEADER[0], sizeof(WLAN_MEM_HEADER));
       vos_mem_copy( (v_U8_t*)(memStruct + 1) + size, &WLAN_MEM_TAIL[0], sizeof(WLAN_MEM_TAIL));
 
-      spin_lock_irqsave(&vosMemList.lock, IrqFlags);
+      spin_lock(&vosMemList.lock);
       vosStatus = hdd_list_insert_front(&vosMemList, &memStruct->pNode);
-      spin_unlock_irqrestore(&vosMemList.lock, IrqFlags);
+      spin_unlock(&vosMemList.lock);
       if(VOS_STATUS_SUCCESS != vosStatus)
       {
          VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, 
@@ -251,9 +264,15 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
 v_VOID_t vos_mem_free( v_VOID_t *ptr )
 {
 
-    unsigned long IrqFlags;
     if (ptr == NULL)
         return;
+
+    if (in_interrupt())
+    {
+        VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "%s cannot be "
+                  "called from interrupt context!!!", __func__);
+        return;
+    }
 
     if (!memory_dbug_flag)
     {
@@ -268,9 +287,9 @@ v_VOID_t vos_mem_free( v_VOID_t *ptr )
         VOS_STATUS vosStatus;
         struct s_vos_mem_struct* memStruct = ((struct s_vos_mem_struct*)ptr) - 1;
 
-        spin_lock_irqsave(&vosMemList.lock, IrqFlags);
+        spin_lock(&vosMemList.lock);
         vosStatus = hdd_list_remove_node(&vosMemList, &memStruct->pNode);
-        spin_unlock_irqrestore(&vosMemList.lock, IrqFlags);
+        spin_unlock(&vosMemList.lock);
 
         if(VOS_STATUS_SUCCESS == vosStatus)
         {
@@ -299,7 +318,6 @@ v_VOID_t vos_mem_free( v_VOID_t *ptr )
 #else
 v_VOID_t * vos_mem_malloc( v_SIZE_t size )
 {
-   int flags = GFP_KERNEL;
 #ifdef CONFIG_WCNSS_MEM_PRE_ALLOC
     v_VOID_t* pmem;
 #endif    
@@ -308,9 +326,10 @@ v_VOID_t * vos_mem_malloc( v_SIZE_t size )
        VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "%s: called with arg > 1024K; passed in %d !!!", __func__,size); 
        return NULL;
    }
-   if (in_interrupt() || irqs_disabled() || in_atomic())
+   if (in_interrupt())
    {
-      flags = GFP_ATOMIC;
+      VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "%s cannot be called from interrupt context!!!", __func__);
+      return NULL;
    }
 #ifdef CONFIG_WCNSS_MEM_PRE_ALLOC
    if(size > WCNSS_PRE_ALLOC_GET_THRESHOLD)
@@ -320,7 +339,7 @@ v_VOID_t * vos_mem_malloc( v_SIZE_t size )
            return pmem;
    }
 #endif
-   return kmalloc(size, flags);
+   return kmalloc(size, GFP_KERNEL);
 }   
 
 v_VOID_t vos_mem_free( v_VOID_t *ptr )
@@ -328,6 +347,11 @@ v_VOID_t vos_mem_free( v_VOID_t *ptr )
     if (ptr == NULL)
       return;
 
+    if (in_interrupt())
+    {
+      VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "%s cannot be called from interrupt context!!!", __func__);
+      return;
+    }
 #ifdef CONFIG_WCNSS_MEM_PRE_ALLOC
     if(wcnss_prealloc_put(ptr))
         return;

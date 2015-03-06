@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -19,11 +39,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
 
 /*
  * This file limAssocUtils.cc contains the utility functions
@@ -722,12 +737,12 @@ limCleanupRxPath(tpAniSirGlobal pMac, tpDphHashNode pStaDs,tpPESession psessionE
         pMac->lim.gLastBeaconDtimCount = 0;
         pMac->lim.gLastBeaconDtimPeriod = 0;
 
-#ifdef FEATURE_WLAN_ESE
-#ifdef FEATURE_WLAN_ESE_UPLOAD
+#ifdef FEATURE_WLAN_CCX
+#ifdef FEATURE_WLAN_CCX_UPLOAD
         limSendSmeTsmIEInd(pMac, psessionEntry, 0, 0, 0);
 #else
         limDeactivateAndChangeTimer(pMac,eLIM_TSM_TIMER);
-#endif /* FEATURE_WLAN_ESE_UPLOAD */
+#endif /* FEATURE_WLAN_CCX_UPLOAD */
 #endif
 
         /**
@@ -1849,7 +1864,6 @@ limPopulateOwnRateSet(tpAniSirGlobal pMac,
 #ifdef WLAN_FEATURE_11AC
 tSirRetStatus
 limPopulatePeerRateSet(tpAniSirGlobal pMac,
-
                       tpSirSupportedRates pRates,
                       tANI_U8* pSupportedMCSSet,
                       tANI_U8 basicOnly,
@@ -1962,8 +1976,6 @@ limPopulatePeerRateSet(tpAniSirGlobal pMac,
             tempRateSet.rate[min] = 0xff;
         }
     }
-
-
     if (IS_DOT11_MODE_HT(psessionEntry->dot11mode))
     {
         val = SIZE_OF_SUPPORTED_MCS_SET;
@@ -1993,7 +2005,6 @@ limPopulatePeerRateSet(tpAniSirGlobal pMac,
  error:
     return eSIR_FAILURE;
 } /*** limPopulatePeerRateSet() ***/
-
 /**
  * limPopulateMatchingRateSet
  * FUNCTION:
@@ -2373,7 +2384,6 @@ limAddSta(
     pAddStaParams->wmmEnabled = pStaDs->qosMode;
     pAddStaParams->listenInterval = pStaDs->mlmStaContext.listenInterval;
     pAddStaParams->shortPreambleSupported = pStaDs->shortPreambleEnabled;
-    pAddStaParams->currentOperChan = psessionEntry->currentOperChannel;
     if((limGetSystemRole(psessionEntry) == eLIM_AP_ROLE) && (pStaDs->mlmStaContext.subType == LIM_REASSOC))
     {
         /* TBD - need to remove this REASSOC check after fixinf rmmod issue */
@@ -2844,7 +2854,7 @@ limAddStaSelf(tpAniSirGlobal pMac,tANI_U16 staIdx, tANI_U8 updateSta, tpPESessio
     pAddStaParams->staType = STA_ENTRY_SELF;
     pAddStaParams->status = eHAL_STATUS_SUCCESS;
     pAddStaParams->respReqd = 1;
-    pAddStaParams->currentOperChan = psessionEntry->currentOperChannel;
+
     /* Update  PE session ID */
     pAddStaParams->sessionId = psessionEntry->peSessionId;
     
@@ -3325,9 +3335,6 @@ limCheckAndAnnounceJoinSuccess(tpAniSirGlobal pMac,
         psessionEntry->limMlmState = eLIM_MLM_JOINED_STATE;
         MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, psessionEntry->peSessionId, eLIM_MLM_JOINED_STATE));
 
-        /* update the capability info based on recently
-         * received beacon/probe response frame */
-        psessionEntry->limCurrentBssCaps = limGetU16((tANI_U8 *) &pBPR->capabilityInfo);
 
         /**
          * Announce join success by sending
@@ -3709,16 +3716,6 @@ tSirRetStatus limStaSendAddBss( tpAniSirGlobal pMac, tpSirAssocRsp pAssocRsp,
                      psessionEntry->txBFIniFeatureEnabled)
                 {
                     pAddBssParams->staContext.vhtTxBFCapable = 1;
-                }
-                if (pAssocRsp->VHTCaps.muBeamformerCap &&
-                                    psessionEntry->txMuBformee )
-                {
-                    pAddBssParams->staContext.vhtTxMUBformeeCapable = 1;
-                    limLog(pMac, LOG1,FL("Enabling MUBformeeCapable for peer"));
-                    /* Dont allow any other MuBf session as concurrency
-                     * is not supported
-                     */
-                    pMac->isMuBfsessionexist = TRUE;
                 }
             }
 #endif
@@ -4151,17 +4148,6 @@ tSirRetStatus limStaSendAddBssPreAssoc( tpAniSirGlobal pMac, tANI_U8 updateEntry
                 {
                     pAddBssParams->staContext.vhtTxBFCapable = 1;
                 }
-                if (pBeaconStruct->VHTCaps.muBeamformerCap &&
-                                    psessionEntry->txMuBformee )
-                {
-                    pAddBssParams->staContext.vhtTxMUBformeeCapable = 1;
-                    limLog(pMac, LOG1,FL("Enabling MUBformeeCapable for peer"));
-                    /* Dont allow any other MuBf session as concurrency
-                     * is not supported
-                     */
-                    pMac->isMuBfsessionexist = TRUE;
-                }
-
             }
 #endif
             if( (pBeaconStruct->HTCaps.supportedChannelWidthSet) &&
@@ -4671,7 +4657,7 @@ void limSendSmeUnprotectedMgmtFrameInd(
 }
 #endif
 
-#if defined(FEATURE_WLAN_ESE) && defined(FEATURE_WLAN_ESE_UPLOAD)
+#if defined(FEATURE_WLAN_CCX) && defined(FEATURE_WLAN_CCX_UPLOAD)
 /** -------------------------------------------------------------
 \fn     limSendSmeTsmIEInd
 \brief  Forwards the TSM IE information to SME.
@@ -4713,6 +4699,6 @@ void limSendSmeTsmIEInd(tpAniSirGlobal pMac, tpPESession psessionEntry,
     limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
     return;
 }
-#endif /* FEATURE_WLAN_ESE && FEATURE_WLAN_ESE_UPLOAD */
+#endif /* FEATURE_WLAN_CCX && FEATURE_WLAN_CCX_UPLOAD */
 
 
