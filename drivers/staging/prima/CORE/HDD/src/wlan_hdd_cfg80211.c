@@ -1,38 +1,33 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-
-
+  * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+  *
+  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+  *
+  *
+  * Permission to use, copy, modify, and/or distribute this software for
+  * any purpose with or without fee is hereby granted, provided that the
+  * above copyright notice and this permission notice appear in all
+  * copies.
+  *
+  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+  * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+  * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+  * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+  * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  * PERFORMANCE OF THIS SOFTWARE.
+*/
 
 /**========================================================================
 
   \file  wlan_hdd_cfg80211.c
 
   \brief WLAN Host Device Driver implementation
+
+  Copyright 2008 (c) Qualcomm Technologies, Inc.  All Rights Reserved.
+
+  Qualcomm Technologies Confidential and Proprietary.
 
   ========================================================================*/
 
@@ -102,7 +97,6 @@
 #define FREQ_BASE_80211G          (2407)
 #define FREQ_BAND_DIFF_80211G     (5)
 #define MAX_SCAN_SSID 9
-#define MAX_PENDING_LOG 5
 #define GET_IE_LEN_IN_BSS_DESC(lenInBss) ( lenInBss + sizeof(lenInBss) - \
         ((uintptr_t)OFFSET_OF( tSirBssDescription, ieFields)))
 
@@ -142,47 +136,12 @@
 #define WLAN_AKM_SUITE_FT_PSK           0x000FAC04
 #endif
 
-#define HDD_CHANNEL_14 14
-#define WLAN_HDD_MAX_FEATURE_SET   8
-
-#ifdef WLAN_FEATURE_LINK_LAYER_STATS
-/*
- * Used to allocate the size of 4096 for the link layer stats.
- * The size of 4096 is considered assuming that all data per
- * respective event fit with in the limit.Please take a call
- * on the limit based on the data requirements on link layer
- * statistics.
- */
-#define LL_STATS_EVENT_BUF_SIZE 4096
-#endif
-#ifdef WLAN_FEATURE_EXTSCAN
-/*
- * Used to allocate the size of 4096 for the EXTScan NL data.
- * The size of 4096 is considered assuming that all data per
- * respective event fit with in the limit.Please take a call
- * on the limit based on the data requirements.
- */
-
-#define EXTSCAN_EVENT_BUF_SIZE 4096
-#define EXTSCAN_MAX_CACHED_RESULTS_PER_IND 32
-#endif
-
-/*EXT TDLS*/
-/*
- * Used to allocate the size of 4096 for the TDLS.
- * The size of 4096 is considered assuming that all data per
- * respective event fit with in the limit.Please take a call
- * on the limit based on the data requirements on link layer
- * statistics.
- */
-#define EXTTDLS_EVENT_BUF_SIZE 4096
-
 static const u32 hdd_cipher_suites[] =
 {
     WLAN_CIPHER_SUITE_WEP40,
     WLAN_CIPHER_SUITE_WEP104,
     WLAN_CIPHER_SUITE_TKIP,
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
 #define WLAN_CIPHER_SUITE_KRK 0x004096ff /* use for KRK */
     WLAN_CIPHER_SUITE_KRK,
     WLAN_CIPHER_SUITE_CCMP,
@@ -532,14 +491,6 @@ typedef enum
    DATA_RATE_11AC_MAX_MCS_NA
 } eDataRate11ACMaxMcs;
 
-/* SSID broadcast  type */
-typedef enum eSSIDBcastType
-{
-  eBCAST_UNKNOWN      = 0,
-  eBCAST_NORMAL       = 1,
-  eBCAST_HIDDEN       = 2,
-} tSSIDBcastType;
-
 /* MCS Based VHT rate table */
 static struct index_vht_data_rate_type supported_vht_mcs_rate[] =
 {
@@ -557,19 +508,7 @@ static struct index_vht_data_rate_type supported_vht_mcs_rate[] =
 };
 #endif /* WLAN_FEATURE_11AC */
 
-/*array index points to MCS and array value points respective rssi*/
-static int rssiMcsTbl[][10] =
-{
-/*MCS 0   1     2   3    4    5    6    7    8    9*/
-   {-82, -79, -77, -74, -70, -66, -65, -64, -59, -57}, //20
-   {-79, -76, -74, -71, -67, -63, -62, -61, -56, -54}, //40
-   {-76, -73, -71, -68, -64, -60, -59, -58, -53, -51}  //80
-};
-
 extern struct net_device_ops net_ops_struct;
-#ifdef FEATURE_WLAN_SCAN_PNO
-static eHalStatus wlan_hdd_is_pno_allowed(hdd_adapter_t *pAdapter);
-#endif
 
 #ifdef WLAN_NL80211_TESTMODE
 enum wlan_hdd_tm_attr
@@ -627,7 +566,7 @@ int wlan_hdd_send_avoid_freq_event(hdd_context_t *pHddCtx,
 
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
                        sizeof(tHddAvoidFreqList),
-                       QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_INDEX,
+                       QCOM_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_INDEX,
                        GFP_KERNEL);
     if (!vendor_event)
     {
@@ -646,4310 +585,15 @@ int wlan_hdd_send_avoid_freq_event(hdd_context_t *pHddCtx,
 }
 #endif /* FEATURE_WLAN_CH_AVOID */
 
-#ifdef WLAN_FEATURE_LINK_LAYER_STATS
-
-static v_BOOL_t put_wifi_rate_stat( tpSirWifiRateStat stats,
-                                struct sk_buff *vendor_event)
-{
-    if (nla_put_u8(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_PREAMBLE,
-                stats->rate.preamble)  ||
-        nla_put_u8(vendor_event,
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_NSS,
-            stats->rate.nss)       ||
-        nla_put_u8(vendor_event,
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_BW,
-            stats->rate.bw)        ||
-        nla_put_u8(vendor_event,
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_MCS_INDEX,
-            stats->rate.rateMcsIdx) ||
-        nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_BIT_RATE,
-            stats->rate.bitrate )   ||
-        nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_TX_MPDU,
-            stats->txMpdu )    ||
-        nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_RX_MPDU,
-                stats->rxMpdu )     ||
-        nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_MPDU_LOST,
-                stats->mpduLost )  ||
-        nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_RETRIES,
-                stats->retries)     ||
-        nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_RETRIES_SHORT,
-                stats->retriesShort )   ||
-        nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_RATE_RETRIES_LONG,
-                stats->retriesLong))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail"));
-        return FALSE;
-    }
-    return TRUE;
-}
-
-static v_BOOL_t put_wifi_peer_info( tpSirWifiPeerInfo stats,
-                               struct sk_buff *vendor_event)
-{
-    u32 i = 0;
-    struct nlattr *rateInfo;
-    if (nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_PEER_INFO_TYPE,
-                                     stats->type) ||
-        nla_put(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_PEER_INFO_MAC_ADDRESS,
-                VOS_MAC_ADDR_SIZE, &stats->peerMacAddress[0]) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_PEER_INFO_CAPABILITIES,
-                    stats->capabilities) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_PEER_INFO_NUM_RATES,
-                    stats->numRate))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail"));
-        goto error;
-    }
-
-    rateInfo = nla_nest_start(vendor_event,
-                            QCA_WLAN_VENDOR_ATTR_LL_STATS_PEER_INFO_RATE_INFO);
-    for (i = 0; i < stats->numRate; i++)
-    {
-        struct nlattr *rates;
-        tpSirWifiRateStat pRateStats = (tpSirWifiRateStat )((uint8 *)
-                                            stats->rateStats +
-                                       (i * sizeof(tSirWifiRateStat)));
-        rates = nla_nest_start(vendor_event, i);
-
-        if (FALSE == put_wifi_rate_stat(pRateStats, vendor_event))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail"));
-            return FALSE;
-        }
-        nla_nest_end(vendor_event, rates);
-    }
-    nla_nest_end(vendor_event, rateInfo);
-
-    return TRUE;
-error:
-    return FALSE;
-}
-
-static v_BOOL_t put_wifi_wmm_ac_stat( tpSirWifiWmmAcStat stats,
-                                  struct sk_buff *vendor_event)
-{
-    if (nla_put_u32(vendor_event, QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_AC,
-                    stats->ac ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_TX_MPDU,
-                    stats->txMpdu ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_RX_MPDU,
-                    stats->rxMpdu ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_TX_MCAST,
-                    stats->txMcast ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_RX_MCAST,
-                    stats->rxMcast ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_RX_AMPDU,
-                    stats->rxAmpdu ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_TX_AMPDU,
-                    stats->txAmpdu ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_MPDU_LOST,
-                    stats->mpduLost )||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_RETRIES,
-                    stats->retries ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_RETRIES_SHORT,
-                    stats->retriesShort ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_RETRIES_LONG,
-                    stats->retriesLong ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_CONTENTION_TIME_MIN,
-                    stats->contentionTimeMin ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_CONTENTION_TIME_MAX,
-                    stats->contentionTimeMax ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_CONTENTION_TIME_AVG,
-                    stats->contentionTimeAvg ) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_CONTENTION_NUM_SAMPLES,
-                    stats->contentionNumSamples ))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail") );
-        return FALSE;
-    }
-    return TRUE;
-}
-
-static v_BOOL_t put_wifi_interface_info(tpSirWifiInterfaceInfo stats,
-                                    struct sk_buff *vendor_event)
-{
-    if (nla_put_s32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_MODE, stats->mode ) ||
-            nla_put(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_MAC_ADDR,
-                    VOS_MAC_ADDR_SIZE, stats->macAddr) ||
-            nla_put_u32(vendor_event,
-                        QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_STATE,
-                        stats->state ) ||
-            nla_put_u32(vendor_event,
-                        QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_ROAMING,
-                        stats->roaming ) ||
-            nla_put_u32(vendor_event,
-                        QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_CAPABILITIES,
-                        stats->capabilities ) ||
-            nla_put(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_SSID,
-                    strlen(stats->ssid), stats->ssid) ||
-            nla_put(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_BSSID,
-                    WNI_CFG_BSSID_LEN, stats->bssid) ||
-            nla_put(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_AP_COUNTRY_STR,
-                    WNI_CFG_COUNTRY_CODE_LEN, stats->apCountryStr) ||
-            nla_put(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_INFO_COUNTRY_STR,
-                    WNI_CFG_COUNTRY_CODE_LEN, stats->countryStr)
-      )
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail") );
-        return FALSE;
-    }
-    return TRUE;
-}
-
-static v_BOOL_t put_wifi_iface_stats(hdd_adapter_t *pAdapter,
-                            tpSirWifiIfaceStat pWifiIfaceStat,
-                                 struct sk_buff *vendor_event)
-{
-    int i = 0;
-    struct nlattr *wmmInfo;
-    hdd_station_ctx_t *pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
-    WLANTL_InterfaceStatsType *pWifiIfaceStatTL = NULL;
-    tSirWifiWmmAcStat accessclassStats;
-
-    if (FALSE == put_wifi_interface_info(
-                                &pWifiIfaceStat->info,
-                                vendor_event))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail") );
-        return FALSE;
-
-    }
-    pWifiIfaceStatTL = (WLANTL_InterfaceStatsType *)
-                             vos_mem_malloc(sizeof(WLANTL_InterfaceStatsType));
-    if (NULL == pWifiIfaceStatTL)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("vos_mem_malloc failed"));
-        return FALSE;
-    }
-
-    accessclassStats = pWifiIfaceStat->AccessclassStats[WIFI_AC_BK];
-    pWifiIfaceStat->AccessclassStats[WIFI_AC_BK] =
-        pWifiIfaceStat->AccessclassStats[WIFI_AC_BE];
-    pWifiIfaceStat->AccessclassStats[WIFI_AC_BE] = accessclassStats;
-
-    accessclassStats.ac = pWifiIfaceStat->AccessclassStats[WIFI_AC_BK].ac;
-    pWifiIfaceStat->AccessclassStats[WIFI_AC_BK].ac =
-        pWifiIfaceStat->AccessclassStats[WIFI_AC_BE].ac;
-    pWifiIfaceStat->AccessclassStats[WIFI_AC_BE].ac = accessclassStats.ac;
-
-    if ( pWifiIfaceStat->info.state == WIFI_ASSOCIATED)
-    {
-        if (VOS_STATUS_SUCCESS ==
-         WLANTL_CollectInterfaceStats((WLAN_HDD_GET_CTX(pAdapter))->pvosContext,
-                    pHddStaCtx->conn_info.staId[0], pWifiIfaceStatTL))
-        {
-            /* mgmtRx, MgmtActionRx, rxMcast, rxMpdu, rxAmpdu, rssiData are
-             * obtained from TL structure
-             */
-
-            pWifiIfaceStat->mgmtRx = pWifiIfaceStat->beaconRx +
-                pWifiIfaceStatTL->mgmtRx;
-            pWifiIfaceStat->rssiData = pWifiIfaceStatTL->rssiData;
-
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_VO].rxMcast
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_VO].rxMcast;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_VI].rxMcast
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_VI].rxMcast;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_BE].rxMcast
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_BE].rxMcast;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_BK].rxMcast
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_BK].rxMcast;
-
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_VO].rxMpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_VO].rxMpdu;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_VI].rxMpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_VI].rxMpdu;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_BE].rxMpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_BE].rxMpdu;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_BK].rxMpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_BK].rxMpdu;
-
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_VO].rxAmpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_VO].rxAmpdu;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_VI].rxAmpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_VI].rxAmpdu;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_BE].rxAmpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_BE].rxAmpdu;
-            pWifiIfaceStat->AccessclassStats[WIFI_AC_BK].rxAmpdu
-                = pWifiIfaceStatTL->accessCategoryStats[WLANTL_AC_BK].rxAmpdu;
-        }
-        else
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("Error in getting stats from TL"));
-        }
-
-        pWifiIfaceStat->AccessclassStats[WIFI_AC_VO].txMcast =
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_VO];
-        pWifiIfaceStat->AccessclassStats[WIFI_AC_VI].txMcast =
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_VI];
-        pWifiIfaceStat->AccessclassStats[WIFI_AC_BE].txMcast =
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_BE];
-        pWifiIfaceStat->AccessclassStats[WIFI_AC_BK].txMcast =
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_BK];
-    }
-    else
-    {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Interface not Associated"));
-    }
-
-
-
-    if (nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_BEACON_RX,
-                    pWifiIfaceStat->beaconRx) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_MGMT_RX,
-                    pWifiIfaceStat->mgmtRx) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_MGMT_ACTION_RX,
-                    pWifiIfaceStat->mgmtActionRx) ||
-        nla_put_u32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_MGMT_ACTION_TX,
-                    pWifiIfaceStat->mgmtActionTx) ||
-        nla_put_s32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_RSSI_MGMT,
-                    pWifiIfaceStat->rssiMgmt) ||
-        nla_put_s32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_RSSI_DATA,
-                    pWifiIfaceStat->rssiData) ||
-        nla_put_s32(vendor_event,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_RSSI_ACK,
-                    pWifiIfaceStat->rssiAck))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail"));
-        vos_mem_free(pWifiIfaceStatTL);
-        return FALSE;
-    }
-
-    wmmInfo = nla_nest_start(vendor_event,
-                            QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_INFO);
-    for (i = 0; i < WIFI_AC_MAX; i++)
-    {
-        struct nlattr *wmmStats;
-        wmmStats = nla_nest_start(vendor_event, i);
-        if (FALSE == put_wifi_wmm_ac_stat(
-                                &pWifiIfaceStat->AccessclassStats[i],
-                                vendor_event))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    FL("QCA_WLAN_VENDOR_ATTR put Fail"));
-            vos_mem_free(pWifiIfaceStatTL);
-            return FALSE;
-        }
-
-        nla_nest_end(vendor_event, wmmStats);
-    }
-    nla_nest_end(vendor_event, wmmInfo);
-    vos_mem_free(pWifiIfaceStatTL);
-    return TRUE;
-}
-
-static tSirWifiInterfaceMode
-    hdd_map_device_to_ll_iface_mode ( int deviceMode )
-{
-    switch (deviceMode)
-    {
-    case  WLAN_HDD_INFRA_STATION:
-        return WIFI_INTERFACE_STA;
-    case  WLAN_HDD_SOFTAP:
-        return WIFI_INTERFACE_SOFTAP;
-    case  WLAN_HDD_P2P_CLIENT:
-        return WIFI_INTERFACE_P2P_CLIENT;
-    case  WLAN_HDD_P2P_GO:
-        return WIFI_INTERFACE_P2P_GO;
-    case  WLAN_HDD_IBSS:
-        return WIFI_INTERFACE_IBSS;
-    default:
-        return WIFI_INTERFACE_UNKNOWN;
-    }
-}
-
-static v_BOOL_t hdd_get_interface_info(hdd_adapter_t *pAdapter,
-                           tpSirWifiInterfaceInfo pInfo)
-{
-    v_U8_t *staMac = NULL;
-    hdd_station_ctx_t *pHddStaCtx;
-    tHalHandle hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
-    tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
-
-    pInfo->mode = hdd_map_device_to_ll_iface_mode(pAdapter->device_mode);
-
-    vos_mem_copy(pInfo->macAddr,
-        pAdapter->macAddressCurrent.bytes, sizeof(v_MACADDR_t));
-
-    if (((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
-            (WLAN_HDD_P2P_CLIENT == pAdapter->device_mode) ||
-            (WLAN_HDD_P2P_DEVICE == pAdapter->device_mode)))
-    {
-        pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
-        if (eConnectionState_NotConnected == pHddStaCtx->conn_info.connState)
-        {
-            pInfo->state = WIFI_DISCONNECTED;
-        }
-        if (eConnectionState_Connecting == pHddStaCtx->conn_info.connState)
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    "%s: Session ID %d, Connection is in progress", __func__,
-                    pAdapter->sessionId);
-            pInfo->state = WIFI_ASSOCIATING;
-        }
-        if ((eConnectionState_Associated == pHddStaCtx->conn_info.connState) &&
-            (VOS_FALSE == pHddStaCtx->conn_info.uIsAuthenticated))
-        {
-            staMac = (v_U8_t *) &(pAdapter->macAddressCurrent.bytes[0]);
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                "%s: client " MAC_ADDRESS_STR
-                " is in the middle of WPS/EAPOL exchange.", __func__,
-                MAC_ADDR_ARRAY(staMac));
-            pInfo->state = WIFI_AUTHENTICATING;
-        }
-        if (eConnectionState_Associated == pHddStaCtx->conn_info.connState)
-        {
-            pInfo->state = WIFI_ASSOCIATED;
-            vos_mem_copy(pInfo->bssid,
-                    &pHddStaCtx->conn_info.bssId, WNI_CFG_BSSID_LEN);
-            vos_mem_copy(pInfo->ssid,
-                    pHddStaCtx->conn_info.SSID.SSID.ssId,
-                    pHddStaCtx->conn_info.SSID.SSID.length);
-            //NULL Terminate the string.
-            pInfo->ssid[pHddStaCtx->conn_info.SSID.SSID.length] = 0;
-        }
-    }
-    vos_mem_copy(pInfo->countryStr,
-        pMac->scan.countryCodeCurrent, WNI_CFG_COUNTRY_CODE_LEN);
-
-    vos_mem_copy(pInfo->apCountryStr,
-        pMac->scan.countryCodeCurrent, WNI_CFG_COUNTRY_CODE_LEN);
-
-    return TRUE;
-}
-
-/*
- * hdd_link_layer_process_peer_stats () - This function is called after
- * receiving Link Layer Peer statistics from FW.This function converts
- * the firmware data to the NL data and sends the same to the kernel/upper
- * layers.
- */
-static v_VOID_t hdd_link_layer_process_peer_stats(hdd_adapter_t *pAdapter,
-                                                   v_VOID_t *pData)
-{
-    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    tpSirWifiRateStat   pWifiRateStat;
-    tpSirWifiPeerStat   pWifiPeerStat;
-    tpSirWifiPeerInfo   pWifiPeerInfo;
-    struct nlattr *peerInfo;
-    struct sk_buff *vendor_event;
-    int status, i;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid") );
-        return;
-    }
-
-    pWifiPeerStat = (tpSirWifiPeerStat) pData;
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_PEER_ALL : numPeers %u",
-            pWifiPeerStat->numPeers);
-    {
-        for (i = 0; i < pWifiPeerStat->numPeers; i++)
-        {
-            pWifiPeerInfo = (tpSirWifiPeerInfo)
-                ((uint8 *)pWifiPeerStat->peerInfo +
-                ( i * sizeof(tSirWifiPeerInfo)));
-
-            if (WLAN_HDD_INFRA_STATION == pAdapter->device_mode) {
-                    pWifiPeerInfo->type = WIFI_PEER_AP;
-            }
-            if (WLAN_HDD_P2P_CLIENT == pAdapter->device_mode) {
-                    pWifiPeerInfo->type = WIFI_PEER_P2P_GO;
-            }
-
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    " %d) LL_STATS Channel Stats "
-                    " Peer Type %u "
-                    " peerMacAddress  %pM "
-                    " capabilities 0x%x "
-                    " numRate %u ",
-                    i,
-                    pWifiPeerInfo->type,
-                    pWifiPeerInfo->peerMacAddress,
-                    pWifiPeerInfo->capabilities,
-                    pWifiPeerInfo->numRate);
-            {
-                int j;
-                for (j = 0; j < pWifiPeerInfo->numRate; j++)
-                {
-                    pWifiRateStat = (tpSirWifiRateStat)
-                        ((tANI_U8 *) pWifiPeerInfo->rateStats +
-                         ( j * sizeof(tSirWifiRateStat)));
-
-                    hddLog(VOS_TRACE_LEVEL_INFO,
-                            "   peer Rate Stats "
-                            "   preamble  %u "
-                            "   nss %u "
-                            "   bw %u "
-                            "   rateMcsIdx  %u "
-                            "   reserved %u "
-                            "   bitrate %u "
-                            "   txMpdu %u "
-                            "   rxMpdu %u "
-                            "   mpduLost %u "
-                            "   retries %u "
-                            "   retriesShort %u "
-                            "   retriesLong %u",
-                            pWifiRateStat->rate.preamble,
-                            pWifiRateStat->rate.nss,
-                            pWifiRateStat->rate.bw,
-                            pWifiRateStat->rate.rateMcsIdx,
-                            pWifiRateStat->rate.reserved,
-                            pWifiRateStat->rate.bitrate,
-                            pWifiRateStat->txMpdu,
-                            pWifiRateStat->rxMpdu,
-                            pWifiRateStat->mpduLost,
-                            pWifiRateStat->retries,
-                            pWifiRateStat->retriesShort,
-                            pWifiRateStat->retriesLong);
-                }
-            }
-        }
-    }
-
-    /*
-     * Allocate a size of 4096 for the peer stats comprising
-     * each of size = sizeof (tSirWifiPeerInfo) + numRate *
-     * sizeof (tSirWifiRateStat).Each field is put with an
-     * NL attribute.The size of 4096 is considered assuming
-     * that number of rates shall not exceed beyond 50 with
-     * the sizeof (tSirWifiRateStat) being 32.
-     */
-    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-            LL_STATS_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-            QCA_NL80211_VENDOR_SUBCMD_LL_PEER_INFO_STATS_INDEX,
-            GFP_KERNEL);
-    if (!vendor_event)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                "%s: cfg80211_vendor_event_alloc failed",
-                __func__);
-        return;
-    }
-    if (nla_put_u32(vendor_event,
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_IFACE_NUM_PEERS,
-            pWifiPeerStat->numPeers))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                "%s: QCA_WLAN_VENDOR_ATTR put fail", __func__);
-        kfree_skb(vendor_event);
-        return;
-    }
-
-    peerInfo = nla_nest_start(vendor_event,
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_PEER_INFO);
-
-    pWifiPeerInfo = (tpSirWifiPeerInfo)  ((uint8 *)
-                pWifiPeerStat->peerInfo);
-
-    for (i = 1; i <= pWifiPeerStat->numPeers; i++)
-    {
-        struct nlattr *peers = nla_nest_start(vendor_event, i);
-        int numRate = pWifiPeerInfo->numRate;
-
-        if (FALSE == put_wifi_peer_info(
-                                     pWifiPeerInfo, vendor_event))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                "%s: put_wifi_peer_info put fail", __func__);
-            kfree_skb(vendor_event);
-            return;
-        }
-
-        pWifiPeerInfo = (tpSirWifiPeerInfo)  ((uint8 *)
-                pWifiPeerStat->peerInfo +
-                (i * sizeof(tSirWifiPeerInfo)) +
-                (numRate * sizeof (tSirWifiRateStat)));
-        nla_nest_end(vendor_event, peers);
-    }
-    nla_nest_end(vendor_event, peerInfo);
-    cfg80211_vendor_event(vendor_event, GFP_KERNEL);
-}
-
-/*
- * hdd_link_layer_process_iface_stats () - This function is called after
- * receiving Link Layer Interface statistics from FW.This function converts
- * the firmware data to the NL data and sends the same to the kernel/upper
- * layers.
- */
-static v_VOID_t hdd_link_layer_process_iface_stats(hdd_adapter_t *pAdapter,
-                                                   v_VOID_t *pData)
-{
-    tpSirWifiIfaceStat  pWifiIfaceStat;
-    struct sk_buff *vendor_event;
-    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    int status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid") );
-        return;
-    }
-    /*
-     * Allocate a size of 4096 for the interface stats comprising
-     * sizeof (tpSirWifiIfaceStat).The size of 4096 is considered
-     * assuming that all these fit with in the limit.Please take
-     * a call on the limit based on the data requirements on
-     * interface statistics.
-     */
-    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-           LL_STATS_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-           QCA_NL80211_VENDOR_SUBCMD_LL_IFACE_STATS_INDEX,
-           GFP_KERNEL);
-    if (!vendor_event)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("cfg80211_vendor_event_alloc failed") );
-        return;
-    }
-
-    pWifiIfaceStat = (tpSirWifiIfaceStat) pData;
-
-
-    if (FALSE == hdd_get_interface_info( pAdapter,
-                                        &pWifiIfaceStat->info))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("hdd_get_interface_info get fail") );
-        kfree_skb(vendor_event);
-        return;
-    }
-
-    if (FALSE == put_wifi_iface_stats( pAdapter, pWifiIfaceStat,
-                                       vendor_event))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("put_wifi_iface_stats fail") );
-        kfree_skb(vendor_event);
-        return;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "WMI_LINK_STATS_IFACE Data");
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "LL_STATS_IFACE: "
-           " Mode %u "
-           " MAC %pM "
-           " State %u "
-           " Roaming %u "
-           " capabilities 0x%x "
-           " SSID %s "
-           " BSSID %pM",
-           pWifiIfaceStat->info.mode,
-           pWifiIfaceStat->info.macAddr,
-           pWifiIfaceStat->info.state,
-           pWifiIfaceStat->info.roaming,
-           pWifiIfaceStat->info.capabilities,
-           pWifiIfaceStat->info.ssid,
-           pWifiIfaceStat->info.bssid);
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           " AP country str: %c%c%c",
-           pWifiIfaceStat->info.apCountryStr[0],
-           pWifiIfaceStat->info.apCountryStr[1],
-           pWifiIfaceStat->info.apCountryStr[2]);
-
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           " Country Str Association: %c%c%c",
-           pWifiIfaceStat->info.countryStr[0],
-           pWifiIfaceStat->info.countryStr[1],
-           pWifiIfaceStat->info.countryStr[2]);
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           " beaconRx %u "
-           " mgmtRx %u "
-           " mgmtActionRx  %u "
-           " mgmtActionTx %u "
-           " rssiMgmt %d "
-           " rssiData %d "
-           " rssiAck  %d",
-           pWifiIfaceStat->beaconRx,
-           pWifiIfaceStat->mgmtRx,
-           pWifiIfaceStat->mgmtActionRx,
-           pWifiIfaceStat->mgmtActionTx,
-           pWifiIfaceStat->rssiMgmt,
-           pWifiIfaceStat->rssiData,
-           pWifiIfaceStat->rssiAck );
-
-
-    {
-        int i;
-        for (i = 0 ; i < WIFI_AC_MAX; i ++)
-        {
-            hddLog(VOS_TRACE_LEVEL_INFO,
-
-                   " %d) LL_STATS IFACE: "
-                   " ac:  %u  txMpdu: %u "
-                   " rxMpdu: %u txMcast: %u "
-                   " rxMcast: %u  rxAmpdu: %u "
-                   " txAmpdu:  %u  mpduLost: %u "
-                   " retries: %u  retriesShort: %u "
-                   " retriesLong: %u  contentionTimeMin: %u "
-                   " contentionTimeMax: %u  contentionTimeAvg: %u "
-                   " contentionNumSamples: %u",
-                   i,
-                   pWifiIfaceStat->AccessclassStats[i].ac,
-                   pWifiIfaceStat->AccessclassStats[i].txMpdu,
-                   pWifiIfaceStat->AccessclassStats[i].rxMpdu,
-                   pWifiIfaceStat->AccessclassStats[i].txMcast,
-                   pWifiIfaceStat->AccessclassStats[i].rxMcast,
-                   pWifiIfaceStat->AccessclassStats[i].rxAmpdu,
-                   pWifiIfaceStat->AccessclassStats[i].txAmpdu,
-                   pWifiIfaceStat->AccessclassStats[i].mpduLost,
-                   pWifiIfaceStat->AccessclassStats[i].retries,
-                   pWifiIfaceStat->
-                       AccessclassStats[i].retriesShort,
-                   pWifiIfaceStat->AccessclassStats[i].retriesLong,
-                   pWifiIfaceStat->
-                       AccessclassStats[i].contentionTimeMin,
-                   pWifiIfaceStat->
-                       AccessclassStats[i].contentionTimeMax,
-                   pWifiIfaceStat->
-                       AccessclassStats[i].contentionTimeAvg,
-                   pWifiIfaceStat->
-                       AccessclassStats[i].contentionNumSamples);
-
-        }
-    }
-
-    cfg80211_vendor_event(vendor_event, GFP_KERNEL);
-}
-
-/*
- * hdd_link_layer_process_radio_stats () - This function is called after
- * receiving Link Layer Radio statistics from FW.This function converts
- * the firmware data to the NL data and sends the same to the kernel/upper
- * layers.
- */
-static v_VOID_t hdd_link_layer_process_radio_stats(hdd_adapter_t *pAdapter,
-                                                   v_VOID_t *pData)
-{
-    int status, i;
-    tpSirWifiRadioStat  pWifiRadioStat;
-    tpSirWifiChannelStats pWifiChannelStats;
-    struct sk_buff *vendor_event;
-    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    struct nlattr *chList;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid") );
-        return;
-    }
-    pWifiRadioStat = (tpSirWifiRadioStat) pData;
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "LL_STATS_RADIO"
-           " radio is %d onTime is %u "
-           " txTime is %u  rxTime is %u "
-           " onTimeScan is %u  onTimeNbd is %u "
-           " onTimeEXTScan is %u onTimeRoamScan is %u "
-           " onTimePnoScan is %u  onTimeHs20 is %u "
-           " numChannels is %u",
-           pWifiRadioStat->radio, pWifiRadioStat->onTime,
-           pWifiRadioStat->txTime, pWifiRadioStat->rxTime,
-           pWifiRadioStat->onTimeScan, pWifiRadioStat->onTimeNbd,
-           pWifiRadioStat->onTimeEXTScan,
-           pWifiRadioStat->onTimeRoamScan,
-           pWifiRadioStat->onTimePnoScan,
-           pWifiRadioStat->onTimeHs20,
-           pWifiRadioStat->numChannels);
-    /*
-     * Allocate a size of 4096 for the Radio stats comprising
-     * sizeof (tSirWifiRadioStat) + numChannels * sizeof
-     * (tSirWifiChannelStats).Each channel data is put with an
-     * NL attribute.The size of 4096 is considered assuming that
-     * number of channels shall not exceed beyond  60 with the
-     * sizeof (tSirWifiChannelStats) being 24 bytes.
-     */
-
-    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-           LL_STATS_EVENT_BUF_SIZE + NLMSG_HDRLEN ,
-           QCA_NL80211_VENDOR_SUBCMD_LL_RADIO_STATS_INDEX,
-           GFP_KERNEL);
-
-    if (!vendor_event)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("cfg80211_vendor_event_alloc failed") );
-        return;
-    }
-
-    if (nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ID,
-             pWifiRadioStat->radio)      ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME,
-             pWifiRadioStat->onTime)     ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_TX_TIME,
-             pWifiRadioStat->txTime)     ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_RX_TIME,
-             pWifiRadioStat->rxTime)     ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME_SCAN,
-             pWifiRadioStat->onTimeScan) ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME_NBD,
-             pWifiRadioStat->onTimeNbd)  ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME_EXTSCAN,
-             pWifiRadioStat->onTimeEXTScan)||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME_ROAM_SCAN,
-             pWifiRadioStat->onTimeRoamScan) ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME_PNO_SCAN,
-             pWifiRadioStat->onTimePnoScan) ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_ON_TIME_HS20,
-             pWifiRadioStat->onTimeHs20)    ||
-        nla_put_u32(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_RADIO_NUM_CHANNELS,
-             pWifiRadioStat->numChannels))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("QCA_WLAN_VENDOR_ATTR put fail"));
-        kfree_skb(vendor_event);
-        return ;
-    }
-
-    chList = nla_nest_start(vendor_event,
-             QCA_WLAN_VENDOR_ATTR_LL_STATS_CH_INFO);
-    for (i = 0; i < pWifiRadioStat->numChannels; i++)
-    {
-        struct nlattr *chInfo;
-
-        pWifiChannelStats = (tpSirWifiChannelStats) ((uint8*)
-                pWifiRadioStat->channels +
-                (i * sizeof(tSirWifiChannelStats)));
-
-        hddLog(VOS_TRACE_LEVEL_INFO,
-               " %d) Channel Info"
-               "  width is %u "
-               "  CenterFreq %u "
-               "  CenterFreq0 %u "
-               "  CenterFreq1 %u "
-               "  onTime %u "
-               "  ccaBusyTime %u",
-               i,
-               pWifiChannelStats->channel.width,
-               pWifiChannelStats->channel.centerFreq,
-               pWifiChannelStats->channel.centerFreq0,
-               pWifiChannelStats->channel.centerFreq1,
-               pWifiChannelStats->onTime,
-               pWifiChannelStats->ccaBusyTime);
-
-
-        chInfo = nla_nest_start(vendor_event, i);
-
-        if (nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_INFO_WIDTH,
-                pWifiChannelStats->channel.width) ||
-            nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_INFO_CENTER_FREQ,
-                pWifiChannelStats->channel.centerFreq) ||
-            nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_INFO_CENTER_FREQ0,
-                pWifiChannelStats->channel.centerFreq0)  ||
-            nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_INFO_CENTER_FREQ1,
-                pWifiChannelStats->channel.centerFreq1)    ||
-            nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_ON_TIME,
-                pWifiChannelStats->onTime)  ||
-            nla_put_u32(vendor_event,
-                QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_CCA_BUSY_TIME,
-                pWifiChannelStats->ccaBusyTime))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                   FL("cfg80211_vendor_event_alloc failed") );
-            kfree_skb(vendor_event);
-            return ;
-        }
-        nla_nest_end(vendor_event, chInfo);
-    }
-    nla_nest_end(vendor_event, chList);
-
-    cfg80211_vendor_event(vendor_event, GFP_KERNEL);
-    return;
-}
-
-/*
- * hdd_link_layer_stats_ind_callback () - This function is called after
- * receiving Link Layer indications from FW.This callback converts the firmware
- * data to the NL data and send the same to the kernel/upper layers.
- */
-static void hdd_link_layer_stats_ind_callback ( void *pCtx,
-                                                int indType,
-                                                void *pRsp, u8  *macAddr)
-{
-    hdd_context_t *pHddCtx = (hdd_context_t *)pCtx;
-    hdd_adapter_t *pAdapter = NULL;
-    tpSirLLStatsResults linkLayerStatsResults = (tpSirLLStatsResults)pRsp;
-    int status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return;
-    }
-
-
-
-    pAdapter = hdd_get_adapter_by_macaddr(pHddCtx, macAddr);
-    if (NULL == pAdapter)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL(" MAC address %pM does not exist with host"),
-                macAddr);
-        return;
-    }
-
-    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-            "%s: Interface: %s LLStats indType: %d", __func__,
-            pAdapter->dev->name, indType);
-
-    switch (indType)
-    {
-    case SIR_HAL_LL_STATS_RESULTS_RSP:
-        {
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    FL("RESPONSE SIR_HAL_LL_STATS_RESULTS_RSP") );
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    "LL_STATS RESULTS RESPONSE paramID = 0x%x",
-                    linkLayerStatsResults->paramId);
-            hddLog(VOS_TRACE_LEVEL_INFO,
-               "LL_STATS RESULTS RESPONSE ifaceId = %u MAC: %pM",
-               linkLayerStatsResults->ifaceId, macAddr);
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    "LL_STATS RESULTS RESPONSE respId = %u",
-                    linkLayerStatsResults->respId);
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    "LL_STATS RESULTS RESPONSE moreResultToFollow = %u",
-                    linkLayerStatsResults->moreResultToFollow);
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    "LL_STATS RESULTS RESPONSE result = %p",
-                    linkLayerStatsResults->result);
-            if ( linkLayerStatsResults->paramId & WMI_LINK_STATS_RADIO )
-            {
-                hdd_link_layer_process_radio_stats(pAdapter,
-                                (v_VOID_t *)linkLayerStatsResults->result);
-            }
-            else if ( linkLayerStatsResults->paramId & WMI_LINK_STATS_IFACE )
-            {
-                hdd_link_layer_process_iface_stats(pAdapter,
-                                (v_VOID_t *)linkLayerStatsResults->result);
-            }
-            else if ( linkLayerStatsResults->paramId &
-                    WMI_LINK_STATS_ALL_PEER )
-            {
-                hdd_link_layer_process_peer_stats(pAdapter,
-                                (v_VOID_t *)linkLayerStatsResults->result);
-            } /* WMI_LINK_STATS_ALL_PEER */
-            else
-            {
-                hddLog(VOS_TRACE_LEVEL_ERROR,
-                        FL("INVALID LL_STATS_NOTIFY RESPONSE ***********"));
-            }
-
-            break;
-        }
-        default:
-            hddLog(VOS_TRACE_LEVEL_ERROR, "invalid event type %d", indType);
-            break;
-    }
-    return;
-}
-
-const struct
-nla_policy
-qca_wlan_vendor_ll_set_policy[QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_MAX +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_CONFIG_MPDU_SIZE_THRESHOLD] =
-    { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_CONFIG_AGGRESSIVE_STATS_GATHERING] =
-    { .type = NLA_U32 },
-};
-
-static int wlan_hdd_cfg80211_ll_stats_set(struct wiphy *wiphy,
-        struct wireless_dev *wdev,
-        void *data,
-        int data_len)
-{
-    int status;
-    struct nlattr *tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_MAX + 1];
-    tSirLLStatsSetReq linkLayerStatsSetReq;
-    struct net_device *dev = wdev->netdev;
-    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx = wiphy_priv(wiphy);
-    hdd_station_ctx_t *pHddStaCtx;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-
-    if (NULL == pAdapter)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD adapter is Null"));
-        return -ENODEV;
-    }
-    /* check the LLStats Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableLLStats) ||
-         (TRUE != sme_IsFeatureSupportedByFW(LINK_LAYER_STATS_MEAS)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("Link Layer Statistics not supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb_vendor, QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_MAX,
-           (struct nlattr *)data,
-           data_len, qca_wlan_vendor_ll_set_policy))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL() );
-        return -EINVAL;
-    }
-    if (!tb_vendor
-            [QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_CONFIG_MPDU_SIZE_THRESHOLD])
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("MPDU size Not present"));
-        return -EINVAL;
-    }
-    if (!tb_vendor[
-         QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_CONFIG_AGGRESSIVE_STATS_GATHERING])
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL(" Stats Gathering Not Present"));
-        return -EINVAL;
-    }
-    // Shall take the request Id if the Upper layers pass. 1 For now.
-    linkLayerStatsSetReq.reqId = 1;
-
-    linkLayerStatsSetReq.mpduSizeThreshold =
-        nla_get_u32(
-            tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_CONFIG_MPDU_SIZE_THRESHOLD]);
-
-    linkLayerStatsSetReq.aggressiveStatisticsGathering =
-        nla_get_u32(
-            tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_SET_CONFIG_AGGRESSIVE_STATS_GATHERING]);
-
-    vos_mem_copy(linkLayerStatsSetReq.macAddr,
-               pAdapter->macAddressCurrent.bytes, sizeof(v_MACADDR_t));
-
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "LL_STATS_SET reqId = %d", linkLayerStatsSetReq.reqId);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_SET MAC = %pM", linkLayerStatsSetReq.macAddr);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_SET mpduSizeThreshold = %d",
-            linkLayerStatsSetReq.mpduSizeThreshold);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_SET aggressive Statistics Gathering  = %d",
-            linkLayerStatsSetReq.aggressiveStatisticsGathering);
-
-    if (eHAL_STATUS_SUCCESS != sme_SetLinkLayerStatsIndCB(
-                               pHddCtx->hHal,
-                               hdd_link_layer_stats_ind_callback))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s:"
-           "sme_SetLinkLayerStatsIndCB Failed", __func__);
-        return -EINVAL;
-
-    }
-
-    pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
-    if (VOS_STATUS_SUCCESS !=
-        WLANTL_ClearInterfaceStats((WLAN_HDD_GET_CTX(pAdapter))->pvosContext,
-        pHddStaCtx->conn_info.staId[0], WIFI_STATS_IFACE))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s:"
-                "WLANTL_ClearInterfaceStats Failed", __func__);
-        return -EINVAL;
-    }
-
-    pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_VO] = 0;
-    pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_VI] = 0;
-    pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_BE] = 0;
-    pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_BK] = 0;
-
-    if (eHAL_STATUS_SUCCESS != sme_LLStatsSetReq( pHddCtx->hHal,
-                                            &linkLayerStatsSetReq))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s:"
-           "sme_LLStatsSetReq Failed", __func__);
-        return -EINVAL;
-    }
-
-    pAdapter->isLinkLayerStatsSet = 1;
-
-    return 0;
-}
-
-const struct
-nla_policy
-qca_wlan_vendor_ll_get_policy[QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_MAX +1] =
-{
-    /* Unsigned 32bit value provided by the caller issuing the GET stats
-     * command. When reporting
-     * the stats results, the driver uses the same value to indicate
-     * which GET request the results
-     * correspond to.
-     */
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_CONFIG_REQ_ID] = { .type = NLA_U32 },
-
-    /* Unsigned 32bit value . bit mask to identify what statistics are
-         requested for retrieval */
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_CONFIG_REQ_MASK] = { .type = NLA_U32 },
-};
-
-static int wlan_hdd_cfg80211_ll_stats_get(struct wiphy *wiphy,
-                                          struct wireless_dev *wdev,
-                                          void *data,
-                                          int data_len)
-{
-    hdd_context_t *pHddCtx = wiphy_priv(wiphy);
-    struct nlattr *tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_MAX + 1];
-    tSirLLStatsGetReq linkLayerStatsGetReq;
-    struct net_device *dev = wdev->netdev;
-    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
-    int status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL ;
-    }
-
-    if (NULL == pAdapter)
-    {
-        hddLog(VOS_TRACE_LEVEL_FATAL,
-               "%s: HDD adapter is Null", __func__);
-        return -ENODEV;
-    }
-    /* check the LLStats Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableLLStats) ||
-         (TRUE != sme_IsFeatureSupportedByFW(LINK_LAYER_STATS_MEAS)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("Link Layer Statistics not supported by Firmware"));
-        return -EINVAL;
-    }
-
-
-    if (!pAdapter->isLinkLayerStatsSet)
-    {
-        hddLog(VOS_TRACE_LEVEL_FATAL,
-               "%s: isLinkLayerStatsSet : %d",
-               __func__, pAdapter->isLinkLayerStatsSet);
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb_vendor, QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_MAX,
-            (struct nlattr *)data,
-            data_len, qca_wlan_vendor_ll_get_policy))
-    {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL() );
-       return -EINVAL;
-    }
-
-    if (!tb_vendor
-            [QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_CONFIG_REQ_ID])
-    {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL("Request Id Not present"));
-       return -EINVAL;
-    }
-
-    if (!tb_vendor
-            [QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_CONFIG_REQ_MASK])
-    {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL("Req Mask Not present"));
-       return -EINVAL;
-    }
-
-
-    linkLayerStatsGetReq.reqId =
-        nla_get_u32( tb_vendor[
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_CONFIG_REQ_ID]);
-    linkLayerStatsGetReq.paramIdMask =
-        nla_get_u32( tb_vendor[
-            QCA_WLAN_VENDOR_ATTR_LL_STATS_GET_CONFIG_REQ_MASK]);
-
-    vos_mem_copy(linkLayerStatsGetReq.macAddr,
-               pAdapter->macAddressCurrent.bytes, sizeof(v_MACADDR_t));
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "LL_STATS_GET reqId = %d", linkLayerStatsGetReq.reqId);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "LL_STATS_GET MAC = %pM", linkLayerStatsGetReq.macAddr);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-           "LL_STATS_GET paramIdMask = %d",
-           linkLayerStatsGetReq.paramIdMask);
-
-    if (eHAL_STATUS_SUCCESS  != sme_LLStatsGetReq( pHddCtx->hHal,
-                                                &linkLayerStatsGetReq))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s:"
-               "sme_LLStatsGetReq Failed", __func__);
-        return -EINVAL;
-    }
-    return 0;
-}
-
-const struct
-nla_policy
-qca_wlan_vendor_ll_clr_policy[QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_MAX +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_REQ_MASK] = {.type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_STOP_REQ] = {.type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_RSP_MASK] = {.type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_STOP_RSP] = {.type = NLA_U8 },
-};
-
-static int wlan_hdd_cfg80211_ll_stats_clear(struct wiphy *wiphy,
-                                            struct wireless_dev *wdev,
-                                            void *data,
-                                            int data_len)
-{
-    hdd_context_t *pHddCtx = wiphy_priv(wiphy);
-    struct nlattr *tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_MAX + 1];
-    tSirLLStatsClearReq linkLayerStatsClearReq;
-    struct net_device *dev = wdev->netdev;
-    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
-    u32 statsClearReqMask;
-    u8 stopReq;
-    int status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-
-    if (NULL == pAdapter)
-    {
-        hddLog(VOS_TRACE_LEVEL_FATAL,
-                   "%s: HDD adapter is Null", __func__);
-        return -ENODEV;
-    }
-    /* check the LLStats Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableLLStats) ||
-         (TRUE != sme_IsFeatureSupportedByFW(LINK_LAYER_STATS_MEAS)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("Enable LLStats Capability"));
-        return -EINVAL;
-    }
-
-    if (!pAdapter->isLinkLayerStatsSet)
-    {
-        hddLog(VOS_TRACE_LEVEL_FATAL,
-                   "%s: isLinkLayerStatsSet : %d",
-                   __func__, pAdapter->isLinkLayerStatsSet);
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb_vendor, QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_MAX,
-            (struct nlattr *)data,
-            data_len, qca_wlan_vendor_ll_clr_policy))
-    {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL() );
-       return -EINVAL;
-    }
-
-    if (!tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_REQ_MASK] ||
-
-        !tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_STOP_REQ])
-    {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL("Error in LL_STATS CLR CONFIG PARA") );
-       return -EINVAL;
-
-    }
-
-
-    statsClearReqMask = linkLayerStatsClearReq.statsClearReqMask =
-        nla_get_u32(
-            tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_REQ_MASK]);
-
-    stopReq = linkLayerStatsClearReq.stopReq =
-        nla_get_u8(
-            tb_vendor[QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_STOP_REQ]);
-
-    // Shall take the request Id if the Upper layers pass. 1 For now.
-    linkLayerStatsClearReq.reqId = 1;
-
-    vos_mem_copy(linkLayerStatsClearReq.macAddr,
-               pAdapter->macAddressCurrent.bytes, sizeof(v_MACADDR_t));
-
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_CLEAR reqId = %d", linkLayerStatsClearReq.reqId);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_CLEAR MAC = %pM", linkLayerStatsClearReq.macAddr);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_CLEAR statsClearReqMask = 0x%X",
-            linkLayerStatsClearReq.statsClearReqMask);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-            "LL_STATS_CLEAR stopReq  = %d",
-            linkLayerStatsClearReq.stopReq);
-
-    if (eHAL_STATUS_SUCCESS == sme_LLStatsClearReq(pHddCtx->hHal,
-                                                     &linkLayerStatsClearReq))
-    {
-        struct sk_buff *temp_skbuff;
-        hdd_station_ctx_t *pHddStaCtx;
-
-        pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
-        if (VOS_STATUS_SUCCESS !=
-           WLANTL_ClearInterfaceStats((WLAN_HDD_GET_CTX(pAdapter))->pvosContext,
-           pHddStaCtx->conn_info.staId[0], statsClearReqMask))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR, "%s:"
-                    "WLANTL_ClearInterfaceStats Failed", __func__);
-            return -EINVAL;
-        }
-        if ((statsClearReqMask & WIFI_STATS_IFACE_AC) ||
-                (statsClearReqMask & WIFI_STATS_IFACE)) {
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_VO] = 0;
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_VI] = 0;
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_BE] = 0;
-            pAdapter->hdd_stats.hddTxRxStats.txMcast[WLANTL_AC_BK] = 0;
-        }
-
-        temp_skbuff = cfg80211_vendor_cmd_alloc_reply_skb(wiphy,
-                                2 * sizeof(u32) +
-                            NLMSG_HDRLEN);
-
-        if (temp_skbuff != NULL)
-        {
-
-            if (nla_put_u32(temp_skbuff,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_RSP_MASK,
-                    statsClearReqMask) ||
-                 nla_put_u32(temp_skbuff,
-                    QCA_WLAN_VENDOR_ATTR_LL_STATS_CLR_CONFIG_STOP_RSP,
-                    stopReq))
-            {
-                 hddLog(VOS_TRACE_LEVEL_ERROR, FL("LL_STATS_CLR put fail"));
-                 kfree_skb(temp_skbuff);
-                 return -EINVAL;
-            }
-            /* If the ask is to stop the stats collection as part of clear
-             * (stopReq = 1) , ensure that no further requests of get
-             * go to the firmware by having isLinkLayerStatsSet set to 0.
-             * However it the stopReq as part of the clear request is 0 ,
-             * the request to get the statistics are honoured as in this
-             * case the firmware is just asked to clear the statistics.
-             */
-            if (linkLayerStatsClearReq.stopReq == 1)
-                pAdapter->isLinkLayerStatsSet = 0;
-            return cfg80211_vendor_cmd_reply(temp_skbuff);
-        }
-        return -ENOMEM;
-    }
-    return -EINVAL;
-}
-#endif /* WLAN_FEATURE_LINK_LAYER_STATS */
-
-#ifdef WLAN_FEATURE_EXTSCAN
-static const struct nla_policy
-wlan_hdd_extscan_config_policy
-            [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID] =
-                                                        { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_VALID_CHANNELS_CONFIG_PARAM_WIFI_BAND] =
-                                                        { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_CHANNEL] = { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_DWELL_TIME] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_PASSIVE] = { .type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_CLASS] = { .type = NLA_U8 },
-
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_INDEX] = { .type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_BAND] = { .type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_PERIOD] = { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_REPORT_EVENTS] =
-                                                            { .type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_NUM_CHANNEL_SPECS] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_BASE_PERIOD] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_MAX_AP_PER_SCAN] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_REPORT_THRESHOLD] =
-                                                            { .type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_NUM_BUCKETS] =
-                                                            { .type = NLA_U8 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_CACHED_SCAN_RESULTS_CONFIG_PARAM_FLUSH] =
-                                                             { .type = NLA_U8 },
-
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_CACHED_SCAN_RESULTS_CONFIG_PARAM_MAX] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_BSSID] =
-                                                        { .type = NLA_UNSPEC },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_LOW] =
-                                                            { .type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_HIGH] =
-                                                            { .type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_CHANNEL] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_BSSID_HOTLIST_PARAMS_NUM_AP] =
-                                                            { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_RSSI_SAMPLE_SIZE] =
-                                                         { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_LOST_AP_SAMPLE_SIZE]
-                                                         = { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_MIN_BREACHING] =
-                                                           { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_NUM_AP] = { .type =
-                                                                     NLA_U32 },
-};
-
-static void wlan_hdd_cfg80211_extscan_get_capabilities_ind(void *ctx, void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tpSirEXTScanCapabilitiesEvent pData =
-                    (tpSirEXTScanCapabilitiesEvent) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                        EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                        QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CAPABILITIES_INDEX,
-                        GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Scan cache size (%u)", pData->scanCacheSize);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Scan buckets (%u)", pData->scanBuckets);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Max AP per scan (%u)", pData->maxApPerScan);
-    hddLog(VOS_TRACE_LEVEL_INFO, "maxRssiSampleSize (%u)",
-                                        pData->maxRssiSampleSize);
-    hddLog(VOS_TRACE_LEVEL_INFO, "maxScanReportingThreshold (%u)",
-                                        pData->maxScanReportingThreshold);
-    hddLog(VOS_TRACE_LEVEL_INFO, "maxHotlistAPs (%u)", pData->maxHotlistAPs);
-    hddLog(VOS_TRACE_LEVEL_INFO, "maxSignificantWifiChangeAPs (%u)",
-                                        pData->maxSignificantWifiChangeAPs);
-    hddLog(VOS_TRACE_LEVEL_INFO, "maxBsidHistoryEntries (%u)",
-                                        pData->maxBsidHistoryEntries);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-           pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_SCAN_CACHE_SIZE,
-           pData->scanCacheSize) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_SCAN_BUCKETS,
-           pData->scanBuckets) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_AP_CACHE_PER_SCAN,
-           pData->maxApPerScan) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_RSSI_SAMPLE_SIZE,
-           pData->maxRssiSampleSize) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_SCAN_REPORTING_THRESHOLD,
-           pData->maxScanReportingThreshold) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_HOTLIST_APS,
-           pData->maxHotlistAPs) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_SIGNIFICANT_WIFI_CHANGE_APS,
-           pData->maxSignificantWifiChangeAPs) ||
-        nla_put_u32(skb,
-           QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CAPABILITIES_MAX_BSSID_HISTORY_ENTRIES,
-           pData->maxBsidHistoryEntries)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-
-static void wlan_hdd_cfg80211_extscan_start_rsp(void *ctx, void *pMsg)
-{
-    tpSirEXTScanStartRspParams pData = (tpSirEXTScanStartRspParams) pMsg;
-    hdd_context_t *pHddCtx         = (hdd_context_t *)ctx;
-    struct sk_buff *skb            = NULL;
-    tpAniSirGlobal pMac = PMAC_STRUCT( pHddCtx->hHal );
-
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                                  EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                                  QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_START_INDEX,
-                                  GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Status (%u)", pData->status);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                         pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    /*
-     * Store the Request ID for comparing with the requestID obtained
-     * in other requests.HDD shall return a failure is the extscan_stop
-     * request is issued with a different requestId as that of the
-     * extscan_start request. Also, This requestId shall be used while
-     * indicating the full scan results to the upper layers.
-     * The requestId is stored with the assumption that the firmware
-     * shall return the ext scan start request's requestId in ext scan
-     * start response.
-     */
-    if (pData->status == 0)
-        pMac->sme.extScanStartReqId = pData->requestId;
-
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-
-static void wlan_hdd_cfg80211_extscan_stop_rsp(void *ctx, void *pMsg)
-{
-    tpSirEXTScanStopRspParams pData = (tpSirEXTScanStopRspParams) pMsg;
-    hdd_context_t *pHddCtx        = (hdd_context_t *)ctx;
-    struct sk_buff *skb           = NULL;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                                    EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                                    QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_STOP_INDEX,
-                                    GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                         pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-
-static void wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(void *ctx,
-                                                        void *pMsg)
-{
-    hdd_context_t *pHddCtx    = (hdd_context_t *)ctx;
-    struct sk_buff *skb       = NULL;
-    tpSirEXTScanSetBssidHotListRspParams pData =
-                    (tpSirEXTScanSetBssidHotListRspParams) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                      EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                      QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_BSSID_HOTLIST_INDEX,
-                      GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Status (%u)", pData->status);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                         pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-static void wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(void *ctx,
-                                                          void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tpSirEXTScanResetBssidHotlistRspParams pData =
-                    (tpSirEXTScanResetBssidHotlistRspParams) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                      EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                      QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_BSSID_HOTLIST_INDEX,
-                      GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                         pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-
-static void wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(void *ctx,
-                                                              void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tpSirEXTScanSetSignificantChangeRspParams pData =
-                    (tpSirEXTScanSetSignificantChangeRspParams) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_SIGNIFICANT_CHANGE_INDEX,
-                GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Status (%u)", pData->status);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                         pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-
-static void wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(void *ctx,
-                                                                void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tpSirEXTScanResetSignificantChangeRspParams pData =
-                    (tpSirEXTScanResetSignificantChangeRspParams) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-              EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-              QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_SIGNIFICANT_CHANGE_INDEX,
-              GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Status (%u)", pData->status);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                         pData->requestId) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_STATUS, pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-static void wlan_hdd_cfg80211_extscan_cached_results_ind(void *ctx,
-                                                       void *pMsg)
-{
-    hdd_context_t *pHddCtx = (hdd_context_t *)ctx;
-    struct sk_buff *skb    = NULL;
-    tANI_U32 i = 0, j, resultsPerEvent;
-    tANI_S32 totalResults;
-    tpSirWifiScanResultEvent pData = (tpSirWifiScanResultEvent) pMsg;
-    tpSirWifiScanResult pSirWifiScanResult;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-    totalResults = pData->numOfAps;
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Num results (%u)", pData->numOfAps);
-    hddLog(VOS_TRACE_LEVEL_INFO, "More Data (%u)", pData->moreData);
-
-    do{
-        resultsPerEvent = ((totalResults >= EXTSCAN_MAX_CACHED_RESULTS_PER_IND) ?
-                EXTSCAN_MAX_CACHED_RESULTS_PER_IND : totalResults);
-        totalResults -= EXTSCAN_MAX_CACHED_RESULTS_PER_IND;
-
-        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CACHED_RESULTS_INDEX,
-                GFP_KERNEL);
-
-        if (!skb) {
-            hddLog(VOS_TRACE_LEVEL_ERROR,
-                    FL("cfg80211_vendor_event_alloc failed"));
-            return;
-        }
-
-        hddLog(VOS_TRACE_LEVEL_INFO, "resultsPerEvent (%u)", resultsPerEvent);
-
-        if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                    pData->requestId) ||
-                nla_put_u32(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_NUM_RESULTS_AVAILABLE,
-                    resultsPerEvent)) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-            goto fail;
-        }
-        if (nla_put_u8(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_MORE_DATA,
-                    pData->moreData ? 1 : (totalResults > 0 ? 1 : 0 )))
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-            goto fail;
-        }
-
-        if (resultsPerEvent) {
-            struct nlattr *aps;
-
-            aps = nla_nest_start(skb,
-                            QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_LIST);
-            if (!aps)
-            {
-                hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                goto fail;
-            }
-
-            for (j = 0; j < resultsPerEvent; j++, i++) {
-                struct nlattr *ap;
-                pSirWifiScanResult =  (tpSirWifiScanResult) ((tANI_U8 *)
-                        pData->ap + ( i* sizeof(tSirWifiScanResult)));
-
-                hddLog(VOS_TRACE_LEVEL_INFO, "[index=%u] Timestamp(%llu) "
-                        "Ssid (%s)"
-                        "Bssid: %pM "
-                        "Channel (%u)"
-                        "Rssi (%d)"
-                        "RTT (%u)"
-                        "RTT_SD (%u)",
-                        i,
-                        pSirWifiScanResult->ts,
-                        pSirWifiScanResult->ssid,
-                        pSirWifiScanResult->bssid,
-                        pSirWifiScanResult->channel,
-                        pSirWifiScanResult->rssi,
-                        pSirWifiScanResult->rtt,
-                        pSirWifiScanResult->rtt_sd);
-
-                ap = nla_nest_start(skb, j + 1);
-                if (!ap)
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-
-                if (nla_put_u64(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
-                    pSirWifiScanResult->ts) )
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-                if (nla_put(skb,
-                         QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_SSID,
-                         sizeof(pSirWifiScanResult->ssid),
-                        pSirWifiScanResult->ssid) )
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-                if (nla_put(skb,
-                        QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_BSSID,
-                        sizeof(pSirWifiScanResult->bssid),
-                        pSirWifiScanResult->bssid) )
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-                if (nla_put_u32(skb,
-                       QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_CHANNEL,
-                        pSirWifiScanResult->channel) )
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-                if (nla_put_s32(skb,
-                        QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RSSI,
-                        pSirWifiScanResult->rssi) )
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-                if (nla_put_u32(skb,
-                          QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RTT,
-                          pSirWifiScanResult->rtt) )
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-                if (nla_put_u32(skb,
-                        QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RTT_SD,
-                        pSirWifiScanResult->rtt_sd))
-                {
-                    hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-                    goto fail;
-                }
-
-                nla_nest_end(skb, ap);
-            }
-            nla_nest_end(skb, aps);
-
-        }
-        cfg80211_vendor_event(skb, GFP_KERNEL);
-    } while (totalResults > 0);
-
-    return;
-fail:
-    kfree_skb(skb);
-    return;
-}
-
-static void wlan_hdd_cfg80211_extscan_hotlist_match_ind(void *ctx,
-                                                      void *pMsg)
-{
-    tpSirWifiScanResultEvent pData = (tpSirWifiScanResultEvent) pMsg;
-    hdd_context_t *pHddCtx         = (hdd_context_t *)ctx;
-    struct sk_buff *skb            = NULL;
-    tANI_U32 i;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                      EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                      QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_HOTLIST_AP_FOUND_INDEX,
-                      GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Num results (%u)", pData->numOfAps);
-    hddLog(VOS_TRACE_LEVEL_INFO, "More Data (%u)", pData->moreData);
-
-    for (i = 0; i < pData->numOfAps; i++) {
-        hddLog(VOS_TRACE_LEVEL_INFO, "[index=%u] Timestamp(0x%lld) "
-                              "Ssid (%s) "
-                              "Bssid (" MAC_ADDRESS_STR ") "
-                              "Channel (%u) "
-                              "Rssi (%d) "
-                              "RTT (%u) "
-                              "RTT_SD (%u) ",
-                              i,
-                              pData->ap[i].ts,
-                              pData->ap[i].ssid,
-                              MAC_ADDR_ARRAY(pData->ap[i].bssid),
-                              pData->ap[i].channel,
-                              pData->ap[i].rssi,
-                              pData->ap[i].rtt,
-                              pData->ap[i].rtt_sd);
-    }
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                      pData->requestId) ||
-        nla_put_u32(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_NUM_RESULTS_AVAILABLE,
-                      pData->numOfAps)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-        goto fail;
-    }
-    if (pData->numOfAps) {
-        struct nlattr *aps;
-
-        aps = nla_nest_start(skb,
-                   QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_LIST);
-        if (!aps)
-            goto fail;
-
-        for (i = 0; i < pData->numOfAps; i++) {
-            struct nlattr *ap;
-
-            ap = nla_nest_start(skb, i + 1);
-            if (!ap)
-                goto fail;
-
-            if (nla_put_u64(skb,
-                   QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
-                    pData->ap[i].ts) ||
-                nla_put(skb,
-                     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_SSID,
-                     sizeof(pData->ap[i].ssid),
-                     pData->ap[i].ssid) ||
-                nla_put(skb,
-                     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_BSSID,
-                     sizeof(pData->ap[i].bssid),
-                     pData->ap[i].bssid) ||
-                nla_put_u32(skb,
-                     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_CHANNEL,
-                     pData->ap[i].channel) ||
-                nla_put_s32(skb,
-                     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RSSI,
-                     pData->ap[i].rssi) ||
-                nla_put_u32(skb,
-                     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RTT,
-                     pData->ap[i].rtt) ||
-                nla_put_u32(skb,
-                     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RTT_SD,
-                     pData->ap[i].rtt_sd))
-                goto fail;
-
-              nla_nest_end(skb, ap);
-        }
-        nla_nest_end(skb, aps);
-
-        if (nla_put_u8(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_MORE_DATA,
-                      pData->moreData))
-            goto fail;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-fail:
-    kfree_skb(skb);
-    return;
-
-}
-static void wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(void *ctx,
-                                                                   void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tANI_U32 i, j;
-    tpSirWifiSignificantChangeEvent pData =
-                                     (tpSirWifiSignificantChangeEvent) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                    EXTSCAN_EVENT_BUF_SIZE,
-                    QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SIGNIFICANT_CHANGE_INDEX,
-                    GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "total List Size %u ", pData->numSigRssiBss);
-    hddLog(VOS_TRACE_LEVEL_INFO, " CUrrent List size  (%u)",
-            pData->numSigRssiBss);
-    hddLog(VOS_TRACE_LEVEL_INFO, "moreData (%u)", pData->moreData);
-
-    for (i = 0; i < pData->numSigRssiBss; i++) {
-        hddLog(VOS_TRACE_LEVEL_INFO , "Rssi List [%d] BSSID: (%pM) Channel %u "
-                " num RSSI %u ",
-                i, pData->sigRssiResult[i].bssid,
-                pData->sigRssiResult[i].channel,
-                pData->sigRssiResult[i].numRssi);
-
-        for (j = 0; j < pData->sigRssiResult[i].numRssi; j++){
-
-            hddLog(VOS_TRACE_LEVEL_INFO,
-                    " [%d]",
-                    pData->sigRssiResult[i].rssi[j]);
-
-        }
-    }
-
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                pData->requestId) ||
-            nla_put_u32(skb,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_NUM_RESULTS_AVAILABLE,
-                pData->numSigRssiBss)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("put fail"));
-        goto fail;
-    }
-
-    if (pData->numSigRssiBss) {
-        struct nlattr *aps;
-        aps = nla_nest_start(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_LIST);
-        if (!aps)
-            goto fail;
-        for (i = 0; i < pData->numSigRssiBss; i++) {
-            struct nlattr *ap;
-
-            ap = nla_nest_start(skb, i);
-            if (!ap)
-                goto fail;
-            if (nla_put(skb,
-                 QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SIGNIFICANT_CHANGE_RESULT_BSSID,
-                 sizeof(tSirMacAddr), pData->sigRssiResult[i].bssid) ||
-                nla_put_u32(skb,
-                 QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SIGNIFICANT_CHANGE_RESULT_CHANNEL,
-                 pData->sigRssiResult[i].channel) ||
-                nla_put_u32(skb,
-                 QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SIGNIFICANT_CHANGE_RESULT_NUM_RSSI,
-                 pData->sigRssiResult[i].numRssi) ||
-                nla_put(skb,
-                 QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SIGNIFICANT_CHANGE_RESULT_RSSI_LIST,
-                 sizeof(s32) * pData->sigRssiResult[i].numRssi,
-                 pData->sigRssiResult[i].rssi))
-                goto fail;
-            nla_nest_end(skb, ap);
-        }
-        nla_nest_end(skb, aps);
-        if (nla_put_u8(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_MORE_DATA,
-                    pData->moreData))
-            goto fail;
-    }
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-fail:
-    kfree_skb(skb);
-    return;
-}
-
-static void wlan_hdd_cfg80211_extscan_full_scan_result_event(void *ctx,
-                                                           void *pMsg)
-{
-    struct sk_buff *skb;
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    tpSirWifiFullScanResultEvent pData =
-        (tpSirWifiFullScanResultEvent) (pMsg);
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                    "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-            EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-            QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_FULL_SCAN_RESULT_INDEX,
-            GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%u)"), pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("More Data (%u)"), pData->moreData);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("AP Info: Timestamp(0x%llX) "
-                "Ssid (%s)"
-                "Bssid (" MAC_ADDRESS_STR ")"
-                "Channel (%u)"
-                "Rssi (%d)"
-                "RTT (%u)"
-                "RTT_SD (%u)"),
-            pData->ap.ts,
-            pData->ap.ssid,
-            MAC_ADDR_ARRAY(pData->ap.bssid),
-            pData->ap.channel,
-            pData->ap.rssi,
-            pData->ap.rtt,
-            pData->ap.rtt_sd);
-    hddLog(VOS_TRACE_LEVEL_INFO, "IE Length (%u)", pData->ieLength);
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                pData->requestId) ||
-        nla_put_u64(skb,
-            QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
-            pData->ap.ts) ||
-        nla_put(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_SSID,
-            sizeof(pData->ap.ssid),
-            pData->ap.ssid) ||
-        nla_put(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_BSSID,
-            WNI_CFG_BSSID_LEN,
-            pData->ap.bssid) ||
-        nla_put_u32(skb,
-            QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_CHANNEL,
-            pData->ap.channel) ||
-        nla_put_s32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RSSI,
-            pData->ap.rssi) ||
-        nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RTT,
-            pData->ap.rtt) ||
-        nla_put_u32(skb,
-            QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_RTT_SD,
-            pData->ap.rtt_sd) ||
-        nla_put_u16(skb,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_BEACON_PERIOD,
-            pData->ap.beaconPeriod) ||
-        nla_put_u16(skb,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_CAPABILITY,
-            pData->ap.capability) ||
-        nla_put_u32(skb,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_IE_LENGTH,
-            pData->ieLength))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-    if (nla_put(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_IE_DATA,
-                pData->ieLength,
-                pData->ie))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-static void wlan_hdd_cfg80211_extscan_scan_res_available_event(void *ctx,
-                                                             void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tpSirEXTScanResultsAvailableIndParams pData =
-                    (tpSirEXTScanResultsAvailableIndParams) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SCAN_RESULTS_AVAILABLE_INDEX,
-                GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Req Id (%u)", pData->requestId);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Num results (%u)",
-                                  pData->numResultsAvailable);
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                    pData->requestId) ||
-        nla_put_u32(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_NUM_RESULTS_AVAILABLE,
-                    pData->numResultsAvailable)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-static void wlan_hdd_cfg80211_extscan_scan_progress_event(void *ctx, void *pMsg)
-{
-    hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
-    struct sk_buff *skb     = NULL;
-    tpSirEXTScanProgressIndParams pData =
-                                   (tpSirEXTScanProgressIndParams) pMsg;
-
-    if (wlan_hdd_validate_context(pHddCtx) || !pData) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
-                                         "or pData(%p) is null"), pData);
-        return;
-    }
-
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
-                            EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                            QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SCAN_EVENT_INDEX,
-                            GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Scan event type (%u)",
-            pData->extScanEventType);
-    hddLog(VOS_TRACE_LEVEL_INFO, "Scan event status (%u)",
-            pData->status);
-
-    if (nla_put_u8(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_EVENT_TYPE,
-                   pData->extScanEventType) ||
-        nla_put_u32(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
-                    pData->requestId) ||
-        nla_put_u32(skb,
-                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_EVENT_STATUS,
-                    pData->status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return;
-
-nla_put_failure:
-    kfree_skb(skb);
-    return;
-}
-
-void wlan_hdd_cfg80211_extscan_callback(void *ctx, const tANI_U16 evType,
-                                      void *pMsg)
-{
-    hdd_context_t *pHddCtx = (hdd_context_t *)ctx;
-
-    if (wlan_hdd_validate_context(pHddCtx)) {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("HDD context is not valid"));
-        return;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Rcvd Event (%d)"), evType);
-
-
-    switch(evType) {
-    case SIR_HAL_EXTSCAN_START_RSP:
-            wlan_hdd_cfg80211_extscan_start_rsp(ctx, pMsg);
-        break;
-
-    case SIR_HAL_EXTSCAN_STOP_RSP:
-            wlan_hdd_cfg80211_extscan_stop_rsp(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_GET_CACHED_RESULTS_RSP:
-        /* There is no need to send this response to upper layer
-           Just log the message */
-        hddLog(VOS_TRACE_LEVEL_INFO,
-                FL("Rcvd SIR_HAL_EXTSCAN_CACHED_RESULTS_RSP"));
-        break;
-    case SIR_HAL_EXTSCAN_SET_BSS_HOTLIST_RSP:
-        wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(ctx, pMsg);
-        break;
-
-    case SIR_HAL_EXTSCAN_RESET_BSS_HOTLIST_RSP:
-        wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(ctx, pMsg);
-        break;
-
-    case SIR_HAL_EXTSCAN_SET_SIGNF_RSSI_CHANGE_RSP:
-        wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(ctx, pMsg);
-        break;
-
-    case SIR_HAL_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_RSP:
-        wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_GET_CAPABILITIES_RSP:
-        wlan_hdd_cfg80211_extscan_get_capabilities_ind(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_PROGRESS_IND:
-        wlan_hdd_cfg80211_extscan_scan_progress_event(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_SCAN_AVAILABLE_IND:
-        wlan_hdd_cfg80211_extscan_scan_res_available_event(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_SCAN_RESULT_IND:
-        wlan_hdd_cfg80211_extscan_cached_results_ind(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_HOTLIST_MATCH_IND:
-        wlan_hdd_cfg80211_extscan_hotlist_match_ind(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_SIGNF_WIFI_CHANGE_IND:
-        wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(ctx, pMsg);
-        break;
-    case SIR_HAL_EXTSCAN_FULL_SCAN_RESULT_IND:
-        wlan_hdd_cfg80211_extscan_full_scan_result_event(ctx, pMsg);
-        break;
-    default:
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("invalid event type %d "), evType);
-        break;
-    }
-}
-
-static int wlan_hdd_cfg80211_extscan_get_capabilities(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tSirGetEXTScanCapabilitiesReqParams reqMsg;
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                     = wiphy_priv(wiphy);
-    struct nlattr
-        *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    eHalStatus status;
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering"));
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-
-
-    reqMsg.requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), reqMsg.requestId);
-
-    reqMsg.sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), reqMsg.sessionId);
-
-    status = sme_EXTScanGetCapabilities(pHddCtx->hHal, &reqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("sme_EXTScanGetCapabilities failed(err=%d)"), status);
-        return -EINVAL;
-    }
-
-    return 0;
-}
-
-
-static int wlan_hdd_cfg80211_extscan_get_cached_results(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tSirEXTScanGetCachedResultsReqParams reqMsg;
-    struct net_device *dev                      = wdev->netdev;
-    hdd_adapter_t *pAdapter                     = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                      = wiphy_priv(wiphy);
-    struct nlattr
-            *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    eHalStatus status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-
-    reqMsg.requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), reqMsg.requestId);
-
-    reqMsg.sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), reqMsg.sessionId);
-
-    /* Parse and fetch flush parameter */
-    if (!tb
-      [QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_CACHED_SCAN_RESULTS_CONFIG_PARAM_FLUSH])
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr flush failed"));
-        goto failed;
-    }
-    reqMsg.flush = nla_get_u8(
-    tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_CACHED_SCAN_RESULTS_CONFIG_PARAM_FLUSH]);
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Flush (%d)"), reqMsg.flush);
-
-    status = sme_getCachedResults(pHddCtx->hHal, &reqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("sme_getCachedResults failed(err=%d)"), status);
-        return -EINVAL;
-    }
-    return 0;
-
-failed:
-    return -EINVAL;
-}
-
-static int wlan_hdd_cfg80211_extscan_set_bssid_hotlist(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tpSirEXTScanSetBssidHotListReqParams pReqMsg = NULL;
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                     = wiphy_priv(wiphy);
-    struct nlattr
-            *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr
-            *tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr *apTh;
-    eHalStatus status;
-    tANI_U8 i = 0;
-    int rem;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-    pReqMsg = (tpSirEXTScanSetBssidHotListReqParams)
-                                     vos_mem_malloc(sizeof(*pReqMsg));
-    if (!pReqMsg) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("vos_mem_malloc failed"));
-        return -ENOMEM;
-    }
-
-
-    pReqMsg->requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), pReqMsg->requestId);
-
-    /* Parse and fetch number of APs */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BSSID_HOTLIST_PARAMS_NUM_AP]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr number of AP failed"));
-        goto fail;
-    }
-
-    pReqMsg->sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), pReqMsg->sessionId);
-
-    pReqMsg->numAp = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BSSID_HOTLIST_PARAMS_NUM_AP]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Number of AP (%d)"), pReqMsg->numAp);
-
-    nla_for_each_nested(apTh,
-                tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM], rem) {
-        if(nla_parse(tb2, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                nla_data(apTh), nla_len(apTh),
-                NULL)) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla_parse failed"));
-            goto fail;
-        }
-
-        /* Parse and fetch MAC address */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_BSSID]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr mac address failed"));
-            goto fail;
-        }
-        memcpy(pReqMsg->ap[i].bssid, nla_data(
-                tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_BSSID]),
-                sizeof(tSirMacAddr));
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("BSSID: %pM "), pReqMsg->ap[i].bssid);
-
-        /* Parse and fetch low RSSI */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_LOW]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr low RSSI failed"));
-            goto fail;
-        }
-        pReqMsg->ap[i].low = nla_get_s32(
-             tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_LOW]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("RSSI low (%d)"), pReqMsg->ap[i].low);
-
-        /* Parse and fetch high RSSI */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_HIGH]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr high RSSI failed"));
-            goto fail;
-        }
-        pReqMsg->ap[i].high = nla_get_s32(
-            tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_HIGH]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("RSSI High (%d)"),
-                                         pReqMsg->ap[i].high);
-
-        /* Parse and fetch channel */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_CHANNEL]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr channel failed"));
-            goto fail;
-        }
-        pReqMsg->ap[i].channel = nla_get_u32(
-              tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_CHANNEL]);
-        hddLog(VOS_TRACE_LEVEL_INFO,
-                FL("Channel (%u)"), pReqMsg->ap[i].channel);
-        i++;
-    }
-    status = sme_SetBssHotlist(pHddCtx->hHal, pReqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("sme_SetBssHotlist failed(err=%d)"), status);
-        vos_mem_free(pReqMsg);
-        return -EINVAL;
-    }
-
-    vos_mem_free(pReqMsg);
-
-    return 0;
-
-fail:
-    vos_mem_free(pReqMsg);
-    return -EINVAL;
-}
-
-static int wlan_hdd_cfg80211_extscan_set_significant_change(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tpSirEXTScanSetSignificantChangeReqParams pReqMsg = NULL;
-    struct net_device *dev                  = wdev->netdev;
-    hdd_adapter_t *pAdapter                 = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                  = wiphy_priv(wiphy);
-    struct nlattr
-        *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr
-        *tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr *apTh;
-    eHalStatus status;
-    int i = 0;
-    int rem;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-    pReqMsg = (tpSirEXTScanSetSignificantChangeReqParams)
-                                     vos_mem_malloc(sizeof(*pReqMsg));
-    if (!pReqMsg) {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL("vos_mem_malloc failed"));
-       return -ENOMEM;
-    }
-
-
-
-    pReqMsg->requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), pReqMsg->requestId);
-
-    /* Parse and fetch RSSI sample size */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_RSSI_SAMPLE_SIZE])
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr RSSI sample size failed"));
-        goto fail;
-    }
-    pReqMsg->rssiSampleSize = nla_get_u32(
-    tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_RSSI_SAMPLE_SIZE]);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-               FL("RSSI sample size (%u)"), pReqMsg->rssiSampleSize);
-
-    /* Parse and fetch lost AP sample size */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_LOST_AP_SAMPLE_SIZE])
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr lost AP sample size failed"));
-        goto fail;
-    }
-    pReqMsg->lostApSampleSize = nla_get_u32(
-    tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_LOST_AP_SAMPLE_SIZE]);
-    hddLog(VOS_TRACE_LEVEL_INFO,
-               FL("Lost AP sample size (%u)"), pReqMsg->lostApSampleSize);
-    /* Parse and fetch minimum Breaching */
-    if (!tb
-    [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_MIN_BREACHING]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr minBreaching failed"));
-        goto fail;
-    }
-    pReqMsg->minBreaching = nla_get_u32(
-      tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_MIN_BREACHING]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(" Breaching (%d)"), pReqMsg->minBreaching);
-
-    /* Parse and fetch number of APs */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_NUM_AP]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr number of AP failed"));
-        goto fail;
-    }
-    pReqMsg->numAp = nla_get_u32(
-            tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SIGNIFICANT_CHANGE_PARAMS_NUM_AP]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Number of AP (%d)"), pReqMsg->numAp);
-
-    pReqMsg->sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), pReqMsg->sessionId);
-
-    nla_for_each_nested(apTh,
-                tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM], rem) {
-        if(nla_parse(tb2,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                nla_data(apTh), nla_len(apTh),
-                NULL)) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla_parse failed"));
-            goto fail;
-        }
-
-        /* Parse and fetch MAC address */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_BSSID]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr mac address failed"));
-            goto fail;
-        }
-        memcpy(pReqMsg->ap[i].bssid, nla_data(
-                tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_BSSID]),
-                sizeof(tSirMacAddr));
-
-        /* Parse and fetch low RSSI */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_LOW]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr low RSSI failed"));
-            goto fail;
-        }
-        pReqMsg->ap[i].low = nla_get_s32(
-             tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_LOW]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("RSSI low (%d)"), pReqMsg->ap[i].low);
-
-        /* Parse and fetch high RSSI */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_HIGH]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr high RSSI failed"));
-            goto fail;
-        }
-        pReqMsg->ap[i].high = nla_get_s32(
-            tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_RSSI_HIGH]);
-        hddLog(VOS_TRACE_LEVEL_INFO,
-                                    FL("RSSI High (%d)"), pReqMsg->ap[i].high);
-
-        /* Parse and fetch channel */
-        if (!tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_CHANNEL]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr channel failed"));
-            goto fail;
-        }
-        pReqMsg->ap[i].channel = nla_get_u32(
-              tb2[QCA_WLAN_VENDOR_ATTR_EXTSCAN_AP_THRESHOLD_PARAM_CHANNEL]);
-        hddLog(VOS_TRACE_LEVEL_INFO,
-                           FL("Channel (%u)"), pReqMsg->ap[i].channel);
-        i++;
-    }
-
-    status = sme_SetSignificantChange(pHddCtx->hHal, pReqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("sme_SetSignificantChange failed(err=%d)"), status);
-        vos_mem_free(pReqMsg);
-        return -EINVAL;
-    }
-    vos_mem_free(pReqMsg);
-    hddLog(VOS_TRACE_LEVEL_ERROR, FL(" Exiting"));
-    return 0;
-
-fail:
-    vos_mem_free(pReqMsg);
-    return -EINVAL;
-}
-
-static int wlan_hdd_cfg80211_extscan_get_valid_channels(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    hdd_context_t *pHddCtx                               = wiphy_priv(wiphy);
-    tANI_U32 ChannelList[WNI_CFG_VALID_CHANNEL_LIST_LEN] = {0};
-    tANI_U8 numChannels                                  = 0;
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    tANI_U32 requestId;
-    tWifiBand wifiBand;
-    eHalStatus status;
-    struct sk_buff *replySkb;
-    tANI_U8 i;
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering"));
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                  data, dataLen,
-                  wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-    requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), requestId);
-
-    /* Parse and fetch wifi band */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_VALID_CHANNELS_CONFIG_PARAM_WIFI_BAND])
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr wifi band failed"));
-        return -EINVAL;
-    }
-    wifiBand = nla_get_u32(
-     tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_GET_VALID_CHANNELS_CONFIG_PARAM_WIFI_BAND]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Wifi band (%d)"), wifiBand);
-
-    status = sme_GetValidChannelsByBand((tHalHandle)(pHddCtx->hHal),
-                                        wifiBand, ChannelList,
-                                        &numChannels);
-    if (eHAL_STATUS_SUCCESS != status) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-           FL("sme_GetValidChannelsByBand failed (err=%d)"), status);
-        return -EINVAL;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Number of channels (%d)"), numChannels);
-    for (i = 0; i < numChannels; i++)
-        hddLog(VOS_TRACE_LEVEL_INFO, "Channel: %u ", ChannelList[i]);
-
-    replySkb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(u32) +
-                                                    sizeof(u32) * numChannels +
-                                                    NLMSG_HDRLEN);
-
-    if (!replySkb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                FL("valid channels: buffer alloc fail"));
-        return -EINVAL;
-    }
-    if (nla_put_u32(replySkb,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_NUM_CHANNELS,
-                numChannels) ||
-            nla_put(replySkb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_CHANNELS,
-                sizeof(u32) * numChannels, ChannelList)) {
-
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        kfree_skb(replySkb);
-        return -EINVAL;
-    }
-
-    return cfg80211_vendor_cmd_reply(replySkb);
-}
-
-static int wlan_hdd_cfg80211_extscan_start(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tpSirEXTScanStartReqParams pReqMsg = NULL;
-    struct net_device *dev                  = wdev->netdev;
-    hdd_adapter_t *pAdapter                 = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                  = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr *bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr *channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    struct nlattr *buckets;
-    struct nlattr *channels;
-    int rem1;
-    int rem2;
-    eHalStatus status;
-    tANI_U32 j = 0, index = 0;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-
-    pReqMsg = (tpSirEXTScanStartReqParams)
-                                     vos_mem_malloc(sizeof(*pReqMsg));
-    if (!pReqMsg) {
-       hddLog(VOS_TRACE_LEVEL_ERROR, FL("vos_mem_malloc failed"));
-       return -ENOMEM;
-    }
-
-    pReqMsg->requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), pReqMsg->requestId);
-
-    pReqMsg->sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), pReqMsg->sessionId);
-
-    /* Parse and fetch base period */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_BASE_PERIOD]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr base period failed"));
-        goto fail;
-    }
-    pReqMsg->basePeriod = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_BASE_PERIOD]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Base Period (%d)"),
-                                         pReqMsg->basePeriod);
-
-    /* Parse and fetch max AP per scan */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_MAX_AP_PER_SCAN]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr max_ap_per_scan failed"));
-        goto fail;
-    }
-    pReqMsg->maxAPperScan = nla_get_u32(
-             tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_MAX_AP_PER_SCAN]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Max AP per Scan (%d)"),
-                                         pReqMsg->maxAPperScan);
-
-    /* Parse and fetch report threshold */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_REPORT_THRESHOLD]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr report_threshold failed"));
-        goto fail;
-    }
-    pReqMsg->reportThreshold = nla_get_u8(
-            tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_REPORT_THRESHOLD]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Report Threshold (%d)"),
-                                         pReqMsg->reportThreshold);
-
-    /* Parse and fetch number of buckets */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_NUM_BUCKETS]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr number of buckets failed"));
-        goto fail;
-    }
-    pReqMsg->numBuckets = nla_get_u8(
-                 tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SCAN_CMD_PARAMS_NUM_BUCKETS]);
-    if (pReqMsg->numBuckets > WLAN_EXTSCAN_MAX_BUCKETS) {
-        hddLog(VOS_TRACE_LEVEL_WARN, FL("Exceeded MAX number of buckets "
-          "Setting numBuckets to %u"), WLAN_EXTSCAN_MAX_BUCKETS);
-        pReqMsg->numBuckets = WLAN_EXTSCAN_MAX_BUCKETS;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Number of Buckets (%d)"),
-                                         pReqMsg->numBuckets);
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr bucket spec failed"));
-        goto fail;
-    }
-
-    nla_for_each_nested(buckets,
-                tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC], rem1) {
-        if(nla_parse(bucket,
-            QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-            nla_data(buckets), nla_len(buckets), NULL)) { //policy
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla_parse failed"));
-            goto fail;
-        }
-
-        /* Parse and fetch bucket spec */
-        if (!bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_INDEX]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr bucket index failed"));
-            goto fail;
-        }
-
-        pReqMsg->buckets[index].bucket = nla_get_u8(
-                bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_INDEX]);
-
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Bucket spec Index (%d)"),
-                pReqMsg->buckets[index].bucket);
-
-        /* Parse and fetch wifi band */
-        if (!bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_BAND]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr wifi band failed"));
-            goto fail;
-        }
-        pReqMsg->buckets[index].band = nla_get_u8(
-                         bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_BAND]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Wifi band (%d)"),
-                           pReqMsg->buckets[index].band);
-
-        /* Parse and fetch period */
-        if (!bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_PERIOD]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr period failed"));
-            goto fail;
-        }
-        pReqMsg->buckets[index].period = nla_get_u32(
-                       bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_PERIOD]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("period (%d)"),
-                           pReqMsg->buckets[index].period);
-
-        /* Parse and fetch report events */
-        if (!bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_REPORT_EVENTS]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr report events failed"));
-            goto fail;
-        }
-        pReqMsg->buckets[index].reportEvents = nla_get_u8(
-                bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_REPORT_EVENTS]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("report events (%d)"),
-                           pReqMsg->buckets[index].reportEvents);
-
-        /* Parse and fetch number of channels */
-        if (!bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_NUM_CHANNEL_SPECS])
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr num channels failed"));
-            goto fail;
-        }
-        pReqMsg->buckets[index].numChannels = nla_get_u32(
-            bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_BUCKET_SPEC_NUM_CHANNEL_SPECS]);
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("num channels (%d)"),
-                           pReqMsg->buckets[index].numChannels);
-
-        if (!bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC]) {
-            hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr channel spec failed"));
-            goto fail;
-        }
-
-        j = 0;
-        nla_for_each_nested(channels,
-                      bucket[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC], rem2) {
-            if(nla_parse(channel,
-                QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                nla_data(channels), nla_len(channels),
-                NULL)) { //wlan_hdd_extscan_config_policy here
-                hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla_parse failed"));
-                goto fail;
-            }
-
-            /* Parse and fetch channel */
-            if (!channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_CHANNEL]) {
-                hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr channel failed"));
-                goto fail;
-            }
-            pReqMsg->buckets[index].channels[j].channel = nla_get_u32(
-                   channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_CHANNEL]);
-            hddLog(VOS_TRACE_LEVEL_INFO, FL("channel (%u)"),
-                         pReqMsg->buckets[index].channels[j].channel);
-
-            /* Parse and fetch dwell time */
-            if (!channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_DWELL_TIME]) {
-                hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr dwelltime failed"));
-                goto fail;
-            }
-            pReqMsg->buckets[index].channels[j].dwellTimeMs = nla_get_u32(
-                 channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_DWELL_TIME]);
-            hddLog(VOS_TRACE_LEVEL_INFO, FL("Dwell time (%u ms)"),
-                     pReqMsg->buckets[index].channels[j].dwellTimeMs);
-
-            /* Parse and fetch channel spec passive */
-            if (!channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_PASSIVE]) {
-                hddLog(VOS_TRACE_LEVEL_ERROR,
-                                     FL("attr channel spec passive failed"));
-                goto fail;
-            }
-            pReqMsg->buckets[index].channels[j].passive = nla_get_u8(
-                   channel[QCA_WLAN_VENDOR_ATTR_EXTSCAN_CHANNEL_SPEC_PASSIVE]);
-            hddLog(VOS_TRACE_LEVEL_INFO, FL("Chnl spec passive (%u)"),
-                     pReqMsg->buckets[index].channels[j].passive);
-            j++;
-        }
-        index++;
-    }
-    status = sme_EXTScanStart(pHddCtx->hHal, pReqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                     FL("sme_EXTScanStart failed(err=%d)"), status);
-        vos_mem_free(pReqMsg);
-        return -EINVAL;
-    }
-
-    vos_mem_free(pReqMsg);
-    return 0;
-
-fail:
-    vos_mem_free(pReqMsg);
-    return -EINVAL;
-}
-
-static int wlan_hdd_cfg80211_extscan_stop(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tSirEXTScanStopReqParams reqMsg;
-    struct net_device *dev                  = wdev->netdev;
-    hdd_adapter_t *pAdapter                 = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                  = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    eHalStatus status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-
-    reqMsg.requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), reqMsg.requestId);
-
-    reqMsg.sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), reqMsg.sessionId);
-
-    status = sme_EXTScanStop(pHddCtx->hHal, &reqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                    FL("sme_EXTScanStop failed(err=%d)"), status);
-        return -EINVAL;
-    }
-
-    return 0;
-}
-
-static int wlan_hdd_cfg80211_extscan_reset_bssid_hotlist(struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tSirEXTScanResetBssidHotlistReqParams reqMsg;
-    struct net_device *dev                       = wdev->netdev;
-    hdd_adapter_t *pAdapter                      = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                       = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    eHalStatus status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-
-    reqMsg.requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), reqMsg.requestId);
-
-    reqMsg.sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), reqMsg.sessionId);
-
-    status = sme_ResetBssHotlist(pHddCtx->hHal, &reqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                          FL("sme_ResetBssHotlist failed(err=%d)"), status);
-        return -EINVAL;
-    }
-
-    return 0;
-}
-
-static int wlan_hdd_cfg80211_extscan_reset_significant_change(
-                                        struct wiphy *wiphy,
-                                        struct wireless_dev *wdev,
-                                        void *data, int dataLen)
-{
-    tSirEXTScanResetSignificantChangeReqParams reqMsg;
-    struct net_device *dev                       = wdev->netdev;
-    hdd_adapter_t *pAdapter                      = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                       = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1];
-    eHalStatus status;
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(" Entering"));
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    /* check the EXTScan Capability */
-    if ( (TRUE != pHddCtx->cfg_ini->fEnableEXTScan) ||
-         (TRUE != sme_IsFeatureSupportedByFW(EXTENDED_SCAN)))
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("EXTScan not enabled/supported by Firmware"));
-        return -EINVAL;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX,
-                    data, dataLen,
-                    wlan_hdd_extscan_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch request Id */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr request id failed"));
-        return -EINVAL;
-    }
-
-
-    reqMsg.requestId = nla_get_u32(
-              tb[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Req Id (%d)"), reqMsg.requestId);
-
-    reqMsg.sessionId = pAdapter->sessionId;
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Session Id (%d)"), reqMsg.sessionId);
-
-    status = sme_ResetSignificantChange(pHddCtx->hHal, &reqMsg);
-    if (!HAL_STATUS_SUCCESS(status)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                   FL("sme_ResetSignificantChange failed(err=%d)"), status);
-        return -EINVAL;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_ERROR, FL(" Exiting"));
-    return 0;
-}
-
-#endif /* WLAN_FEATURE_EXTSCAN */
-
-/*EXT TDLS*/
-static const struct nla_policy
-wlan_hdd_tdls_config_enable_policy[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAC_ADDR] = {.type = NLA_UNSPEC },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_CHANNEL] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_GLOBAL_OPERATING_CLASS] =
-                                                       {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX_LATENCY_MS] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MIN_BANDWIDTH_KBPS] = {.type = NLA_S32 },
-
-};
-
-static const struct nla_policy
-wlan_hdd_tdls_config_disable_policy[QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAX +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAC_ADDR] = {.type = NLA_UNSPEC },
-
-};
-
-static const struct nla_policy
-wlan_hdd_tdls_config_state_change_policy[
-                    QCA_WLAN_VENDOR_ATTR_TDLS_STATE_MAX +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_TDLS_STATE_MAC_ADDR] = {.type = NLA_UNSPEC },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_NEW_STATE] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_STATE_REASON] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_STATE_CHANNEL] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_STATE_GLOBAL_OPERATING_CLASS] =
-                                                {.type = NLA_S32 },
-
-};
-
-static const struct nla_policy
-wlan_hdd_tdls_config_get_status_policy[
-                     QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAX +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAC_ADDR] = {.type = NLA_UNSPEC },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_STATE] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_REASON] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_CHANNEL] = {.type = NLA_S32 },
-    [QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_GLOBAL_OPERATING_CLASS]
-                                                   = {.type = NLA_S32 },
-
-};
-
-static const struct nla_policy
-wlan_hdd_mac_config[QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI_MAX+1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI] = {.type = NLA_UNSPEC },
-};
-
-static int wlan_hdd_cfg80211_set_spoofed_mac_oui(struct wiphy *wiphy,
-        struct wireless_dev *wdev,
-        void *data,
-        int data_len)
-{
-
-    hdd_context_t *pHddCtx      = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI_MAX + 1];
-
-    if (0 != wlan_hdd_validate_context(pHddCtx)){
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("hdd Ctx invalid while spoof macAddr"));
-        return -EINVAL;
-    }
-    if (FALSE == pHddCtx->cfg_ini->enableMacSpoofing) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("MAC_SPOOFED_SCAN disabled in ini"));
-        return -ENOTSUPP;
-     }
-    if (TRUE != sme_IsFeatureSupportedByFW(MAC_SPOOFED_SCAN)){
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("MAC_SPOOFED_SCAN not supported by FW"));
-        return -ENOTSUPP;
-    }
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI_MAX,
-                data, data_len, wlan_hdd_mac_config)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch mac address */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr mac addr failed"));
-        return -EINVAL;
-    }
-
-    memcpy(pHddCtx->spoofMacAddr.randomMacAddr.bytes, nla_data(
-                tb[QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI]),
-            VOS_MAC_ADDR_LAST_3_BYTES);
-
-    vos_trace_hex_dump( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,nla_data(
-            tb[QCA_WLAN_VENDOR_ATTR_SET_SCANNING_MAC_OUI]),
-            VOS_MAC_ADDR_FIRST_3_BYTES);
-
-    if (VOS_STATUS_SUCCESS != vos_randomize_n_bytes(
-        (void *)(&pHddCtx->spoofMacAddr.randomMacAddr.bytes[3]),
-        VOS_MAC_ADDR_LAST_3_BYTES)) {
-        hddLog(LOGE, FL("Failed to generate random Mac Addr"));
-    }
-    vos_trace_hex_dump( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-        pHddCtx->spoofMacAddr.randomMacAddr.bytes,
-            VOS_MAC_ADDR_SIZE);
-
-    if (eHAL_STATUS_SUCCESS != sme_SpoofMacAddrReq(pHddCtx->hHal,
-                &pHddCtx->spoofMacAddr.randomMacAddr)) {
-        hddLog(LOGE, FL("Failed to send Spoof Mac Addr to FW"));
-    }
-
-    return 0;
-}
-
-static int wlan_hdd_cfg80211_exttdls_get_status(struct wiphy *wiphy,
-                                                struct wireless_dev *wdev,
-                                                void *data,
-                                                int data_len)
-{
-    u8 peer[6]                                 = {0};
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                     = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAX + 1];
-    eHalStatus ret;
-    tANI_S32 state;
-    tANI_S32 reason;
-    tANI_S32 global_operating_class = 0;
-    tANI_S32 channel = 0;
-    struct sk_buff *skb         = NULL;
-
-    ret = wlan_hdd_validate_context(pHddCtx);
-    if (0 != ret) {
-
-        return -EINVAL;
-    }
-    if (pHddCtx->cfg_ini->fTDLSExternalControl == FALSE) {
-
-        return -ENOTSUPP;
-    }
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAX,
-                    data, data_len,
-                    wlan_hdd_tdls_config_get_status_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch mac address */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAC_ADDR]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr mac addr failed"));
-        return -EINVAL;
-    }
-
-    memcpy(peer, nla_data(
-           tb[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAC_ADDR]),
-           sizeof(peer));
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(MAC_ADDRESS_STR),MAC_ADDR_ARRAY(peer));
-
-    ret = wlan_hdd_tdls_get_status(pAdapter, peer, &state, &reason);
-
-    if (0 != ret) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("get status Failed"));
-        return -EINVAL;
-    }
-    skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy,
-                                              4 * sizeof(s32) +
-                                              NLMSG_HDRLEN);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_cmd_alloc_reply_skb failed"));
-        return -EINVAL;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Reason (%d) Status (%d) class (%d) channel (%d) peer" MAC_ADDRESS_STR),
-                                 reason,
-                                 state,
-                                 global_operating_class,
-                                 channel,
-                                 MAC_ADDR_ARRAY(peer));
-    if (nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_STATE,
-                    state) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_REASON,
-                    reason) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_GLOBAL_OPERATING_CLASS,
-                    global_operating_class) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_CHANNEL,
-                    channel)) {
-
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    return cfg80211_vendor_cmd_reply(skb);
-
-nla_put_failure:
-    kfree_skb(skb);
-    return -EINVAL;
-}
-
-static int wlan_hdd_cfg80211_exttdls_callback(tANI_U8* mac,
-                                              tANI_S32 state,
-                                              tANI_S32 reason,
-                                              void *ctx)
-{
-    hdd_adapter_t* pAdapter       = (hdd_adapter_t*)ctx;
-    hdd_context_t *pHddCtx        = WLAN_HDD_GET_CTX(pAdapter);
-    struct sk_buff *skb           = NULL;
-    tANI_S32 global_operating_class = 0;
-    tANI_S32 channel = 0;
-
-    if (wlan_hdd_validate_context(pHddCtx)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "));
-        return -EINVAL;
-    }
-
-    if (pHddCtx->cfg_ini->fTDLSExternalControl == FALSE) {
-
-        return -ENOTSUPP;
-    }
-    skb = cfg80211_vendor_event_alloc(
-                            pHddCtx->wiphy,
-                            EXTTDLS_EVENT_BUF_SIZE + NLMSG_HDRLEN,
-                            QCA_NL80211_VENDOR_SUBCMD_TDLS_STATE_CHANGE_INDEX,
-                            GFP_KERNEL);
-
-    if (!skb) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                  FL("cfg80211_vendor_event_alloc failed"));
-        return -EINVAL;
-    }
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Entering "));
-    hddLog(VOS_TRACE_LEVEL_INFO, "Reason: (%d) Status: (%d) Class: (%d) Channel: (%d)",
-           reason,
-           state,
-           global_operating_class,
-           channel);
-    hddLog(VOS_TRACE_LEVEL_WARN, "tdls peer " MAC_ADDRESS_STR,
-                                          MAC_ADDR_ARRAY(mac));
-
-    if (nla_put(skb,
-                QCA_WLAN_VENDOR_ATTR_TDLS_STATE_MAC_ADDR,
-                VOS_MAC_ADDR_SIZE, mac) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_NEW_STATE,
-                    state) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_STATE_REASON,
-                    reason) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_STATE_CHANNEL,
-                    channel) ||
-        nla_put_s32(skb,
-                    QCA_WLAN_VENDOR_ATTR_TDLS_STATE_GLOBAL_OPERATING_CLASS,
-                    global_operating_class)
-        ) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    cfg80211_vendor_event(skb, GFP_KERNEL);
-    return (0);
-
-nla_put_failure:
-    kfree_skb(skb);
-    return -EINVAL;
-}
-
-static int wlan_hdd_cfg80211_exttdls_enable(struct wiphy *wiphy,
-                                            struct wireless_dev *wdev,
-                                            void *data,
-                                            int data_len)
-{
-    u8 peer[6]                                 = {0};
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                     = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX + 1];
-    eHalStatus status;
-    tdls_req_params_t   pReqMsg = {0};
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    if (pHddCtx->cfg_ini->fTDLSExternalControl == FALSE) {
-
-        return -ENOTSUPP;
-    }
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX,
-                    data, data_len,
-                    wlan_hdd_tdls_config_enable_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch mac address */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAC_ADDR]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr mac addr failed"));
-        return -EINVAL;
-    }
-
-    memcpy(peer, nla_data(
-                tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAC_ADDR]),
-                sizeof(peer));
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(MAC_ADDRESS_STR),MAC_ADDR_ARRAY(peer));
-
-    /* Parse and fetch channel */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_CHANNEL]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr channel failed"));
-        return -EINVAL;
-    }
-    pReqMsg.channel = nla_get_s32(
-         tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_CHANNEL]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Channel Num (%d)"), pReqMsg.channel);
-
-    /* Parse and fetch global operating class */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_GLOBAL_OPERATING_CLASS]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr operating class failed"));
-        return -EINVAL;
-    }
-    pReqMsg.global_operating_class = nla_get_s32(
-        tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_GLOBAL_OPERATING_CLASS]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Operating class (%d)"),
-                                     pReqMsg.global_operating_class);
-
-    /* Parse and fetch latency ms */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX_LATENCY_MS]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr latency failed"));
-        return -EINVAL;
-    }
-    pReqMsg.max_latency_ms = nla_get_s32(
-        tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX_LATENCY_MS]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Latency (%d)"),
-                                     pReqMsg.max_latency_ms);
-
-    /* Parse and fetch required bandwidth kbps */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MIN_BANDWIDTH_KBPS]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr bandwidth failed"));
-        return -EINVAL;
-    }
-
-    pReqMsg.min_bandwidth_kbps = nla_get_s32(
-        tb[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MIN_BANDWIDTH_KBPS]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Bandwidth (%d)"),
-                                     pReqMsg.min_bandwidth_kbps);
-
-    return (wlan_hdd_tdls_extctrl_config_peer(pAdapter,
-                                 peer,
-                                 wlan_hdd_cfg80211_exttdls_callback));
-}
-
-static int wlan_hdd_cfg80211_exttdls_disable(struct wiphy *wiphy,
-                                             struct wireless_dev *wdev,
-                                             void *data,
-                                             int data_len)
-{
-    u8 peer[6]                                 = {0};
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx                     = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAX + 1];
-    eHalStatus status;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    if (pHddCtx->cfg_ini->fTDLSExternalControl == FALSE) {
-
-        return -ENOTSUPP;
-    }
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAX,
-                    data, data_len,
-                    wlan_hdd_tdls_config_disable_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-    /* Parse and fetch mac address */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAC_ADDR]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr mac addr failed"));
-        return -EINVAL;
-    }
-
-    memcpy(peer, nla_data(
-                tb[QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAC_ADDR]),
-                sizeof(peer));
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(MAC_ADDRESS_STR),MAC_ADDR_ARRAY(peer));
-
-    return (wlan_hdd_tdls_extctrl_deconfig_peer(pAdapter, peer));
-}
-
-static int
-wlan_hdd_cfg80211_get_supported_features(struct wiphy *wiphy,
-                                         struct wireless_dev *wdev,
-                                         void *data, int data_len)
-{
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    hdd_context_t *pHddCtx      = wiphy_priv(wiphy);
-    struct sk_buff *skb         = NULL;
-    tANI_U32       fset         = 0;
-
-    if (wiphy->interface_modes & BIT(NL80211_IFTYPE_STATION)) {
-        hddLog(LOG1, FL("Infra Station mode is supported by driver"));
-        fset |= WIFI_FEATURE_INFRA;
-    }
-
-    if (TRUE == hdd_is_5g_supported(pHddCtx)) {
-        hddLog(LOG1, FL("INFRA_5G is supported by firmware"));
-        fset |= WIFI_FEATURE_INFRA_5G;
-    }
-
-#ifdef WLAN_FEATURE_P2P
-    if ((wiphy->interface_modes & BIT(NL80211_IFTYPE_P2P_CLIENT)) &&
-        (wiphy->interface_modes & BIT(NL80211_IFTYPE_P2P_GO))) {
-        hddLog(LOG1, FL("WiFi-Direct is supported by driver"));
-        fset |= WIFI_FEATURE_P2P;
-    }
-#endif
-
-    /* Soft-AP is supported currently by default */
-    fset |= WIFI_FEATURE_SOFT_AP;
-
-#ifdef WLAN_FEATURE_EXTSCAN
-    if ((TRUE == pHddCtx->cfg_ini->fEnableEXTScan) &&
-            sme_IsFeatureSupportedByFW(EXTENDED_SCAN)) {
-        hddLog(LOG1, FL("EXTScan is supported by firmware"));
-        fset |= WIFI_FEATURE_EXTSCAN;
-    }
-#endif
-
-#ifdef WLAN_FEATURE_NAN
-    if (sme_IsFeatureSupportedByFW(NAN)) {
-        hddLog(LOG1, FL("NAN is supported by firmware"));
-        fset |= WIFI_FEATURE_NAN;
-    }
-#endif
-
-    /* D2D RTT is not supported currently by default */
-    if (sme_IsFeatureSupportedByFW(RTT)) {
-        hddLog(LOG1, FL("RTT is supported by firmware"));
-        fset |= WIFI_FEATURE_D2AP_RTT;
-    }
-
-#ifdef FEATURE_WLAN_BATCH_SCAN
-    if (fset & WIFI_FEATURE_EXTSCAN) {
-        hddLog(LOG1, FL("Batch scan is supported as extscan is supported"));
-        fset &= ~WIFI_FEATURE_BATCH_SCAN;
-    } else if (sme_IsFeatureSupportedByFW(BATCH_SCAN)) {
-        hddLog(LOG1, FL("Batch scan is supported by firmware"));
-        fset |= WIFI_FEATURE_BATCH_SCAN;
-    }
-#endif
-
-#ifdef FEATURE_WLAN_SCAN_PNO
-    if (pHddCtx->cfg_ini->configPNOScanSupport &&
-        (eHAL_STATUS_SUCCESS == wlan_hdd_is_pno_allowed(pAdapter))) {
-        hddLog(LOG1, FL("PNO is supported by firmware"));
-        fset |= WIFI_FEATURE_PNO;
-    }
-#endif
-
-    /* STA+STA is supported currently by default */
-    fset |= WIFI_FEATURE_ADDITIONAL_STA;
-
-#ifdef FEATURE_WLAN_TDLS
-    if ((TRUE == pHddCtx->cfg_ini->fEnableTDLSSupport) &&
-        sme_IsFeatureSupportedByFW(TDLS)) {
-        hddLog(LOG1, FL("TDLS is supported by firmware"));
-        fset |= WIFI_FEATURE_TDLS;
-    }
-
-    /* TDLS_OFFCHANNEL is not supported currently by default */
-#endif
-
-#ifdef WLAN_AP_STA_CONCURRENCY
-    /* AP+STA concurrency is supported currently by default */
-    fset |= WIFI_FEATURE_AP_STA;
-#endif
-
-    skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(fset) +
-                                              NLMSG_HDRLEN);
-
-    if (!skb) {
-        hddLog(LOGE, FL("cfg80211_vendor_cmd_alloc_reply_skb failed"));
-        return -EINVAL;
-    }
-    hddLog(LOG1, FL("Supported Features : 0x%x"), fset);
-
-    if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_FEATURE_SET, fset)) {
-        hddLog(LOGE, FL("nla put fail"));
-        goto nla_put_failure;
-    }
-
-    return cfg80211_vendor_cmd_reply(skb);
-
-nla_put_failure:
-    kfree_skb(skb);
-    return -EINVAL;
-}
-
-static int
-wlan_hdd_cfg80211_get_concurrency_matrix(struct wiphy *wiphy,
-                                         struct wireless_dev *wdev,
-                                         void *data, int data_len)
-{
-    uint32_t feature_set_matrix[WLAN_HDD_MAX_FEATURE_SET] = {0};
-    uint8_t i, feature_sets, max_feature_sets;
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_GET_CONCURRENCY_MATRIX_MAX + 1];
-    struct sk_buff *reply_skb;
-
-    ENTER();
-
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_GET_CONCURRENCY_MATRIX_MAX,
-                  data, data_len, NULL)) {
-        hddLog(LOGE, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch max feature set */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_GET_CONCURRENCY_MATRIX_CONFIG_PARAM_SET_SIZE_MAX]) {
-        hddLog(LOGE, FL("Attr max feature set size failed"));
-        return -EINVAL;
-    }
-    max_feature_sets = nla_get_u32(
-     tb[QCA_WLAN_VENDOR_ATTR_GET_CONCURRENCY_MATRIX_CONFIG_PARAM_SET_SIZE_MAX]);
-    hddLog(LOG1, FL("Max feature set size (%d)"), max_feature_sets);
-
-    /* Fill feature combination matrix */
-    feature_sets = 0;
-    if (feature_sets >= WLAN_HDD_MAX_FEATURE_SET) goto max_buffer_err;
-    feature_set_matrix[feature_sets++] = WIFI_FEATURE_INFRA |
-                                         WIFI_FEATURE_P2P;
-
-    if (feature_sets >= WLAN_HDD_MAX_FEATURE_SET) goto max_buffer_err;
-    feature_set_matrix[feature_sets++] = WIFI_FEATURE_INFRA |
-                                         WIFI_FEATURE_SOFT_AP;
-
-    if (feature_sets >= WLAN_HDD_MAX_FEATURE_SET) goto max_buffer_err;
-    feature_set_matrix[feature_sets++] = WIFI_FEATURE_P2P |
-                                         WIFI_FEATURE_SOFT_AP;
-
-    if (feature_sets >= WLAN_HDD_MAX_FEATURE_SET) goto max_buffer_err;
-    feature_set_matrix[feature_sets++] = WIFI_FEATURE_INFRA |
-                                         WIFI_FEATURE_SOFT_AP |
-                                         WIFI_FEATURE_P2P;
-
-    /* Add more feature combinations here */
-
-    feature_sets = VOS_MIN(feature_sets, max_feature_sets);
-    hddLog(LOG1, FL("Number of feature sets (%d)"), feature_sets);
-    hddLog(LOG1, "Feature set matrix");
-    for (i = 0; i < feature_sets; i++)
-        hddLog(LOG1, "[%d] 0x%02X", i, feature_set_matrix[i]);
-
-    reply_skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(u32) +
-                                                    sizeof(u32) * feature_sets +
-                                                    NLMSG_HDRLEN);
-
-    if (reply_skb) {
-        if (nla_put_u32(reply_skb,
-                        QCA_WLAN_VENDOR_ATTR_GET_CONCURRENCY_MATRIX_RESULTS_SET_SIZE,
-                        feature_sets) ||
-            nla_put(reply_skb,
-                    QCA_WLAN_VENDOR_ATTR_GET_CONCURRENCY_MATRIX_RESULTS_SET,
-                    sizeof(u32) * feature_sets, feature_set_matrix)) {
-            hddLog(LOGE, FL("nla put fail"));
-            kfree_skb(reply_skb);
-            return -EINVAL;
-        }
-
-        return cfg80211_vendor_cmd_reply(reply_skb);
-    }
-    hddLog(LOGE, FL("Feature set matrix: buffer alloc fail"));
-    return -ENOMEM;
-
-max_buffer_err:
-    hddLog(LOGE, FL("Feature set max buffer size reached. feature_sets(%d) max(%d)"),
-           feature_sets, WLAN_HDD_MAX_FEATURE_SET);
-    return -EINVAL;
-}
-
-static const struct nla_policy
-wlan_hdd_set_no_dfs_flag_config_policy[QCA_WLAN_VENDOR_ATTR_SET_NO_DFS_FLAG_MAX
- +1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_SET_NO_DFS_FLAG] = {.type = NLA_U32 },
-};
-
-static int wlan_hdd_cfg80211_disable_dfs_channels(struct wiphy *wiphy,
-                                            struct wireless_dev *wdev,
-                                            void *data,
-                                            int data_len)
-{
-    struct net_device *dev                     = wdev->netdev;
-    hdd_adapter_t *pAdapter                    = WLAN_HDD_GET_PRIV_PTR(dev);
-    tHalHandle hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
-    hdd_context_t *pHddCtx                     = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_SET_NO_DFS_FLAG_MAX + 1];
-    eHalStatus status;
-    u32 dfsFlag = 0;
-
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-    if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SET_NO_DFS_FLAG_MAX,
-                    data, data_len,
-                    wlan_hdd_set_no_dfs_flag_config_policy)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch required bandwidth kbps */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_SET_NO_DFS_FLAG]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr dfs flag failed"));
-        return -EINVAL;
-    }
-
-    dfsFlag = nla_get_u32(
-        tb[QCA_WLAN_VENDOR_ATTR_SET_NO_DFS_FLAG]);
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(" DFS flag (%d)"),
-                                     dfsFlag);
-
-    pHddCtx->disable_dfs_flag = dfsFlag;
-
-    sme_disable_dfs_channel(hHal, dfsFlag);
-    sme_FilterScanResults(hHal, pAdapter->sessionId);
-    return 0;
-}
-
-const struct
-nla_policy qca_wlan_vendor_attr[QCA_WLAN_VENDOR_ATTR_MAX+1] =
-{
-    [QCA_WLAN_VENDOR_ATTR_ROAMING_POLICY] = { .type = NLA_U32 },
-    [QCA_WLAN_VENDOR_ATTR_MAC_ADDR]       = { .type = NLA_UNSPEC },
-};
-
-static int wlan_hdd_cfg80211_firmware_roaming(struct wiphy *wiphy,
-            struct wireless_dev *wdev, void *data, int data_len)
-{
-
-    u8 bssid[6]                                 = {0};
-    hdd_context_t *pHddCtx                      = wiphy_priv(wiphy);
-    struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_MAX + 1];
-    eHalStatus status = eHAL_STATUS_SUCCESS;
-    v_U32_t isFwrRoamEnabled = FALSE;
-    int ret;
-
-    if (NULL == pHddCtx) {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-               FL("HDD context is not valid"));
-        return -EINVAL;
-    }
-
-    ret = nla_parse(tb, QCA_WLAN_VENDOR_ATTR_MAX,
-                    data, data_len,
-                    qca_wlan_vendor_attr);
-    if (ret){
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Invalid ATTR"));
-        return -EINVAL;
-    }
-
-    /* Parse and fetch Enable flag */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_ROAMING_POLICY]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr enable failed"));
-        return -EINVAL;
-    }
-
-    isFwrRoamEnabled = nla_get_u32(
-         tb[QCA_WLAN_VENDOR_ATTR_ROAMING_POLICY]);
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("isFwrRoamEnabled (%d)"), isFwrRoamEnabled);
-
-    /* Parse and fetch bssid */
-    if (!tb[QCA_WLAN_VENDOR_ATTR_MAC_ADDR]) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("attr bss id failed"));
-        return -EINVAL;
-    }
-
-    memcpy(bssid, nla_data(
-                tb[QCA_WLAN_VENDOR_ATTR_MAC_ADDR]),
-                sizeof(bssid));
-    hddLog(VOS_TRACE_LEVEL_INFO, FL(MAC_ADDRESS_STR),MAC_ADDR_ARRAY(bssid));
-
-    //Update roaming
-    status = sme_ConfigFwrRoaming((tHalHandle)(pHddCtx->hHal), isFwrRoamEnabled);
-    return status;
-}
-
-const struct wiphy_vendor_command hdd_wiphy_vendor_commands[] =
-{
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_ROAMING,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_firmware_roaming
-    },
-#ifdef WLAN_FEATURE_LINK_LAYER_STATS
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_CLR,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-            WIPHY_VENDOR_CMD_NEED_NETDEV |
-            WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_ll_stats_clear
-    },
-
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_SET,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-            WIPHY_VENDOR_CMD_NEED_NETDEV |
-            WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_ll_stats_set
-    },
-
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_GET,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-            WIPHY_VENDOR_CMD_NEED_NETDEV |
-            WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_ll_stats_get
-    },
-#endif /* WLAN_FEATURE_LINK_LAYER_STATS */
-#ifdef WLAN_FEATURE_EXTSCAN
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_START,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_start
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_STOP,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_stop
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_VALID_CHANNELS,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV,
-        .doit = wlan_hdd_cfg80211_extscan_get_valid_channels
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CAPABILITIES,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_get_capabilities
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CACHED_RESULTS,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_get_cached_results
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_BSSID_HOTLIST,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_set_bssid_hotlist
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_BSSID_HOTLIST,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_reset_bssid_hotlist
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_SIGNIFICANT_CHANGE,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_set_significant_change
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_SIGNIFICANT_CHANGE,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_extscan_reset_significant_change
-    },
-#endif /* WLAN_FEATURE_EXTSCAN */
-/*EXT TDLS*/
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_TDLS_ENABLE,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_exttdls_enable
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_TDLS_DISABLE,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV |
-                 WIPHY_VENDOR_CMD_NEED_RUNNING,
-        .doit = wlan_hdd_cfg80211_exttdls_disable
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_TDLS_GET_STATUS,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV,
-        .doit = wlan_hdd_cfg80211_exttdls_get_status
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_FEATURES,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV,
-        .doit = wlan_hdd_cfg80211_get_supported_features
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_NO_DFS_FLAG,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV,
-        .doit = wlan_hdd_cfg80211_disable_dfs_channels
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_MAC_OUI,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV,
-        .doit = wlan_hdd_cfg80211_set_spoofed_mac_oui
-    },
-    {
-        .info.vendor_id = QCA_NL80211_VENDOR_ID,
-        .info.subcmd = QCA_NL80211_VENDOR_SUBCMD_GET_CONCURRENCY_MATRIX,
-        .flags = WIPHY_VENDOR_CMD_NEED_WDEV |
-                 WIPHY_VENDOR_CMD_NEED_NETDEV,
-        .doit = wlan_hdd_cfg80211_get_concurrency_matrix
-    },
-};
-
 /* vendor specific events */
-static const
-struct nl80211_vendor_cmd_info wlan_hdd_cfg80211_vendor_events[] =
+static const struct nl80211_vendor_cmd_info wlan_hdd_cfg80211_vendor_events[] =
 {
 #ifdef FEATURE_WLAN_CH_AVOID
     {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY
+        .vendor_id = QCOM_NL80211_VENDOR_ID,
+        .subcmd = QCOM_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY
     },
-#endif /* FEATURE_WLAN_CH_AVOID Index = 0*/
-#ifdef WLAN_FEATURE_LINK_LAYER_STATS
-    {
-        /* Index = 1*/
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_SET
-    },
-    {
-        /* Index = 2*/
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_GET
-    },
-    {
-        /* Index = 3*/
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_CLR
-    },
-    {
-        /* Index = 4*/
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_RADIO_RESULTS
-    },
-    {
-        /* Index = 5*/
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_IFACE_RESULTS
-    },
-    {
-        /* Index = 6*/
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_LL_STATS_PEERS_RESULTS
-    },
-#endif /* WLAN_FEATURE_LINK_LAYER_STATS */
-#ifdef WLAN_FEATURE_EXTSCAN
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_START
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_STOP
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CAPABILITIES
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CACHED_RESULTS
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SCAN_RESULTS_AVAILABLE
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_FULL_SCAN_RESULT
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SCAN_EVENT
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_HOTLIST_AP_FOUND
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_BSSID_HOTLIST
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_BSSID_HOTLIST
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SIGNIFICANT_CHANGE
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_SIGNIFICANT_CHANGE
-    },
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_SIGNIFICANT_CHANGE
-    },
-#endif /* WLAN_FEATURE_EXTSCAN */
-/*EXT TDLS*/
-    {
-        .vendor_id = QCA_NL80211_VENDOR_ID,
-        .subcmd = QCA_NL80211_VENDOR_SUBCMD_TDLS_STATE
-    },
+#endif /* FEATURE_WLAN_CH_AVOID */
 };
 
 /*
@@ -5009,7 +653,12 @@ int wlan_hdd_cfg80211_update_band(struct wiphy *wiphy, eCsrBand eBand)
 
             if (IEEE80211_BAND_2GHZ == i && eCSR_BAND_5G == eBand) // 5G only
             {
-                band->channels[j].flags |= IEEE80211_CHAN_DISABLED;
+                // Enable Social channels for P2P
+                if (WLAN_HDD_IS_SOCIAL_CHANNEL(band->channels[j].center_freq) &&
+                    NV_CHANNEL_ENABLE == channelEnabledState)
+                    band->channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
+                else
+                    band->channels[j].flags |= IEEE80211_CHAN_DISABLED;
                 continue;
             }
             else if (IEEE80211_BAND_5GHZ == i && eCSR_BAND_24 == eBand) // 2G only
@@ -5069,7 +718,6 @@ int wlan_hdd_cfg80211_init(struct device *dev,
     wiphy->flags |=   WIPHY_FLAG_DISABLE_BEACON_HINTS;
 
 
-
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0))
     wiphy->flags |= WIPHY_FLAG_HAVE_AP_SME
                  |  WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD
@@ -5078,13 +726,13 @@ int wlan_hdd_cfg80211_init(struct device *dev,
     wiphy->country_ie_pref = NL80211_COUNTRY_IE_IGNORE_CORE;
 #endif
 
-#if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR)
+#if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
     if (pCfg->isFastTransitionEnabled
 #ifdef FEATURE_WLAN_LFR
        || pCfg->isFastRoamIniFeatureEnabled
 #endif
-#ifdef FEATURE_WLAN_ESE
-       || pCfg->isEseIniFeatureEnabled
+#ifdef FEATURE_WLAN_CCX
+       || pCfg->isCcxIniFeatureEnabled
 #endif
     )
     {
@@ -5213,8 +861,7 @@ int wlan_hdd_cfg80211_init(struct device *dev,
     wiphy->max_remain_on_channel_duration = 5000;
 #endif
 
-    wiphy->n_vendor_commands = ARRAY_SIZE(hdd_wiphy_vendor_commands);
-    wiphy->vendor_commands = hdd_wiphy_vendor_commands;
+    wiphy->n_vendor_commands = 0;
     wiphy->vendor_events = wlan_hdd_cfg80211_vendor_events;
     wiphy->n_vendor_events = ARRAY_SIZE(wlan_hdd_cfg80211_vendor_events);
 
@@ -5252,7 +899,7 @@ void wlan_hdd_cfg80211_update_reg_info(struct wiphy *wiphy)
     if (eHAL_STATUS_SUCCESS != sme_GetDefaultCountryCodeFrmNv(pHddCtx->hHal,
                                   &defaultCountryCode[0]))
     {
-       hddLog(LOGE, FL("Failed to get default country code from NV"));
+       hddLog(LOGE, FL("%s Failed to get default country code from NV"));
     }
     if ((defaultCountryCode[0]== 'U') && (defaultCountryCode[1]=='S'))
     {
@@ -5271,8 +918,11 @@ void wlan_hdd_cfg80211_update_reg_info(struct wiphy *wiphy)
     }
 }
 
-/* This function registers for all frame which supplicant is interested in */
-void wlan_hdd_cfg80211_register_frames(hdd_adapter_t* pAdapter)
+/* In this function we will do all post VOS start initialization.
+   In this function we will register for all frame in which supplicant
+   is interested.
+*/
+void wlan_hdd_cfg80211_post_voss_start(hdd_adapter_t* pAdapter)
 {
     tHalHandle hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
     /* Register for all P2P action, public action etc frames */
@@ -5313,14 +963,9 @@ void wlan_hdd_cfg80211_register_frames(hdd_adapter_t* pAdapter)
     sme_RegisterMgmtFrame(hHal, pAdapter->sessionId, type,
                          (v_U8_t*)WNM_BSS_ACTION_FRAME,
                                   WNM_BSS_ACTION_FRAME_SIZE );
-
-    /* WNM-Notification */
-    sme_RegisterMgmtFrame(hHal, pAdapter->sessionId, type,
-                         (v_U8_t*)WNM_NOTIFICATION_FRAME,
-                                  WNM_NOTIFICATION_FRAME_SIZE );
 }
 
-void wlan_hdd_cfg80211_deregister_frames(hdd_adapter_t* pAdapter)
+void wlan_hdd_cfg80211_pre_voss_stop(hdd_adapter_t* pAdapter)
 {
     tHalHandle hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
     /* Register for all P2P action, public action etc frames */
@@ -5357,10 +1002,6 @@ void wlan_hdd_cfg80211_deregister_frames(hdd_adapter_t* pAdapter)
     sme_DeregisterMgmtFrame(hHal, pAdapter->sessionId, type,
                          (v_U8_t*)P2P_ACTION_FRAME,
                                   P2P_ACTION_FRAME_SIZE );
-    /* WNM-Notification */
-    sme_DeregisterMgmtFrame(hHal, pAdapter->sessionId, type,
-                         (v_U8_t*)WNM_NOTIFICATION_FRAME,
-                                  WNM_NOTIFICATION_FRAME_SIZE );
 }
 
 #ifdef FEATURE_WLAN_WAPI
@@ -5416,11 +1057,6 @@ void wlan_hdd_cfg80211_set_key_wapi(hdd_adapter_t* pAdapter, u8 key_index,
                                                 __LINE__, status );
         pHddStaCtx->roam_info.roamingState = HDD_ROAM_STATE_NONE;
     }
-    /* Need to clear any trace of key value in the memory.
-     * Thus zero out the memory even though it is local
-     * variable.
-     */
-    vos_mem_zero(&setKey, sizeof(setKey));
 }
 #endif /* FEATURE_WLAN_WAPI*/
 
@@ -6259,7 +1895,6 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
     hdd_config_t *iniConfig;
     v_SINT_t i;
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pHostapdAdapter);
-    tSmeConfigParams *psmeConfig;
     v_BOOL_t MFPCapable = VOS_FALSE;
     v_BOOL_t MFPRequired = VOS_FALSE;
     eHddDot11Mode sapDot11Mode =
@@ -6290,6 +1925,7 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
 
     hddLog(VOS_TRACE_LEVEL_INFO_HIGH,"****pConfig->dtim_period=%d***",
                                       pConfig->dtim_period);
+
 
     if (pHostapdAdapter->device_mode == WLAN_HDD_SOFTAP)
     {
@@ -6382,11 +2018,6 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
         pConfig->wps_state = SAP_WPS_DISABLED;
     }
     pConfig->fwdWPSPBCProbeReq  = 1; // Forward WPS PBC probe request frame up
-
-    pConfig->RSNEncryptType = eCSR_ENCRYPT_TYPE_NONE;
-    pConfig->mcRSNEncryptType = eCSR_ENCRYPT_TYPE_NONE;
-    (WLAN_HDD_GET_AP_CTX_PTR(pHostapdAdapter))->ucEncryptType =
-        eCSR_ENCRYPT_TYPE_NONE;
 
     pConfig->RSNWPAReqIELength = 0;
     pConfig->pRSNWPAReqIE = NULL;
@@ -6570,9 +2201,7 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
          (sme_IsFeatureSupportedByDriver(DOT11AC)) &&
           (sme_IsFeatureSupportedByFW(DOT11AC)) )
     {
-        v_U32_t operatingBand = 0;
         pConfig->SapHw_mode = eSAP_DOT11_MODE_11ac;
-        ccmCfgGetInt(hHal, WNI_CFG_SAP_CHANNEL_SELECT_OPERATING_BAND, &operatingBand);
 
         /* If ACS disable and selected channel <= 14
          *  OR
@@ -6584,11 +2213,9 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
          */
         if (((AUTO_CHANNEL_SELECT != pConfig->channel && pConfig->channel <= SIR_11B_CHANNEL_END)
                     || (AUTO_CHANNEL_SELECT == pConfig->channel &&
-            operatingBand == eSAP_RF_SUBBAND_2_4_GHZ)) &&
+                        iniConfig->apOperatingBand == RF_SUBBAND_2_4_GHZ)) &&
                 iniConfig->enableVhtFor24GHzBand == FALSE)
         {
-            hddLog(LOGW, FL("Setting hwmode to 11n, operatingBand = %d, Channel = %d"),
-                    operatingBand, pConfig->channel);
             pConfig->SapHw_mode = eSAP_DOT11_MODE_11n;
         }
     }
@@ -6646,21 +2273,7 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
         return 0;
     }
 
-    if (vos_max_concurrent_connections_reached()) {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Reached max concurrent connections"));
-        return -EINVAL;
-    }
-
     pConfig->persona = pHostapdAdapter->device_mode;
-
-    psmeConfig = (tSmeConfigParams*) vos_mem_malloc(sizeof(tSmeConfigParams));
-    if ( NULL != psmeConfig)
-    {
-        sme_GetConfigParam(hHal, psmeConfig);
-        pConfig->scanBandPreference = psmeConfig->csrConfig.scanBandPreference;
-        vos_mem_free(psmeConfig);
-    }
-    pConfig->acsBandSwitchThreshold = iniConfig->acsBandSwitchThreshold;
 
     pSapEventCallback = hdd_hostapd_SAPEventCB;
     if(WLANSAP_StartBss(pVosContext, pSapEventCallback, pConfig,
@@ -6684,9 +2297,6 @@ static int wlan_hdd_cfg80211_start_bss(hdd_adapter_t *pHostapdAdapter,
     }
 
     set_bit(SOFTAP_BSS_STARTED, &pHostapdAdapter->event_flags);
-    /* Initialize WMM configuation */
-    hdd_wmm_init(pHostapdAdapter);
-    wlan_hdd_incr_active_session(pHddCtx, pHostapdAdapter->device_mode);
 
 #ifdef WLAN_FEATURE_P2P_DEBUG
     if (pHostapdAdapter->device_mode == WLAN_HDD_P2P_GO)
@@ -6726,9 +2336,10 @@ static int wlan_hdd_cfg80211_add_beacon(struct wiphy *wiphy,
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
                      TRACE_CODE_HDD_CFG80211_ADD_BEACON,
                      pAdapter->sessionId, params->interval));
+
     hddLog(VOS_TRACE_LEVEL_INFO_HIGH, "device mode=%s (%d)",
            hdd_device_modetoString(pAdapter->device_mode),
-           pAdapter->device_mode);
+                                   pAdapter->device_mode);
 
     pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     status = wlan_hdd_validate_context(pHddCtx);
@@ -6738,11 +2349,6 @@ static int wlan_hdd_cfg80211_add_beacon(struct wiphy *wiphy,
         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                    "%s: HDD context is not valid", __func__);
         return status;
-    }
-
-    if (vos_max_concurrent_connections_reached()) {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Reached max concurrent connections"));
-        return -EINVAL;
     }
 
     if ( (pAdapter->device_mode == WLAN_HDD_SOFTAP)
@@ -6914,8 +2520,6 @@ static int wlan_hdd_cfg80211_stop_ap (struct wiphy *wiphy,
         VOS_ASSERT(pScanInfo->mScanPending);
     }
 
-    /* Delete all associated STAs before stopping AP/P2P GO */
-    hdd_del_all_sta(pAdapter);
     hdd_hostapd_stop(dev);
 
     if ((pAdapter->device_mode == WLAN_HDD_SOFTAP)
@@ -6953,8 +2557,6 @@ static int wlan_hdd_cfg80211_stop_ap (struct wiphy *wiphy,
                  }
              }
             clear_bit(SOFTAP_BSS_STARTED, &pAdapter->event_flags);
-            /* BSS stopped, clear the active sessions for this device mode */
-            wlan_hdd_decr_active_session(pHddCtx, pAdapter->device_mode);
         }
         mutex_unlock(&pHddCtx->sap_lock);
 
@@ -7212,7 +2814,7 @@ void* wlan_hdd_change_country_code_cb(void *pAdapter)
  * FUNCTION: __wlan_hdd_cfg80211_change_iface
  * This function is used to set the interface type (INFRASTRUCTURE/ADHOC)
  */
-int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
+static int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                                     struct net_device *ndev,
                                     enum nl80211_iftype type,
                                     u32 *flags,
@@ -7221,7 +2823,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
 {
     struct wireless_dev *wdev;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( ndev );
-    hdd_context_t *pHddCtx;
+    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX( pAdapter );
     hdd_adapter_t  *pP2pAdapter = NULL;
     tCsrRoamProfile *pRoamProfile = NULL;
     eCsrRoamBssType LastBSSType;
@@ -7231,21 +2833,6 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
     long ret;
 
     ENTER();
-
-   if (!pAdapter)
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: Adapter context is null", __func__);
-        return VOS_STATUS_E_FAILURE;
-    }
-
-    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    if (!pHddCtx)
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: HDD context is null", __func__);
-        return VOS_STATUS_E_FAILURE;
-    }
 
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
                      TRACE_CODE_HDD_CFG80211_CHANGE_IFACE,
@@ -7263,10 +2850,6 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
             __func__, hdd_device_modetoString(pAdapter->device_mode),
                                               pAdapter->device_mode);
 
-    if (vos_max_concurrent_connections_reached()) {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Reached max concurrent connections"));
-        return -EINVAL;
-    }
     pConfig = pHddCtx->cfg_ini;
     wdev = ndev->ieee80211_ptr;
 
@@ -7297,12 +2880,6 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
       )
     {
         hdd_wext_state_t *pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
-        if (!pWextState)
-        {
-            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                      "%s: pWextState is null", __func__);
-            return VOS_STATUS_E_FAILURE;
-        }
         pRoamProfile = &pWextState->roamProfile;
         LastBSSType = pRoamProfile->BSSType;
 
@@ -7343,7 +2920,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
 
                 if ( pAdapter->device_mode == WLAN_HDD_P2P_CLIENT)
                 {
-                    if (0 != wlan_hdd_sta_tdls_init (pAdapter))
+                    if (0 != wlan_hdd_tdls_init (pAdapter))
                     {
                         hddLog(VOS_TRACE_LEVEL_ERROR,
                             "%s: tdls initialization failed", __func__);
@@ -7389,7 +2966,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
 
                     if (pP2pAdapter)
                     {
-                        hdd_stop_adapter(pHddCtx, pP2pAdapter, VOS_TRUE);
+                        hdd_stop_adapter(pHddCtx, pP2pAdapter);
                         hdd_deinit_adapter(pHddCtx, pP2pAdapter);
                         hdd_close_adapter(pHddCtx, pP2pAdapter, VOS_TRUE);
                     }
@@ -7401,9 +2978,6 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                     //Fail to Exit BMPS
                     VOS_ASSERT(0);
                 }
-
-                hdd_stop_adapter( pHddCtx, pAdapter, VOS_TRUE );
-
 #ifdef FEATURE_WLAN_TDLS
 
                 /* A Mutex Lock is introduced while changing the mode to
@@ -7413,6 +2987,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                 mutex_lock(&pHddCtx->tdls_lock);
 #endif
                 //De-init the adapter.
+                hdd_stop_adapter( pHddCtx, pAdapter );
                 hdd_deinit_adapter( pHddCtx, pAdapter );
                 memset(&pAdapter->sessionCtx, 0, sizeof(pAdapter->sessionCtx));
                 pAdapter->device_mode = (type == NL80211_IFTYPE_AP) ?
@@ -7522,8 +3097,6 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
            case NL80211_IFTYPE_STATION:
            case NL80211_IFTYPE_P2P_CLIENT:
            case NL80211_IFTYPE_ADHOC:
-
-                hdd_stop_adapter( pHddCtx, pAdapter, VOS_TRUE );
 #ifdef FEATURE_WLAN_TDLS
 
                 /* A Mutex Lock is introduced while changing the mode to
@@ -7532,6 +3105,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                  */
                 mutex_lock(&pHddCtx->tdls_lock);
 #endif
+                hdd_stop_adapter( pHddCtx, pAdapter );
                 hdd_deinit_adapter( pHddCtx, pAdapter );
                 wdev->iftype = type;
                 //Check for sub-string p2p to confirm its a p2p interface
@@ -7634,7 +3208,7 @@ done:
 
 #ifdef WLAN_BTAMP_FEATURE
     if((NL80211_IFTYPE_STATION == type) && (pHddCtx->concurrency_mode <= 1) &&
-       (pHddCtx->no_of_open_sessions[WLAN_HDD_INFRA_STATION] <=1))
+       (pHddCtx->no_of_sessions[WLAN_HDD_INFRA_STATION] <=1))
     {
         //we are ok to do AMP
         pHddCtx->isAmpAllowed = VOS_TRUE;
@@ -7698,10 +3272,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                 "%s:LOGP in Progress. Ignore!!!", __func__);
-        wlan_hdd_tdls_set_link_status(pAdapter,
-                                      mac,
-                                      eTDLS_LINK_IDLE,
-                                      eTDLS_LINK_UNSPECIFIED);
+        wlan_hdd_tdls_set_link_status(pAdapter, mac, eTDLS_LINK_IDLE);
         return -EBUSY;
     }
 
@@ -7775,10 +3346,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
         }
     }
     if (0 == update)
-        wlan_hdd_tdls_set_link_status(pAdapter,
-                                      mac,
-                                      eTDLS_LINK_CONNECTING,
-                                      eTDLS_LINK_SUCCESS);
+        wlan_hdd_tdls_set_link_status(pAdapter, mac, eTDLS_LINK_CONNECTING);
 
     /* debug code */
     if (NULL != StaParams)
@@ -7796,7 +3364,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
         VOS_TRACE(VOS_MODULE_ID_HDD, TDLS_LOG_LEVEL,
                   "params->capability: %0x",StaParams->capability);
         VOS_TRACE(VOS_MODULE_ID_HDD, TDLS_LOG_LEVEL,
-                  "params->ext_capab_len: %0x",StaParams->extn_capability[0]);
+                  "params->ext_capab_len: %0x",StaParams->extn_capability);
         if(StaParams->vhtcap_present)
         {
             VOS_TRACE(VOS_MODULE_ID_HDD, TDLS_LOG_LEVEL,
@@ -7853,10 +3421,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
     return 0;
 
 error:
-    wlan_hdd_tdls_set_link_status(pAdapter,
-                                  mac,
-                                  eTDLS_LINK_IDLE,
-                                  eTDLS_LINK_UNSPECIFIED);
+    wlan_hdd_tdls_set_link_status(pAdapter, mac, eTDLS_LINK_IDLE);
     return -EPERM;
 
 }
@@ -7875,7 +3440,6 @@ static int wlan_hdd_change_station(struct wiphy *wiphy,
 #ifdef FEATURE_WLAN_TDLS
     tCsrStaParams StaParams = {0};
     tANI_U8 isBufSta = 0;
-    tANI_U8 isOffChannelSupported = 0;
 #endif
     ENTER();
 
@@ -7932,36 +3496,6 @@ static int wlan_hdd_change_station(struct wiphy *wiphy,
             StaParams.uapsd_queues = params->uapsd_queues;
             StaParams.max_sp = params->max_sp;
 
-            /* Convert (first channel , number of channels) tuple to
-             * the total list of channels. This goes with the assumption
-             * that if the first channel is < 14, then the next channels
-             * are an incremental of 1 else an incremental of 4 till the number
-             * of channels.
-             */
-            if (0 != params->supported_channels_len) {
-                int i = 0,j = 0,k = 0, no_of_channels = 0 ;
-                for ( i = 0 ; i < params->supported_channels_len ; i+=2)
-                {
-                    int wifi_chan_index;
-                    StaParams.supported_channels[j] = params->supported_channels[i];
-                    wifi_chan_index =
-                        ((StaParams.supported_channels[j] <= HDD_CHANNEL_14 ) ? 1 : 4 );
-                    no_of_channels = params->supported_channels[i+1];
-                    for(k=1; k <= no_of_channels; k++)
-                    {
-                        StaParams.supported_channels[j+1] =
-                              StaParams.supported_channels[j] + wifi_chan_index;
-                        j+=1;
-                    }
-                }
-                StaParams.supported_channels_len = j;
-            }
-            vos_mem_copy(StaParams.supported_oper_classes,
-                         params->supported_oper_classes,
-                         params->supported_oper_classes_len);
-            StaParams.supported_oper_classes_len  =
-                                             params->supported_oper_classes_len;
-
             if (0 != params->ext_capab_len)
                 vos_mem_copy(StaParams.extn_capability, params->ext_capab,
                              sizeof(StaParams.extn_capability));
@@ -8007,15 +3541,9 @@ static int wlan_hdd_change_station(struct wiphy *wiphy,
                 if ((1<<4) & StaParams.extn_capability[3]) {
                     isBufSta = 1;
                 }
-                /* TDLS Channel Switching Support */
-                if ((1<<6) & StaParams.extn_capability[3]) {
-                    isOffChannelSupported = 1;
-                }
             }
-            status = wlan_hdd_tdls_set_peer_caps( pAdapter, mac,
-                                                  &StaParams, isBufSta,
-                                                  isOffChannelSupported);
-
+            status = wlan_hdd_tdls_set_peer_caps( pAdapter, mac, params->uapsd_queues,
+                                                  params->max_sp, isBufSta);
             if (VOS_STATUS_SUCCESS != status) {
                 VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                           "%s: wlan_hdd_tdls_set_peer_caps failed!", __func__);
@@ -8169,7 +3697,7 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
             }
 #endif
 
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
         case WLAN_CIPHER_SUITE_KRK:
             setKey.encType = eCSR_ENCRYPT_TYPE_KRK;
             break;
@@ -8182,10 +3710,9 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
 #endif
 
         default:
-            hddLog(VOS_TRACE_LEVEL_ERROR, "%s: unsupported cipher type %u",
+            hddLog(VOS_TRACE_LEVEL_ERROR, "%s: unsupported cipher type %lu",
                     __func__, params->cipher);
-            status = -EOPNOTSUPP;
-            goto end;
+            return -EOPNOTSUPP;
     }
 
     hddLog(VOS_TRACE_LEVEL_INFO_MED, "%s: encryption type %d",
@@ -8226,14 +3753,13 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
         {
             hddLog(VOS_TRACE_LEVEL_ERROR,
                     "%s: sme_RoamSetKey failed, returned %d", __func__, status);
-            status = -EINVAL;
-            goto end;
+            return -EINVAL;
         }
         /*Save the keys here and call sme_RoamSetKey for setting
           the PTK after peer joins the IBSS network*/
         vos_mem_copy(&pAdapter->sessionCtx.station.ibss_enc_key,
                                     &setKey, sizeof(tCsrRoamSetKey));
-        goto end;
+        return status;
     }
     if ((pAdapter->device_mode == WLAN_HDD_SOFTAP) ||
            (pAdapter->device_mode == WLAN_HDD_P2P_GO))
@@ -8252,8 +3778,7 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
 
                 pHddStaCtx->roam_info.roamingState = HDD_ROAM_STATE_NONE;
 
-                status = -EINVAL;
-                goto end;
+                return -EINVAL;
             }
 
             status = WLANSAP_SetKeySta( pVosContext, &setKey);
@@ -8263,8 +3788,6 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
                 VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                         "[%4d] WLANSAP_SetKeySta returned ERROR status= %d",
                         __LINE__, status );
-                status = -EINVAL;
-                goto end;
             }
         }
 
@@ -8333,8 +3856,7 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
 
             pHddStaCtx->roam_info.roamingState = HDD_ROAM_STATE_NONE;
 
-            status = -EINVAL;
-            goto end;
+            return -EINVAL;
 
         }
 
@@ -8347,15 +3869,13 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
         {
            hddLog(VOS_TRACE_LEVEL_INFO_MED,
                   "%s: Update PreAuth Key success", __func__);
-           status = 0;
-           goto end;
+           return 0;
         }
         else if ( halStatus == eHAL_STATUS_FT_PREAUTH_KEY_FAILED )
         {
            hddLog(VOS_TRACE_LEVEL_ERROR,
                   "%s: Update PreAuth Key failed", __func__);
-           status = -EINVAL;
-           goto end;
+           return -EINVAL;
         }
 #endif /* WLAN_FEATURE_VOWIFI_11R */
 
@@ -8368,8 +3888,7 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
             hddLog(VOS_TRACE_LEVEL_ERROR,
                     "%s: sme_RoamSetKey failed, returned %d", __func__, status);
             pHddStaCtx->roam_info.roamingState = HDD_ROAM_STATE_NONE;
-            status = -EINVAL;
-            goto end;
+            return -EINVAL;
         }
 
 
@@ -8406,20 +3925,12 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
                         "%s: sme_RoamSetKey failed for group key (IBSS), returned %d",
                         __func__, status);
                 pHddStaCtx->roam_info.roamingState = HDD_ROAM_STATE_NONE;
-                status = -EINVAL;
-                goto end;
+                return -EINVAL;
             }
         }
     }
 
-end:
-    /* Need to clear any trace of key value in the memory.
-     * Thus zero out the memory even though it is local
-     * variable.
-     */
-    vos_mem_zero(&setKey, sizeof(setKey));
-
-    return status;
+    return 0;
 }
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,38))
@@ -8898,18 +4409,29 @@ static struct cfg80211_bss* wlan_hdd_cfg80211_inform_bss(
 
     chan = __ieee80211_get_channel(wiphy, freq);
 
-    if (!chan) {
+    if (!chan)
+    {
        hddLog(VOS_TRACE_LEVEL_ERROR, "%s chan pointer is NULL", __func__);
        return NULL;
     }
 
-    rssi = (VOS_MIN ((pBssDesc->rssi + pBssDesc->sinr), 0))*100;
+    bss = cfg80211_get_bss(wiphy, chan, pBssDesc->bssId,
+                           &roamProfile->SSID.ssId[0], roamProfile->SSID.length,
+                           WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
+    if (bss == NULL)
+    {
+        rssi = (VOS_MIN ((pBssDesc->rssi + pBssDesc->sinr), 0))*100;
 
-    return cfg80211_inform_bss(wiphy, chan, pBssDesc->bssId,
+        return (cfg80211_inform_bss(wiphy, chan, pBssDesc->bssId,
                 le64_to_cpu(*(__le64 *)pBssDesc->timeStamp),
                 pBssDesc->capabilityInfo,
                 pBssDesc->beaconInterval, ie, ie_length,
-                rssi, GFP_KERNEL );
+                rssi, GFP_KERNEL ));
+}
+    else
+    {
+        return bss;
+    }
 }
 
 
@@ -9114,8 +4636,8 @@ struct cfg80211_bss* wlan_hdd_cfg80211_update_bss_db( hdd_adapter_t *pAdapter,
 
     if (NULL != roamProfile.pBssDesc)
     {
-        bss = wlan_hdd_cfg80211_inform_bss_frame(pAdapter,
-                roamProfile.pBssDesc);
+        bss = wlan_hdd_cfg80211_inform_bss(pAdapter,
+                &roamProfile);
 
         if (NULL == bss)
         {
@@ -9165,6 +4687,16 @@ static int wlan_hdd_cfg80211_update_bss( struct wiphy *wiphy,
 
     /*bss_update is not allowed during wlan driver loading or unloading*/
     if (WLAN_HDD_IS_LOAD_UNLOAD_IN_PROGRESS(pHddCtx))
+    {
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                   "%s:Loading_unloading in Progress. Ignore!!!",__func__);
+        return VOS_STATUS_E_PERM;
+    }
+
+
+
+    /*bss_update is not allowed during wlan driver loading or unloading*/
+    if (pHddCtx->isLoadUnloadInProgress)
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                    "%s:Loading_unloading in Progress. Ignore!!!",__func__);
@@ -9294,121 +4826,6 @@ int wlan_hdd_cfg80211_pmksa_candidate_notify(
 }
 #endif //FEATURE_WLAN_LFR
 
-#ifdef FEATURE_WLAN_LFR_METRICS
-/*
- * FUNCTION: wlan_hdd_cfg80211_roam_metrics_preauth
- * 802.11r/LFR metrics reporting function to report preauth initiation
- *
- */
-#define MAX_LFR_METRICS_EVENT_LENGTH 100
-VOS_STATUS wlan_hdd_cfg80211_roam_metrics_preauth(hdd_adapter_t *pAdapter,
-                                                  tCsrRoamInfo *pRoamInfo)
-{
-    unsigned char metrics_notification[MAX_LFR_METRICS_EVENT_LENGTH + 1];
-    union iwreq_data wrqu;
-
-    ENTER();
-
-    if (NULL == pAdapter)
-    {
-        hddLog(LOGE, "%s: pAdapter is NULL!", __func__);
-        return VOS_STATUS_E_FAILURE;
-    }
-
-    /* create the event */
-    memset(&wrqu, 0, sizeof(wrqu));
-    memset(metrics_notification, 0, sizeof(metrics_notification));
-
-    wrqu.data.pointer = metrics_notification;
-    wrqu.data.length = scnprintf(metrics_notification,
-        sizeof(metrics_notification), "QCOM: LFR_PREAUTH_INIT "
-        MAC_ADDRESS_STR, MAC_ADDR_ARRAY(pRoamInfo->bssid));
-
-    wireless_send_event(pAdapter->dev, IWEVCUSTOM, &wrqu, metrics_notification);
-
-    EXIT();
-
-    return VOS_STATUS_SUCCESS;
-}
-
-/*
- * FUNCTION: wlan_hdd_cfg80211_roam_metrics_preauth_status
- * 802.11r/LFR metrics reporting function to report preauth completion
- * or failure
- */
-VOS_STATUS wlan_hdd_cfg80211_roam_metrics_preauth_status(
-    hdd_adapter_t *pAdapter, tCsrRoamInfo *pRoamInfo, bool preauth_status)
-{
-    unsigned char metrics_notification[MAX_LFR_METRICS_EVENT_LENGTH + 1];
-    union iwreq_data wrqu;
-
-    ENTER();
-
-    if (NULL == pAdapter)
-    {
-        hddLog(LOGE, "%s: pAdapter is NULL!", __func__);
-        return VOS_STATUS_E_FAILURE;
-    }
-
-    /* create the event */
-    memset(&wrqu, 0, sizeof(wrqu));
-    memset(metrics_notification, 0, sizeof(metrics_notification));
-
-    scnprintf(metrics_notification, sizeof(metrics_notification),
-        "QCOM: LFR_PREAUTH_STATUS "MAC_ADDRESS_STR,
-        MAC_ADDR_ARRAY(pRoamInfo->bssid));
-
-    if (1 == preauth_status)
-        strncat(metrics_notification, " TRUE", 5);
-    else
-        strncat(metrics_notification, " FALSE", 6);
-
-    wrqu.data.pointer = metrics_notification;
-    wrqu.data.length = strlen(metrics_notification);
-
-    wireless_send_event(pAdapter->dev, IWEVCUSTOM, &wrqu, metrics_notification);
-
-    EXIT();
-
-    return VOS_STATUS_SUCCESS;
-}
-
-/*
- * FUNCTION: wlan_hdd_cfg80211_roam_metrics_handover
- * 802.11r/LFR metrics reporting function to report handover initiation
- *
- */
-VOS_STATUS wlan_hdd_cfg80211_roam_metrics_handover(hdd_adapter_t * pAdapter,
-                                                   tCsrRoamInfo *pRoamInfo)
-{
-    unsigned char metrics_notification[MAX_LFR_METRICS_EVENT_LENGTH + 1];
-    union iwreq_data wrqu;
-
-    ENTER();
-
-    if (NULL == pAdapter)
-    {
-        hddLog(LOGE, "%s: pAdapter is NULL!", __func__);
-        return VOS_STATUS_E_FAILURE;
-    }
-
-    /* create the event */
-    memset(&wrqu, 0, sizeof(wrqu));
-    memset(metrics_notification, 0, sizeof(metrics_notification));
-
-    wrqu.data.pointer = metrics_notification;
-    wrqu.data.length = scnprintf(metrics_notification,
-        sizeof(metrics_notification), "QCOM: LFR_PREAUTH_HANDOVER "
-        MAC_ADDRESS_STR, MAC_ADDR_ARRAY(pRoamInfo->bssid));
-
-    wireless_send_event(pAdapter->dev, IWEVCUSTOM, &wrqu, metrics_notification);
-
-    EXIT();
-
-    return VOS_STATUS_SUCCESS;
-}
-#endif
-
 /*
  * FUNCTION: hdd_cfg80211_scan_done_callback
  * scanning callback function, called after finishing scan
@@ -9424,8 +4841,8 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
     hdd_scaninfo_t *pScanInfo = &pHddCtx->scan_info;
     struct cfg80211_scan_request *req = NULL;
     int ret = 0;
-    bool aborted = false;
     long waitRet = 0;
+    bool aborted = false;
 
     ENTER();
 
@@ -9433,8 +4850,6 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
             "%s called with halHandle = %p, pContext = %p,"
             "scanID = %d, returned status = %d",
             __func__, halHandle, pContext, (int) scanId, (int) status);
-
-    pScanInfo->mScanPendingCounter = 0;
 
     //Block on scan req completion variable. Can't wait forever though.
     waitRet = wait_for_completion_interruptible_timeout(
@@ -9448,7 +4863,7 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
        goto allow_suspend;
     }
 
-    if (pScanInfo->mScanPending != VOS_TRUE)
+    if(pScanInfo->mScanPending != VOS_TRUE)
     {
         VOS_ASSERT(pScanInfo->mScanPending);
         goto allow_suspend;
@@ -9506,6 +4921,13 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
         goto allow_suspend;
     }
 
+    /*
+     * setting up 0, just in case.
+     */
+    req->n_ssids = 0;
+    req->n_channels = 0;
+    req->ie = 0;
+
     pAdapter->request = NULL;
     /* Scan is no longer pending */
     pScanInfo->mScanPending = VOS_FALSE;
@@ -9547,7 +4969,7 @@ allow_suspend:
  * Go through each adapter and check if Connection is in progress
  *
  */
-v_BOOL_t hdd_isConnectionInProgress( hdd_context_t *pHddCtx, v_BOOL_t isRoC )
+v_BOOL_t hdd_isConnectionInProgress( hdd_context_t *pHddCtx )
 {
     hdd_adapter_list_node_t *pAdapterNode = NULL, *pNext = NULL;
     hdd_station_ctx_t *pHddStaCtx = NULL;
@@ -9575,7 +4997,7 @@ v_BOOL_t hdd_isConnectionInProgress( hdd_context_t *pHddCtx, v_BOOL_t isRoC )
                     "%s: Adapter with device mode %s (%d) exists",
                     __func__, hdd_device_modetoString(pAdapter->device_mode),
                                                        pAdapter->device_mode);
-            if ((((!isRoC) && (WLAN_HDD_INFRA_STATION == pAdapter->device_mode)) ||
+            if (((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
                  (WLAN_HDD_P2P_CLIENT == pAdapter->device_mode) ||
                  (WLAN_HDD_P2P_DEVICE == pAdapter->device_mode)) &&
                  (eConnectionState_Connecting ==
@@ -9586,7 +5008,7 @@ v_BOOL_t hdd_isConnectionInProgress( hdd_context_t *pHddCtx, v_BOOL_t isRoC )
                        WLAN_HDD_GET_STATION_CTX_PTR(pAdapter), pAdapter->sessionId);
                 return VOS_TRUE;
             }
-            if (((!isRoC) && (WLAN_HDD_INFRA_STATION == pAdapter->device_mode)) ||
+            if ((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
                      (WLAN_HDD_P2P_CLIENT == pAdapter->device_mode) ||
                      (WLAN_HDD_P2P_DEVICE == pAdapter->device_mode))
             {
@@ -9605,20 +5027,12 @@ v_BOOL_t hdd_isConnectionInProgress( hdd_context_t *pHddCtx, v_BOOL_t isRoC )
             else if ((WLAN_HDD_SOFTAP == pAdapter->device_mode) ||
                     (WLAN_HDD_P2P_GO == pAdapter->device_mode))
             {
-                v_CONTEXT_t pVosContext = ( WLAN_HDD_GET_CTX(pAdapter))->pvosContext;
-                ptSapContext pSapCtx = NULL;
-                pSapCtx = VOS_GET_SAP_CB(pVosContext);
-                if(pSapCtx == NULL){
-                    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                            FL("psapCtx is NULL"));
-                    return VOS_FALSE;
-                }
                 for (staId = 0; staId < WLAN_MAX_STA_COUNT; staId++)
                 {
-                    if ((pSapCtx->aStaInfo[staId].isUsed) &&
-                            (WLANTL_STA_CONNECTED == pSapCtx->aStaInfo[staId].tlSTAState))
+                    if ((pAdapter->aStaInfo[staId].isUsed) &&
+                            (WLANTL_STA_CONNECTED == pAdapter->aStaInfo[staId].tlSTAState))
                     {
-                        staMac = (v_U8_t *) &(pSapCtx->aStaInfo[staId].macAddrSTA.bytes[0]);
+                        staMac = (v_U8_t *) &(pAdapter->aStaInfo[staId].macAddrSTA.bytes[0]);
 
                         hddLog(VOS_TRACE_LEVEL_ERROR,
                                "%s: client " MAC_ADDRESS_STR " of SoftAP/P2P-GO is in the "
@@ -9718,10 +5132,7 @@ int __wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
 
     if (TRUE == pScanInfo->mScanPending)
     {
-        if ( MAX_PENDING_LOG > pScanInfo->mScanPendingCounter++ )
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR, "%s: mScanPending is TRUE", __func__);
-        }
+        hddLog(VOS_TRACE_LEVEL_INFO, "%s: mScanPending is TRUE", __func__);
         return -EBUSY;
     }
 
@@ -9731,7 +5142,7 @@ int __wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
     //If no action frame pending
     if (0 != wlan_hdd_check_remain_on_channel(pAdapter))
     {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Remain On Channel Pending", __func__);
+        hddLog(VOS_TRACE_LEVEL_INFO, "%s: Remain On Channel Pending", __func__);
         return -EBUSY;
     }
 #ifdef FEATURE_WLAN_TDLS
@@ -9775,7 +5186,7 @@ int __wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
 
     /* Check if scan is allowed at this point of time.
      */
-    if (hdd_isConnectionInProgress(pHddCtx, VOS_FALSE))
+    if (hdd_isConnectionInProgress(pHddCtx))
     {
         hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Scan not allowed", __func__);
         return -EBUSY;
@@ -10035,7 +5446,6 @@ int __wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
     }
 
     pScanInfo->mScanPending = TRUE;
-    pScanInfo->sessionId = pAdapter->sessionId;
     pAdapter->request = request;
     pScanInfo->scanId = scanId;
 
@@ -10088,11 +5498,7 @@ void hdd_select_cbmode( hdd_adapter_t *pAdapter,v_U8_t operationChannel)
        case eHDD_DOT11_MODE_11ac:
        case eHDD_DOT11_MODE_11ac_ONLY:
 #ifdef WLAN_FEATURE_11AC
-          if ( sme_IsFeatureSupportedByDriver(DOT11AC) &&
-               sme_IsFeatureSupportedByFW(DOT11AC) )
-              hddDot11Mode = eHDD_DOT11_MODE_11ac;
-          else
-              hddDot11Mode = eHDD_DOT11_MODE_11n;
+          hddDot11Mode = eHDD_DOT11_MODE_11ac;
 #else
           hddDot11Mode = eHDD_DOT11_MODE_11n;
 #endif
@@ -10131,6 +5537,7 @@ int wlan_hdd_cfg80211_connect_start( hdd_adapter_t  *pAdapter,
     pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
 
     status = wlan_hdd_validate_context(pHddCtx);
+
     if (status)
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -10337,7 +5744,7 @@ static int wlan_hdd_cfg80211_set_auth_type(hdd_adapter_t *pAdapter,
                     "%s: set authentication type to SHARED", __func__);
             pHddStaCtx->conn_info.authType = eCSR_AUTH_TYPE_SHARED_KEY;
             break;
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
         case NL80211_AUTHTYPE_NETWORK_EAP:
             hddLog(VOS_TRACE_LEVEL_INFO,
                             "%s: set authentication type to CCKM WPA", __func__);
@@ -10370,14 +5777,11 @@ static int wlan_hdd_set_akm_suite( hdd_adapter_t *pAdapter,
 {
     hdd_wext_state_t *pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
     ENTER();
-    /* Should be in ieee802_11_defs.h */
-#define WLAN_AKM_SUITE_8021X_SHA256 0x000FAC05
-#define WLAN_AKM_SUITE_PSK_SHA256   0x000FAC06
+
     /*set key mgmt type*/
     switch(key_mgmt)
     {
         case WLAN_AKM_SUITE_PSK:
-        case WLAN_AKM_SUITE_PSK_SHA256:
 #ifdef WLAN_FEATURE_VOWIFI_11R
         case WLAN_AKM_SUITE_FT_PSK:
 #endif
@@ -10387,7 +5791,6 @@ static int wlan_hdd_set_akm_suite( hdd_adapter_t *pAdapter,
             break;
 
         case WLAN_AKM_SUITE_8021X:
-        case WLAN_AKM_SUITE_8021X_SHA256:
 #ifdef WLAN_FEATURE_VOWIFI_11R
         case WLAN_AKM_SUITE_FT_8021X:
 #endif
@@ -10395,21 +5798,13 @@ static int wlan_hdd_set_akm_suite( hdd_adapter_t *pAdapter,
                     __func__);
             pWextState->authKeyMgmt |= IW_AUTH_KEY_MGMT_802_1X;
             break;
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
 #define WLAN_AKM_SUITE_CCKM         0x00409600 /* Should be in ieee802_11_defs.h */
 #define IW_AUTH_KEY_MGMT_CCKM       8  /* Should be in linux/wireless.h */
         case WLAN_AKM_SUITE_CCKM:
             hddLog(VOS_TRACE_LEVEL_INFO, "%s: setting key mgmt type to CCKM",
                             __func__);
             pWextState->authKeyMgmt |= IW_AUTH_KEY_MGMT_CCKM;
-            break;
-#endif
-#ifndef WLAN_AKM_SUITE_OSEN
-#define WLAN_AKM_SUITE_OSEN         0x506f9a01 /* Should be in ieee802_11_defs.h */
-        case WLAN_AKM_SUITE_OSEN:
-            hddLog(VOS_TRACE_LEVEL_INFO, "%s: setting key mgmt type to OSEN",
-                            __func__);
-            pWextState->authKeyMgmt |= IW_AUTH_KEY_MGMT_802_1X;
             break;
 #endif
 
@@ -10475,7 +5870,7 @@ static int wlan_hdd_cfg80211_set_cipher( hdd_adapter_t *pAdapter,
             break;
 #endif
 
-#ifdef FEATURE_WLAN_ESE
+#ifdef FEATURE_WLAN_CCX
         case WLAN_CIPHER_SUITE_KRK:
             encryptionType = eCSR_ENCRYPT_TYPE_KRK;
             break;
@@ -10532,7 +5927,6 @@ int wlan_hdd_cfg80211_set_ie( hdd_adapter_t *pAdapter,
     /* clear previous assocAddIE */
     pWextState->assocAddIE.length = 0;
     pWextState->roamProfile.bWPSAssociation = VOS_FALSE;
-    pWextState->roamProfile.bOSENAssociation = VOS_FALSE;
 
     while (remLen >= 2)
     {
@@ -10651,147 +6045,7 @@ int wlan_hdd_cfg80211_set_ie( hdd_adapter_t *pAdapter,
                     pWextState->roamProfile.pAddIEAssoc = pWextState->assocAddIE.addIEdata;
                     pWextState->roamProfile.nAddIEAssocLength = pWextState->assocAddIE.length;
                 }
-                 /* Appending OSEN Information  Element in Assiciation Request */
-                else if ( (0 == memcmp(&genie[0], OSEN_OUI_TYPE,
-                                       OSEN_OUI_TYPE_SIZE)) )
-                {
-                    v_U16_t curAddIELen = pWextState->assocAddIE.length;
-                    hddLog (VOS_TRACE_LEVEL_INFO, "%s Set OSEN IE(len %d)",
-                            __func__, eLen + 2);
 
-                    if( SIR_MAC_MAX_IE_LENGTH < (pWextState->assocAddIE.length + eLen) )
-                    {
-                        hddLog(VOS_TRACE_LEVEL_FATAL, "Cannot accommodate assocAddIE "
-                               "Need bigger buffer space");
-                        VOS_ASSERT(0);
-                        return -ENOMEM;
-                    }
-                    memcpy( pWextState->assocAddIE.addIEdata + curAddIELen, genie - 2, eLen + 2);
-                    pWextState->assocAddIE.length += eLen + 2;
-
-                    pWextState->roamProfile.bOSENAssociation = VOS_TRUE;
-                    pWextState->roamProfile.pAddIEAssoc = pWextState->assocAddIE.addIEdata;
-                    pWextState->roamProfile.nAddIEAssocLength = pWextState->assocAddIE.length;
-                }
-
-                break;
-                if (WLAN_HDD_IBSS == pAdapter->device_mode) {
-
-                   /* populating as ADDIE in beacon frames */
-                   if (ccmCfgSetStr(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                       WNI_CFG_PROBE_RSP_BCN_ADDNIE_DATA, genie - 2, eLen + 2,
-                       NULL, eANI_BOOLEAN_FALSE)== eHAL_STATUS_SUCCESS)
-                   {
-                       if (ccmCfgSetInt(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                           WNI_CFG_PROBE_RSP_BCN_ADDNIE_FLAG, 1,NULL,
-                           eANI_BOOLEAN_FALSE) == eHAL_STATUS_FAILURE)
-                       {
-                           hddLog(LOGE,
-                                  "Coldn't pass "
-                                  "WNI_CFG_PROBE_RSP_BCN_ADDNIE_FLAG to CCM");
-                       }
-                   }/* ccmCfgSetStr(,WNI_CFG_PROBE_RSP_BCN_ADDNIE_DATA, , )*/
-                   else
-                       hddLog(LOGE,
-                              "Could not pass on "
-                              "WNI_CFG_PROBE_RSP_BCN_ADDNIE_DATA to CCM");
-
-                   /* IBSS mode doesn't contain params->proberesp_ies still
-                    beaconIE's need to be populated in probe response frames */
-                   if ( (NULL != (genie - 2)) && (0 != eLen + 2) )
-                   {
-                      u16 rem_probe_resp_ie_len = eLen + 2;
-                      u8 probe_rsp_ie_len[3] = {0};
-                      u8 counter = 0;
-
-                      /* Check Probe Resp Length if it is greater then 255 then
-                         Store Probe Rsp IEs into WNI_CFG_PROBE_RSP_ADDNIE_DATA1
-                         & WNI_CFG_PROBE_RSP_ADDNIE_DATA2 CFG Variable As We are
-                         not able Store More then 255 bytes into One Variable */
-
-                      while ((rem_probe_resp_ie_len > 0) && (counter < 3))
-                      {
-                         if (rem_probe_resp_ie_len > MAX_CFG_STRING_LEN)
-                         {
-                            probe_rsp_ie_len[counter++] = MAX_CFG_STRING_LEN;
-                            rem_probe_resp_ie_len -= MAX_CFG_STRING_LEN;
-                         }
-                         else
-                         {
-                            probe_rsp_ie_len[counter++] = rem_probe_resp_ie_len;
-                            rem_probe_resp_ie_len = 0;
-                         }
-                      }
-
-                      rem_probe_resp_ie_len = 0;
-
-                      if (probe_rsp_ie_len[0] > 0)
-                      {
-                         if (ccmCfgSetStr(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                                          WNI_CFG_PROBE_RSP_ADDNIE_DATA1,
-                                          (tANI_U8*)(genie - 2),
-                                          probe_rsp_ie_len[0], NULL,
-                                          eANI_BOOLEAN_FALSE)
-                                          == eHAL_STATUS_FAILURE)
-                         {
-                            hddLog(LOGE,
-                                   "Could not pass"
-                                   "on WNI_CFG_PROBE_RSP_ADDNIE_DATA1 to CCM");
-                         }
-                         rem_probe_resp_ie_len += probe_rsp_ie_len[0];
-                      }
-
-                      if (probe_rsp_ie_len[1] > 0)
-                      {
-                         if (ccmCfgSetStr(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                                          WNI_CFG_PROBE_RSP_ADDNIE_DATA2,
-                                          (tANI_U8*)(genie - (2 + rem_probe_resp_ie_len)),
-                                          probe_rsp_ie_len[1], NULL,
-                                          eANI_BOOLEAN_FALSE)
-                                          == eHAL_STATUS_FAILURE)
-                         {
-                             hddLog(LOGE,
-                                    "Could not pass"
-                                    "on WNI_CFG_PROBE_RSP_ADDNIE_DATA2 to CCM");
-                         }
-                         rem_probe_resp_ie_len += probe_rsp_ie_len[1];
-                      }
-
-                      if (probe_rsp_ie_len[2] > 0)
-                      {
-                         if (ccmCfgSetStr(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                                          WNI_CFG_PROBE_RSP_ADDNIE_DATA3,
-                                          (tANI_U8*)(genie - (2 + rem_probe_resp_ie_len)),
-                                          probe_rsp_ie_len[2], NULL,
-                                          eANI_BOOLEAN_FALSE)
-                                          == eHAL_STATUS_FAILURE)
-                          {
-                            hddLog(LOGE,
-                                   "Could not pass"
-                                   "on WNI_CFG_PROBE_RSP_ADDNIE_DATA3 to CCM");
-                          }
-                          rem_probe_resp_ie_len += probe_rsp_ie_len[2];
-                       }
-
-                       if (ccmCfgSetInt(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                           WNI_CFG_PROBE_RSP_ADDNIE_FLAG, 1,NULL,
-                           eANI_BOOLEAN_FALSE) == eHAL_STATUS_FAILURE)
-                       {
-                          hddLog(LOGE,
-                                "Could not pass"
-                                "on WNI_CFG_PROBE_RSP_ADDNIE_FLAG to CCM");
-                       }
-                   }
-                   else
-                   {
-                      // Reset WNI_CFG_PROBE_RSP Flags
-                      wlan_hdd_reset_prob_rspies(pAdapter);
-
-                      hddLog(VOS_TRACE_LEVEL_INFO,
-                            "%s: No Probe Response IE received in set beacon",
-                            __func__);
-                   }
-                } /* end of if (WLAN_HDD_IBSS == pAdapter->device_mode) */
                 break;
             case DOT11F_EID_RSN:
                 hddLog (VOS_TRACE_LEVEL_INFO, "%s Set RSN IE(len %d)",__func__, eLen + 2);
@@ -10824,7 +6078,7 @@ int wlan_hdd_cfg80211_set_ie( hdd_adapter_t *pAdapter,
 #ifdef FEATURE_WLAN_WAPI
             case WLAN_EID_WAPI:
                 pAdapter->wapi_info.nWapiMode = 1;   //Setting WAPI Mode to ON=1
-                hddLog(VOS_TRACE_LEVEL_INFO, "WAPI MODE IS %u",
+                hddLog(VOS_TRACE_LEVEL_INFO,"WAPI MODE IS  %lu \n",
                                           pAdapter->wapi_info.nWapiMode);
                 tmp = (u16 *)ie;
                 tmp = tmp + 2; // Skip element Id and Len, Version
@@ -11103,8 +6357,9 @@ static int wlan_hdd_try_disconnect( hdd_adapter_t *pAdapter )
 }
 
 /*
- * FUNCTION: __wlan_hdd_cfg80211_connect
- * This function is used to start the association process
+ * FUNCTION: __wlan_hdd_cfg80211_set_privacy
+ * This function is used to initialize the security
+ * parameters during connect operation.
  */
 static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
                                       struct net_device *ndev,
@@ -11127,13 +6382,6 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
                                    pAdapter->device_mode);
 
     pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    if (!pHddCtx)
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: HDD context is null", __func__);
-        return -EINVAL;
-    }
-
     status = wlan_hdd_validate_context(pHddCtx);
 
     if (0 != status)
@@ -11141,11 +6389,6 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                    "%s: HDD context is not valid", __func__);
         return status;
-    }
-
-    if (vos_max_concurrent_connections_reached()) {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Reached max concurrent connections"));
-        return -ECONNREFUSED;
     }
 
 #ifdef WLAN_BTAMP_FEATURE
@@ -11161,9 +6404,9 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
     //If Device Mode is Station Concurrent Sessions Exit BMps
     //P2P Mode will be taken care in Open/close adapter
     if((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) &&
-        (vos_concurrent_open_sessions_running())) {
-        exitbmpsStatus = hdd_disable_bmps_imps(pHddCtx,
-                                               WLAN_HDD_INFRA_STATION);
+        (vos_concurrent_sessions_running()))
+    {
+        exitbmpsStatus = hdd_disable_bmps_imps(pHddCtx, WLAN_HDD_INFRA_STATION);
     }
 
     /*Try disconnecting if already in connected state*/
@@ -11184,6 +6427,7 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
                 __func__);
         return status;
     }
+
     if ( req->channel )
     {
         status = wlan_hdd_cfg80211_connect_start(pAdapter, req->ssid,
@@ -11209,7 +6453,8 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
            //ReEnable Bmps and Imps back
            hdd_enable_bmps_imps(pHddCtx);
         }
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("connect failed"));
+
+        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: connect failed", __func__);
         return status;
     }
     pHddCtx->isAmpAllowed = VOS_FALSE;
@@ -11238,7 +6483,6 @@ int wlan_hdd_disconnect( hdd_adapter_t *pAdapter, u16 reason )
     int status;
     hdd_station_ctx_t *pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    long ret;
 
     status = wlan_hdd_validate_context(pHddCtx);
 
@@ -11250,70 +6494,42 @@ int wlan_hdd_disconnect( hdd_adapter_t *pAdapter, u16 reason )
     }
 
     pHddCtx->isAmpAllowed = VOS_TRUE;
-
-    /* Need to apply spin lock before decreasing active sessions
-     * as there can be chance for double decrement if context switch
-     * Calls  hdd_DisConnectHandler.
-     */
-
-    spin_lock_bh(&pAdapter->lock_for_active_session);
-    if (eConnectionState_Associated ==  pHddStaCtx->conn_info.connState)
-    {
-        wlan_hdd_decr_active_session(pHddCtx, pAdapter->device_mode);
-    }
-    hdd_connSetConnectionState( pHddStaCtx, eConnectionState_Disconnecting );
-    spin_unlock_bh(&pAdapter->lock_for_active_session);
-
     VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-                  FL( "Set HDD connState to eConnectionState_Disconnecting" ));
-
+                   "%s: Set HDD connState to eConnectionState_Disconnecting",
+                   __func__);
+    pHddStaCtx->conn_info.connState = eConnectionState_Disconnecting;
     INIT_COMPLETION(pAdapter->disconnect_comp_var);
 
-    /*
-     * stop tx queues before deleting STA/BSS context from the firmware.
-     * tx has to be disabled because the firmware can get busy dropping
-     * the tx frames after BSS/STA has been deleted and will not send
-     * back a response resulting in WDI timeout
-     */
-    netif_tx_disable(pAdapter->dev);
-    netif_carrier_off(pAdapter->dev);
-
     /*issue disconnect*/
+
     status = sme_RoamDisconnect( WLAN_HDD_GET_HAL_CTX(pAdapter),
                                  pAdapter->sessionId, reason);
-     if(eHAL_STATUS_CMD_NOT_QUEUED == status)
-     {
-        hddLog(VOS_TRACE_LEVEL_INFO,
-             FL("status = %d, already disconnected"),
-                     (int)status );
 
-    }
-    else if ( 0 != status )
+    if ( 0 != status )
     {
         hddLog(VOS_TRACE_LEVEL_ERROR,
                "%s csrRoamDisconnect failure, returned %d",
                __func__, (int)status );
         return -EINVAL;
     }
-    ret = wait_for_completion_interruptible_timeout(
+    status = wait_for_completion_interruptible_timeout(
                 &pAdapter->disconnect_comp_var,
                 msecs_to_jiffies(WLAN_WAIT_TIME_DISCONNECT));
-    if (!ret && ( eHAL_STATUS_CMD_NOT_QUEUED != status ))
+    if (!status)
     {
         hddLog(VOS_TRACE_LEVEL_ERROR,
               "%s: Failed to disconnect, timed out", __func__);
         return -ETIMEDOUT;
     }
-    else if (ret == -ERESTARTSYS)
+    else if (status == -ERESTARTSYS)
     {
         hddLog(VOS_TRACE_LEVEL_ERROR,
                "%s: Failed to disconnect, wait interrupted", __func__);
-        return ret;
+        return status;
     }
-    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-              FL("Set HDD connState to eConnectionState_NotConnected"));
-    pHddStaCtx->conn_info.connState = eConnectionState_NotConnected;
-
+    /*stop tx queues*/
+    netif_tx_disable(pAdapter->dev);
+    netif_carrier_off(pAdapter->dev);
     return 0;
 }
 
@@ -11394,8 +6610,7 @@ static int __wlan_hdd_cfg80211_disconnect( struct wiphy *wiphy,
             {
                 hddLog(VOS_TRACE_LEVEL_INFO, "Disconnect is in progress, "
                               "Aborting Scan");
-                hdd_abort_mac_scan(pHddCtx, pScanInfo->sessionId,
-                                   eCSR_SCAN_ABORT_DEFAULT);
+                hdd_abort_mac_scan(pHddCtx, eCSR_SCAN_ABORT_DEFAULT);
             }
 
 #ifdef FEATURE_WLAN_TDLS
@@ -11473,7 +6688,6 @@ static int wlan_hdd_cfg80211_set_privacy_ibss(
     ENTER();
 
     pWextState->wpaVersion = IW_AUTH_WPA_VERSION_DISABLED;
-    vos_mem_zero(&pHddStaCtx->ibss_enc_key, sizeof(tCsrRoamSetKey));
 
     if (params->ie_len && ( NULL != params->ie) )
     {
@@ -11543,10 +6757,10 @@ static int wlan_hdd_cfg80211_set_privacy_ibss(
 }
 
 /*
- * FUNCTION: __wlan_hdd_cfg80211_join_ibss
+ * FUNCTION: wlan_hdd_cfg80211_join_ibss
  * This function is used to create/join an IBSS
  */
-static int __wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
+static int wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
                                         struct net_device *dev,
                                         struct cfg80211_ibss_params *params
                                        )
@@ -11555,7 +6769,6 @@ static int __wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
     hdd_wext_state_t *pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
     tCsrRoamProfile          *pRoamProfile;
     int status;
-    bool alloc_bssid = VOS_FALSE;
     hdd_station_ctx_t *pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
 
@@ -11585,11 +6798,6 @@ static int __wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
         return -EIO;
     }
 
-    if (vos_max_concurrent_connections_reached()) {
-        hddLog(VOS_TRACE_LEVEL_INFO, FL("Reached max concurrent connections"));
-        return -ECONNREFUSED;
-    }
-
     /*Try disconnecting if already in connected state*/
     status = wlan_hdd_try_disconnect(pAdapter);
     if ( 0 > status)
@@ -11606,37 +6814,6 @@ static int __wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
         hddLog (VOS_TRACE_LEVEL_ERROR,
                 "%s Interface type is not set to IBSS", __func__);
         return -EINVAL;
-    }
-
-    /* BSSID is provided by upper layers hence no need to AUTO generate */
-    if (NULL != params->bssid) {
-       if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_IBSS_AUTO_BSSID, 0,
-                        NULL, eANI_BOOLEAN_FALSE)==eHAL_STATUS_FAILURE) {
-           hddLog (VOS_TRACE_LEVEL_ERROR,
-                  "%s:ccmCfgStInt faild for WNI_CFG_IBSS_AUTO_BSSID", __func__);
-           return -EIO;
-       }
-    }
-    else if(pHddCtx->cfg_ini->isCoalesingInIBSSAllowed == 0)
-    {
-        if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_IBSS_AUTO_BSSID, 0,
-                         NULL, eANI_BOOLEAN_FALSE)==eHAL_STATUS_FAILURE)
-        {
-            hddLog (VOS_TRACE_LEVEL_ERROR,
-                    "%s:ccmCfgStInt faild for WNI_CFG_IBSS_AUTO_BSSID", __func__);
-            return -EIO;
-        }
-        params->bssid = vos_mem_malloc(sizeof(VOS_MAC_ADDR_SIZE));
-        if (!params->bssid)
-        {
-            hddLog (VOS_TRACE_LEVEL_ERROR,
-                    "%s:Failed memory allocation", __func__);
-            return -EIO;
-        }
-        vos_mem_copy((v_U8_t *)params->bssid,
-                     (v_U8_t *)&pHddCtx->cfg_ini->IbssBssid.bytes[0],
-                     VOS_MAC_ADDR_SIZE);
-        alloc_bssid = VOS_TRUE;
     }
 
     /* Set Channel */
@@ -11712,34 +6889,14 @@ static int __wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
         return status;
     }
 
-    if (NULL != params->bssid &&
-        pHddCtx->cfg_ini->isCoalesingInIBSSAllowed == 0 &&
-        alloc_bssid == VOS_TRUE)
-    {
-        vos_mem_free(params->bssid);
-    }
     return 0;
 }
 
-static int wlan_hdd_cfg80211_join_ibss( struct wiphy *wiphy,
-                                        struct net_device *dev,
-                                        struct cfg80211_ibss_params *params
-                                       )
-{
-    int ret = 0;
-
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_join_ibss(wiphy, dev, params);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
-
 /*
- * FUNCTION: __wlan_hdd_cfg80211_leave_ibss
+ * FUNCTION: wlan_hdd_cfg80211_leave_ibss
  * This function is used to leave an IBSS
  */
-static int __wlan_hdd_cfg80211_leave_ibss( struct wiphy *wiphy,
+static int wlan_hdd_cfg80211_leave_ibss( struct wiphy *wiphy,
                                          struct net_device *dev
                                          )
 {
@@ -11789,19 +6946,6 @@ static int __wlan_hdd_cfg80211_leave_ibss( struct wiphy *wiphy,
                                   eCSR_DISCONNECT_REASON_IBSS_LEAVE);
 
     return 0;
-}
-
-static int wlan_hdd_cfg80211_leave_ibss( struct wiphy *wiphy,
-                                         struct net_device *dev
-                                         )
-{
-    int ret = 0;
-
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_leave_ibss(wiphy, dev);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
 }
 
 /*
@@ -12090,7 +7234,7 @@ static int wlan_hdd_cfg80211_get_txpower(struct wiphy *wiphy,
     return 0;
 }
 
-static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_device *dev,
+static int wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_device *dev,
                                    u8* mac, struct station_info *sinfo)
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
@@ -12113,7 +7257,7 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
     tANI_U8  maxSpeedMCS = 0;
     tANI_U8  maxMCSIdx = 0;
     tANI_U8  rateFlag = 1;
-    tANI_U8  i, j, rssidx, mode=0;
+    tANI_U8  i, j, rssidx;
     tANI_U16 temp;
     int status;
 
@@ -12133,13 +7277,6 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
         return 0;
     }
 
-    if (VOS_TRUE == pHddStaCtx->hdd_ReassocScenario)
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-                  "%s: Roaming in progress, so unable to proceed this request", __func__);
-        return 0;
-    }
-
     status = wlan_hdd_validate_context(pHddCtx);
 
     if (0 != status)
@@ -12148,7 +7285,6 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
                    "%s: HDD context is not valid", __func__);
         return status;
     }
-
 
     wlan_hdd_get_rssi(pAdapter, &sinfo->signal);
     sinfo->filled |= STATION_INFO_SIGNAL;
@@ -12159,7 +7295,7 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
     /*overwrite rate_flags if MAX link-speed need to be reported*/
     if ((eHDD_LINK_SPEED_REPORT_MAX == pCfg->reportMaxLinkSpeed) ||
         (eHDD_LINK_SPEED_REPORT_MAX_SCALED == pCfg->reportMaxLinkSpeed &&
-         sinfo->signal >= pCfg->linkSpeedRssiLow))
+         sinfo->signal >= pCfg->linkSpeedRssiHigh))
     {
         rate_flags = pAdapter->maxRateFlags;
     }
@@ -12268,19 +7404,12 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
             /* Update MAX rate */
             maxRate = (currentRate > maxRate)?currentRate:maxRate;
         }
-
         /* Get MCS Rate Set --
            Only if we are always reporting max speed  (or)
            if we have good rssi */
-        if ((3 != rssidx) && !(rate_flags & eHAL_TX_RATE_LEGACY))
+         if ((0 == rssidx) ||
+              (eHDD_LINK_SPEED_REPORT_MAX == pCfg->reportMaxLinkSpeed))
         {
-            if (rate_flags & eHAL_TX_RATE_VHT80)
-                mode = 2;
-            else if (rate_flags & (eHAL_TX_RATE_VHT40 | eHAL_TX_RATE_HT40))
-                mode = 1;
-            else
-                mode = 0;
-
             if (0 != ccmCfgGetStr(WLAN_HDD_GET_HAL_CTX(pAdapter), WNI_CFG_CURRENT_MCS_SET,
                                  MCSRates, &MCSLeng))
             {
@@ -12314,19 +7443,6 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
                         maxMCSIdx = 8;
                     else
                         maxMCSIdx = 9;
-                }
-
-                if (0 != rssidx)/*check for scaled */
-                {
-                    //get middle rate MCS index if rssi=1/2
-                    for (i=0; i <= maxMCSIdx; i++)
-                    {
-                        if (sinfo->signal <= rssiMcsTbl[mode][i])
-                        {
-                            maxMCSIdx = i;
-                            break;
-                        }
-                    }
                 }
 
                 if (rate_flags & eHAL_TX_RATE_VHT80)
@@ -12364,22 +7480,9 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
                     rateFlag |= 2;
                 }
 
-                temp = sizeof(supported_mcs_rate) / sizeof(supported_mcs_rate[0]);
-                if (rssidx == 1 || rssidx == 2)
-                {
-                    //get middle rate MCS index if rssi=1/2
-                    for (i=0; i <= 7; i++)
-                    {
-                        if (sinfo->signal <= rssiMcsTbl[mode][i])
-                        {
-                            temp = i+1;
-                            break;
-                         }
-                     }
-                }
-
                 for (i = 0; i < MCSLeng; i++)
                 {
+                    temp = sizeof(supported_mcs_rate) / sizeof(supported_mcs_rate[0]);
                     for (j = 0; j < temp; j++)
                     {
                         if (supported_mcs_rate[j].beacon_rate_index == MCSRates[i])
@@ -12404,8 +7507,10 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
             maxSpeedMCS = 1;
             maxMCSIdx = pAdapter->hdd_stats.ClassA_stat.mcs_index;
         }
+
         // make sure we report a value at least as big as our current rate
-        if ((maxRate < myRate) || (0 == maxRate))
+        if (((maxRate < myRate) && (0 == rssidx)) ||
+             (0 == maxRate))
         {
            maxRate = myRate;
            if (rate_flags & eHAL_TX_RATE_LEGACY)
@@ -12546,19 +7651,7 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_devic
        return 0;
 }
 
-static int wlan_hdd_cfg80211_get_station(struct wiphy *wiphy, struct net_device *dev,
-                                   u8* mac, struct station_info *sinfo)
-{
-    int ret;
-
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_get_station(wiphy, dev, mac, sinfo);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
-
-static int __wlan_hdd_cfg80211_set_power_mgmt(struct wiphy *wiphy,
+static int wlan_hdd_cfg80211_set_power_mgmt(struct wiphy *wiphy,
                      struct net_device *dev, bool mode, int timeout)
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -12622,17 +7715,7 @@ static int __wlan_hdd_cfg80211_set_power_mgmt(struct wiphy *wiphy,
     return 0;
 }
 
-static int wlan_hdd_cfg80211_set_power_mgmt(struct wiphy *wiphy,
-                     struct net_device *dev, bool mode, int timeout)
-{
-    int ret;
 
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_set_power_mgmt(wiphy, dev, mode, timeout);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,38))
 static int wlan_hdd_set_default_mgmt_key(struct wiphy *wiphy,
                          struct net_device *netdev,
@@ -12660,17 +7743,15 @@ static int wlan_hdd_set_txq_params(struct wiphy *wiphy,
 }
 #endif //LINUX_VERSION_CODE
 
-static int __wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
-                                       struct net_device *dev,
-                                       struct tagCsrDelStaParams *pDelStaParams)
+static int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
+                                         struct net_device *dev, u8 *mac)
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     hdd_context_t *pHddCtx;
     VOS_STATUS vos_status;
     int status;
     v_U8_t staId;
-    v_CONTEXT_t pVosContext = NULL;
-    ptSapContext pSapCtx = NULL;
+
     ENTER();
 
     if ( NULL == pAdapter )
@@ -12697,76 +7778,64 @@ static int __wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
        || (WLAN_HDD_P2P_GO == pAdapter->device_mode)
        )
     {
-        pVosContext = ( WLAN_HDD_GET_CTX(pAdapter))->pvosContext;
-        pSapCtx = VOS_GET_SAP_CB(pVosContext);
-        if(pSapCtx == NULL){
-            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                 FL("psapCtx is NULL"));
-            return -ENOENT;
-        }
-        if (vos_is_macaddr_broadcast((v_MACADDR_t *)pDelStaParams->peerMacAddr))
+        if( NULL == mac )
         {
             v_U16_t i;
             for(i = 0; i < WLAN_MAX_STA_COUNT; i++)
             {
-                if ((pSapCtx->aStaInfo[i].isUsed) &&
-                    (!pSapCtx->aStaInfo[i].isDeauthInProgress))
+                if ((pAdapter->aStaInfo[i].isUsed) &&
+                    (!pAdapter->aStaInfo[i].isDeauthInProgress))
                 {
-                    vos_mem_copy(pDelStaParams->peerMacAddr,
-                                 pSapCtx->aStaInfo[i].macAddrSTA.bytes,
-                                 ETHER_ADDR_LEN);
-
+                    u8 *macAddr = pAdapter->aStaInfo[i].macAddrSTA.bytes;
                     hddLog(VOS_TRACE_LEVEL_INFO,
                            "%s: Delete STA with MAC::"
                             MAC_ADDRESS_STR,
-                            __func__,
-                            MAC_ADDR_ARRAY(pDelStaParams->peerMacAddr));
-                    vos_status = hdd_softap_sta_deauth(pAdapter, pDelStaParams);
+                            __func__, MAC_ADDR_ARRAY(macAddr));
+                    vos_status = hdd_softap_sta_deauth(pAdapter, macAddr);
                     if (VOS_IS_STATUS_SUCCESS(vos_status))
-                        pSapCtx->aStaInfo[i].isDeauthInProgress = TRUE;
+                        pAdapter->aStaInfo[i].isDeauthInProgress = TRUE;
                 }
             }
         }
         else
         {
 
-            vos_status = hdd_softap_GetStaId(pAdapter,
-                            (v_MACADDR_t *)pDelStaParams->peerMacAddr, &staId);
+            vos_status = hdd_softap_GetStaId(pAdapter,(v_MACADDR_t *)mac, &staId);
             if (!VOS_IS_STATUS_SUCCESS(vos_status))
             {
                 hddLog(VOS_TRACE_LEVEL_INFO,
                        "%s: Skip this DEL STA as this is not used::"
                        MAC_ADDRESS_STR,
-                       __func__, MAC_ADDR_ARRAY(pDelStaParams->peerMacAddr));
+                       __func__, MAC_ADDR_ARRAY(mac));
                 return -ENOENT;
             }
 
-            if( pSapCtx->aStaInfo[staId].isDeauthInProgress == TRUE)
+            if( pAdapter->aStaInfo[staId].isDeauthInProgress == TRUE)
             {
                 hddLog(VOS_TRACE_LEVEL_INFO,
                        "%s: Skip this DEL STA as deauth is in progress::"
                        MAC_ADDRESS_STR,
-                       __func__, MAC_ADDR_ARRAY(pDelStaParams->peerMacAddr));
+                       __func__, MAC_ADDR_ARRAY(mac));
                 return -ENOENT;
             }
 
-            pSapCtx->aStaInfo[staId].isDeauthInProgress = TRUE;
+            pAdapter->aStaInfo[staId].isDeauthInProgress = TRUE;
 
             hddLog(VOS_TRACE_LEVEL_INFO,
                                 "%s: Delete STA with MAC::"
                                 MAC_ADDRESS_STR,
                                 __func__,
-                                MAC_ADDR_ARRAY(pDelStaParams->peerMacAddr));
+                                MAC_ADDR_ARRAY(mac));
 
-            vos_status = hdd_softap_sta_deauth(pAdapter, pDelStaParams);
+            vos_status = hdd_softap_sta_deauth(pAdapter, mac);
             if (!VOS_IS_STATUS_SUCCESS(vos_status))
             {
-                pSapCtx->aStaInfo[staId].isDeauthInProgress = FALSE;
+                pAdapter->aStaInfo[staId].isDeauthInProgress = FALSE;
                 hddLog(VOS_TRACE_LEVEL_INFO,
                                 "%s: STA removal failed for ::"
                                 MAC_ADDRESS_STR,
                                 __func__,
-                                MAC_ADDR_ARRAY(pDelStaParams->peerMacAddr));
+                                MAC_ADDR_ARRAY(mac));
                 return -ENOENT;
             }
 
@@ -12778,41 +7847,7 @@ static int __wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
     return 0;
 }
 
-#ifdef CFG80211_DEL_STA_V2
-static int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
-                                         struct net_device *dev,
-                                         struct station_del_parameters *param)
-#else
-static int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
-                                         struct net_device *dev, u8 *mac)
-#endif
-{
-    int ret;
-    struct tagCsrDelStaParams delStaParams;
-
-    vos_ssr_protect(__func__);
-
-#ifdef CFG80211_DEL_STA_V2
-    if (NULL == param) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid argumet passed", __func__);
-        return -EINVAL;
-    }
-
-    WLANSAP_PopulateDelStaParams(param->mac, param->reason_code,
-                                 param->subtype, &delStaParams);
-
-#else
-    WLANSAP_PopulateDelStaParams(mac, eCsrForcedDeauthSta,
-                                 (SIR_MAC_MGMT_DEAUTH >> 4), &delStaParams);
-#endif
-    ret = __wlan_hdd_cfg80211_del_station(wiphy, dev, &delStaParams);
-
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
-
-static int __wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
+static int wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
           struct net_device *dev, u8 *mac, struct station_parameters *params)
 {
     hdd_adapter_t *pAdapter =  WLAN_HDD_GET_PRIV_PTR(dev);
@@ -12843,28 +7878,28 @@ static int __wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
     return status;
 }
 
-static int wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
-          struct net_device *dev, u8 *mac, struct station_parameters *params)
-{
-    int ret;
 
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_add_station(wiphy, dev, mac, params);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
 #ifdef FEATURE_WLAN_LFR
+#define MAX_PMKSAIDS_IN_CACHE 8
+
+static tPmkidCacheInfo PMKIDCache[MAX_PMKSAIDS_IN_CACHE]; // HDD local cache
+static tANI_U32 PMKIDCacheIndex; // HDD local Cache index
+
 
 static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *dev,
             struct cfg80211_pmksa *pmksa)
 {
+    tANI_U32 j=0;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     tHalHandle halHandle;
     eHalStatus result;
     int status;
+    tANI_U8  BSSIDMatched = 0;
     hdd_context_t *pHddCtx;
-    tPmkidCacheInfo pmk_id;
+
+    ENTER();
+    hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: set PMKSA for " MAC_ADDRESS_STR,
+           __func__, MAC_ADDR_ARRAY(pmksa->bssid));
 
     // Validate pAdapter
     if ( NULL == pAdapter )
@@ -12872,20 +7907,6 @@ static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device 
         hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid Adapter" ,__func__);
         return -EINVAL;
     }
-
-    if (!pmksa) {
-        hddLog(LOGE, FL("pmksa is NULL"));
-        return -EINVAL;
-    }
-
-    if (!pmksa->bssid || !pmksa->pmkid) {
-       hddLog(LOGE, FL("pmksa->bssid(%p) or pmksa->pmkid(%p) is NULL"),
-              pmksa->bssid, pmksa->pmkid);
-       return -EINVAL;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: set PMKSA for " MAC_ADDRESS_STR,
-           __func__, MAC_ADDR_ARRAY(pmksa->bssid));
 
     pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     status = wlan_hdd_validate_context(pHddCtx);
@@ -12900,18 +7921,60 @@ static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device 
     // Retrieve halHandle
     halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
 
-    vos_mem_copy(pmk_id.BSSID, pmksa->bssid, ETHER_ADDR_LEN);
-    vos_mem_copy(pmk_id.PMKID, pmksa->pmkid, CSR_RSN_PMKID_SIZE);
+    for (j = 0; j < PMKIDCacheIndex; j++)
+    {
+        if(vos_mem_compare(PMKIDCache[j].BSSID,
+                    pmksa->bssid, WNI_CFG_BSSID_LEN))
+        {
+            /* BSSID matched previous entry.  Overwrite it. */
+            BSSIDMatched = 1;
+            vos_mem_copy(PMKIDCache[j].BSSID,
+                    pmksa->bssid, WNI_CFG_BSSID_LEN);
+            vos_mem_copy(PMKIDCache[j].PMKID,
+                    pmksa->pmkid,
+                    CSR_RSN_PMKID_SIZE);
+            hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Reusing cache entry %d.",
+                    __func__, j );
+            dump_bssid(pmksa->bssid);
+            dump_pmkid(halHandle, pmksa->pmkid);
+            break;
+        }
+    }
 
-    /* Add to the PMKSA ID Cache in CSR */
+    /* Check we compared all entries,if then take the first slot now */
+    if(j == MAX_PMKSAIDS_IN_CACHE) PMKIDCacheIndex=0;
+
+    if (!BSSIDMatched)
+    {
+        // Now, we DON'T have a BSSID match, so take a new entry in the cache.
+        vos_mem_copy(PMKIDCache[PMKIDCacheIndex].BSSID,
+                pmksa->bssid, ETHER_ADDR_LEN);
+        vos_mem_copy(PMKIDCache[PMKIDCacheIndex].PMKID,
+                pmksa->pmkid,
+                CSR_RSN_PMKID_SIZE);
+        hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Adding a new cache entry %d.",
+                __func__, PMKIDCacheIndex );
+        dump_bssid(pmksa->bssid);
+        dump_pmkid(halHandle, pmksa->pmkid);
+        // Increment the HDD Local Cache index
+        // The "i=0" doesn't work for the call to sme_RoamSetPMKIDCache() - LFR FIXME
+        if (PMKIDCacheIndex <= (MAX_PMKSAIDS_IN_CACHE-1)) PMKIDCacheIndex++; else PMKIDCacheIndex = 0;
+    }
+
+
+    // Calling csrRoamSetPMKIDCache to configure the PMKIDs into the cache
+    //hddLog(LOG1, FL("%s: Calling csrRoamSetPMKIDCache with %d cache entries."),
+    //        __func__, i );
+    hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Calling csrRoamSetPMKIDCache with %d cache entries.",
+            __func__, PMKIDCacheIndex );
+    // Finally set the PMKSA ID Cache in CSR
     result = sme_RoamSetPMKIDCache(halHandle,pAdapter->sessionId,
-                                   &pmk_id, 1, FALSE);
-
+                                    PMKIDCache,
+                                    PMKIDCacheIndex);
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
                      TRACE_CODE_HDD_CFG80211_SET_PMKSA,
                      pAdapter->sessionId, result));
-
-    return HAL_STATUS_SUCCESS(result) ? 0 : -EINVAL;
+    return 0;
 }
 
 static int wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *dev,
@@ -12930,10 +7993,16 @@ static int wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *d
 static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device *dev,
              struct cfg80211_pmksa *pmksa)
 {
+    tANI_U32 j=0;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     tHalHandle halHandle;
+    tANI_U8  BSSIDMatched = 0;
+    tANI_U8 *pBSSId;
     hdd_context_t *pHddCtx;
     int status = 0;
+
+    hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: deleting PMKSA with PMKSA_ID %d .",
+            __func__,pmksa->pmkid);
 
     /* Validate pAdapter */
     if (NULL == pAdapter)
@@ -12941,19 +8010,6 @@ static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device 
        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid Adapter" ,__func__);
        return -EINVAL;
     }
-
-    if (!pmksa) {
-        hddLog(LOGE, FL("pmksa is NULL"));
-        return -EINVAL;
-    }
-
-    if (!pmksa->bssid) {
-       hddLog(LOGE, FL("pmksa->bssid is NULL"));
-       return -EINVAL;
-    }
-
-    hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: deleting PMKSA for " MAC_ADDRESS_STR,
-           __func__, MAC_ADDR_ARRAY(pmksa->bssid));
 
     pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     status = wlan_hdd_validate_context(pHddCtx);
@@ -12968,15 +8024,70 @@ static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device 
     /*Retrieve halHandle*/
     halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
 
-    /* Delete the PMKID CSR cache */
-    if (eHAL_STATUS_SUCCESS !=
-        sme_RoamDelPMKIDfromCache(halHandle,
-                                  pAdapter->sessionId, pmksa->bssid, FALSE)) {
-        hddLog(LOGE, FL("Failed to delete PMKSA for "MAC_ADDRESS_STR),
-                     MAC_ADDR_ARRAY(pmksa->bssid));
-        status = -EINVAL;
+    /*in case index is 0,no entry to delete*/
+    if (0 == PMKIDCacheIndex)
+    {
+        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Invalid entry to delete" ,
+              __func__);
+        return -EINVAL;
     }
 
+    /*find the matching PMKSA entry from j=0 to (index-1),
+     * and delete the matched one
+     */
+    for (j = 0; j<PMKIDCacheIndex; j++)
+    {
+          if (vos_mem_compare(PMKIDCache[j].BSSID,
+                             pmksa->bssid,
+                             WNI_CFG_BSSID_LEN))
+          {
+             /* BSSID matched entry */
+             BSSIDMatched = 1;
+
+             if (j<PMKIDCacheIndex-1)
+             {
+                 /*replace the matching entry with the last entry in HDD local cache*/
+                 vos_mem_copy(PMKIDCache[j].BSSID,
+                              PMKIDCache[PMKIDCacheIndex-1].BSSID,
+                              WNI_CFG_BSSID_LEN);
+                 vos_mem_copy(PMKIDCache[j].PMKID,
+                              PMKIDCache[PMKIDCacheIndex-1].PMKID,
+                              CSR_RSN_PMKID_SIZE);
+              }
+
+             /*clear the last entry in HDD cache ---[index-1]*/
+             pBSSId =(tANI_U8 *)(PMKIDCache[PMKIDCacheIndex-1].BSSID);
+             vos_mem_zero(PMKIDCache[PMKIDCacheIndex-1].BSSID, WNI_CFG_BSSID_LEN);
+             vos_mem_zero(PMKIDCache[PMKIDCacheIndex-1].PMKID, CSR_RSN_PMKID_SIZE);
+
+             /*reduce the PMKID array index*/
+             PMKIDCacheIndex--;
+
+             /*delete the last PMKID cache in CSR*/
+             if (eHAL_STATUS_SUCCESS !=
+                 sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, pmksa->bssid))
+             {
+                hddLog(VOS_TRACE_LEVEL_ERROR,"%s: cannot delete PMKSA %d CONTENT.",
+                          __func__,PMKIDCacheIndex);
+                status = -EINVAL;
+             }
+
+             dump_bssid(pmksa->bssid);
+             dump_pmkid(halHandle,pmksa->pmkid);
+
+             break;
+          }
+    }
+
+    /* we compare all entries,but cannot find matching entry */
+    if (j == MAX_PMKSAIDS_IN_CACHE && !BSSIDMatched)
+    {
+       hddLog(VOS_TRACE_LEVEL_FATAL, "%s: No such PMKSA entry existed %d.",
+             __func__,pmksa->bssid);
+       dump_bssid(pmksa->bssid);
+       dump_pmkid(halHandle, pmksa->pmkid);
+       return -EINVAL;
+    }
    return status;
 }
 
@@ -12996,9 +8107,11 @@ static int wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device *d
 
 static int __wlan_hdd_cfg80211_flush_pmksa(struct wiphy *wiphy, struct net_device *dev)
 {
+    tANI_U32 j=0;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     tHalHandle halHandle;
     hdd_context_t *pHddCtx;
+    tANI_U8 *pBSSId;
     int status = 0;
 
     hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: flushing PMKSA ",__func__);
@@ -13024,13 +8137,32 @@ static int __wlan_hdd_cfg80211_flush_pmksa(struct wiphy *wiphy, struct net_devic
     /*Retrieve halHandle*/
     halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
 
-    /* Flush the PMKID cache in CSR */
-    if (eHAL_STATUS_SUCCESS !=
-        sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, NULL, TRUE)) {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Cannot flush PMKIDCache"));
-        status = -EINVAL;
+    /*in case index is 0,no entry to delete*/
+    if (0 == PMKIDCacheIndex)
+    {
+       hddLog(VOS_TRACE_LEVEL_ERROR, FL("No entries to flush"));
+       return -EINVAL;
     }
 
+    /*delete all the PMKSA one by one */
+    for (j = 0; j<PMKIDCacheIndex; j++)
+    {
+          /*clear the entry in HDD cache 0--index-1 */
+          pBSSId =(tANI_U8 *)(PMKIDCache[j].BSSID);
+          vos_mem_zero(PMKIDCache[j].BSSID, WNI_CFG_BSSID_LEN);
+          vos_mem_zero(PMKIDCache[j].PMKID, CSR_RSN_PMKID_SIZE);
+
+          /*delete the PMKID in CSR*/
+          if (eHAL_STATUS_SUCCESS !=
+              sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, pBSSId))
+          {
+             hddLog(VOS_TRACE_LEVEL_ERROR ,"%s cannot flush PMKIDCache %d.",
+                    __func__,j);
+             status = -EINVAL;
+          }
+      }
+
+    PMKIDCacheIndex = 0;
     return status;
 }
 
@@ -13047,9 +8179,8 @@ static int wlan_hdd_cfg80211_flush_pmksa(struct wiphy *wiphy, struct net_device 
 #endif
 
 #if defined(WLAN_FEATURE_VOWIFI_11R) && defined(KERNEL_SUPPORT_11R_CFG80211)
-static int __wlan_hdd_cfg80211_update_ft_ies(struct wiphy *wiphy,
-                                             struct net_device *dev,
-                                             struct cfg80211_update_ft_ies_params *ftie)
+static int wlan_hdd_cfg80211_update_ft_ies(struct wiphy *wiphy,
+          struct net_device *dev, struct cfg80211_update_ft_ies_params *ftie)
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     hdd_station_ctx_t *pHddStaCtx;
@@ -13083,19 +8214,6 @@ static int __wlan_hdd_cfg80211_update_ft_ies(struct wiphy *wiphy,
                   (const u8 *)ftie->ie,
                   ftie->ie_len);
     return 0;
-}
-
-static int wlan_hdd_cfg80211_update_ft_ies(struct wiphy *wiphy,
-                                           struct net_device *dev,
-                                           struct cfg80211_update_ft_ies_params *ftie)
-{
-    int ret;
-
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_update_ft_ies(wiphy, dev, ftie);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
 }
 #endif
 
@@ -13173,7 +8291,6 @@ static eHalStatus wlan_hdd_is_pno_allowed(hdd_adapter_t *pAdapter)
           || (WLAN_HDD_P2P_CLIENT == pTempAdapter->device_mode)
           || (WLAN_HDD_P2P_GO == pTempAdapter->device_mode)
           || (WLAN_HDD_SOFTAP == pTempAdapter->device_mode)
-          || (WLAN_HDD_TM_LEVEL_4 == pHddCtx->tmInfo.currentTmLevel)
           )
         {
             return eHAL_STATUS_FAILURE;
@@ -13204,12 +8321,8 @@ void hdd_cfg80211_sched_scan_start_status_cb(void *callbackContext, VOS_STATUS s
         return;
     }
 
-    if (VOS_STATUS_SUCCESS != status)
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
               FL("PNO enable response status = %d"), status);
-        pHddCtx->isPnoEnable = FALSE;
-    }
 
     pAdapter->pno_req_status = (status == VOS_STATUS_SUCCESS) ? 0 : -EBUSY;
     complete(&pAdapter->pno_comp_var);
@@ -13226,14 +8339,12 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
     tpSirPNOScanReq pPnoRequest = NULL;
     hdd_context_t *pHddCtx;
     tHalHandle hHal;
-    v_U32_t i, indx, num_ch, tempInterval, j;
+    v_U32_t i, indx, num_ch, tempInterval;
     u8 valid_ch[WNI_CFG_VALID_CHANNEL_LIST_LEN] = {0};
     u8 channels_allowed[WNI_CFG_VALID_CHANNEL_LIST_LEN] = {0};
     v_U32_t num_channels_allowed = WNI_CFG_VALID_CHANNEL_LIST_LEN;
     eHalStatus status = eHAL_STATUS_FAILURE;
     int ret = 0;
-    hdd_config_t *pConfig = NULL;
-    v_U32_t num_ignore_dfs_ch = 0;
 
     if (NULL == pAdapter)
     {
@@ -13252,7 +8363,6 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         return -EINVAL;
     }
 
-    pConfig = pHddCtx->cfg_ini;
     hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
     if (NULL == hHal)
     {
@@ -13260,7 +8370,7 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
                   "%s: HAL context  is Null!!!", __func__);
         return -EINVAL;
     }
-    sme_ScanFlushResult(hHal, pAdapter->sessionId);
+
     ret = wlan_hdd_scan_abort(pAdapter);
     if (ret < 0)
     {
@@ -13282,14 +8392,6 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
                   FL("already PNO is enabled"));
        return -EBUSY;
     }
-
-    if (VOS_STATUS_SUCCESS != wlan_hdd_cancel_remain_on_channel(pHddCtx))
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: abort ROC failed ", __func__);
-        return -EBUSY;
-    }
-
     pHddCtx->isPnoEnable = TRUE;
 
     pPnoRequest = (tpSirPNOScanReq) vos_mem_malloc(sizeof (tSirPNOScanReq));
@@ -13347,16 +8449,6 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
             {
                 if (request->channels[i]->hw_value == channels_allowed[indx])
                 {
-                    if ((!pConfig->enableDFSPnoChnlScan) &&
-                      (NV_CHANNEL_DFS == vos_nv_getChannelEnabledState(channels_allowed[indx])))
-                    {
-                        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-                        "%s : Dropping DFS channel : %d",
-                        __func__,channels_allowed[indx]);
-                        num_ignore_dfs_ch++;
-                        break;
-                    }
-
                     valid_ch[num_ch++] = request->channels[i]->hw_value;
                     len += snprintf(chList+len, 5, "%d ",
                                          request->channels[i]->hw_value);
@@ -13365,16 +8457,8 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
             }
         }
         hddLog(VOS_TRACE_LEVEL_INFO,"Channel-List:  %s ", chList);
-
-        /*If all channels are DFS and dropped, then ignore the PNO request*/
-        if (num_ignore_dfs_ch == request->n_channels)
-        {
-            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-             "%s : All requested channels are DFS channels", __func__);
-            ret = -EINVAL;
-            goto error;
-        }
      }
+
     /* Filling per profile  params */
     for (i = 0; i < pPnoRequest->ucNetworksCount; i++)
     {
@@ -13408,26 +8492,6 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         pPnoRequest->aNetworks[i].rssiThreshold = 0; //Default value
     }
 
-    for (i = 0; i < request->n_ssids; i++)
-    {
-        j = 0;
-        while (j < pPnoRequest->ucNetworksCount)
-        {
-            if ((pPnoRequest->aNetworks[j].ssId.length ==
-                 request->ssids[i].ssid_len) &&
-                 (0 == memcmp(pPnoRequest->aNetworks[j].ssId.ssId,
-                            request->ssids[i].ssid,
-                            pPnoRequest->aNetworks[j].ssId.length)))
-            {
-                pPnoRequest->aNetworks[j].bcastNetwType = eBCAST_HIDDEN;
-                break;
-            }
-            j++;
-        }
-    }
-    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-              "Number of hidden networks being Configured = %d",
-              request->n_ssids);
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
               "request->ie_len = %zu", request->ie_len);
     if ((0 < request->ie_len) && (NULL != request->ie))
@@ -13508,7 +8572,6 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         goto error;
     }
 
-    vos_mem_free(pPnoRequest);
     ret = pAdapter->pno_req_status;
     return ret;
 
@@ -13688,10 +8751,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                 "%s:LOGP in Progress. Ignore!!!", __func__);
-        wlan_hdd_tdls_set_link_status(pAdapter,
-                                      peer,
-                                      eTDLS_LINK_IDLE,
-                                      eTDLS_LINK_UNSPECIFIED);
+        wlan_hdd_tdls_set_link_status(pAdapter, peer, eTDLS_LINK_IDLE);
         return -EBUSY;
     }
 
@@ -13716,12 +8776,6 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
                         __func__, MAC_ADDR_ARRAY(peer), action_code);
 
         return -ENOTSUPP;
-        }
-
-        if (vos_max_concurrent_connections_reached())
-        {
-            hddLog(VOS_TRACE_LEVEL_INFO, FL("Reached max concurrent connections"));
-            return -EINVAL;
         }
     }
 
@@ -13788,7 +8842,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
 
 #ifdef WLAN_FEATURE_TDLS_DEBUG
     VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-               "%s: " MAC_ADDRESS_STR " action %d, dialog_token %d status %d, len = %zu",
+               "%s: " MAC_ADDRESS_STR " action %d, dialog_token %d status %d, len = %d",
                "tdls_mgmt", MAC_ADDR_ARRAY(peer),
                action_code, dialog_token, status_code, len);
 #endif
@@ -13806,7 +8860,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
        else
        {
            VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                    "%s: " MAC_ADDRESS_STR " peer doesn't exist or not connected %d dialog_token %d status %d, len = %zu",
+                    "%s: " MAC_ADDRESS_STR " peer doesn't exist or not connected %d dialog_token %d status %d, len = %d",
                     __func__, MAC_ADDR_ARRAY(peer), (NULL == pTdlsPeer) ? -1 : pTdlsPeer->link_status,
                      dialog_token, status_code, len);
            return -EPERM;
@@ -13859,7 +8913,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
     if ((rc <= 0) || (TRUE != pAdapter->mgmtTxCompletionStatus))
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: Mgmt Tx Completion failed status %ld TxCompletion %u",
+                  "%s: Mgmt Tx Completion failed status %ld TxCompletion %lu",
                   __func__, rc, pAdapter->mgmtTxCompletionStatus);
         pAdapter->mgmtTxCompletionStatus = FALSE;
 
@@ -13892,106 +8946,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
     return 0;
 }
 
-
-int wlan_hdd_tdls_extctrl_config_peer(hdd_adapter_t *pAdapter,
-                                      u8 *peer,
-                                      cfg80211_exttdls_callback callback)
-{
-
-    hddTdlsPeer_t *pTdlsPeer;
-    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-              " %s : NL80211_TDLS_SETUP for " MAC_ADDRESS_STR,
-              __func__, MAC_ADDR_ARRAY(peer));
-
-    if ( (FALSE == pHddCtx->cfg_ini->fTDLSExternalControl) ||
-         (FALSE == pHddCtx->cfg_ini->fEnableTDLSImplicitTrigger) ) {
-
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-              " %s TDLS External control and Implicit Trigger not enabled ",
-              __func__);
-        return -ENOTSUPP;
-    }
-
-    /* To cater the requirement of establishing the TDLS link
-     * irrespective of the data traffic , get an entry of TDLS peer.
-     */
-    pTdlsPeer = wlan_hdd_tdls_get_peer(pAdapter, peer);
-    if (pTdlsPeer == NULL) {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  "%s: peer " MAC_ADDRESS_STR " not existing",
-                  __func__, MAC_ADDR_ARRAY(peer));
-        return -EINVAL;
-    }
-
-    if ( 0 != wlan_hdd_tdls_set_force_peer(pAdapter, peer, TRUE) ) {
-
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-              " %s TDLS Add Force Peer Failed",
-              __func__);
-        return -EINVAL;
-    }
-    /*EXT TDLS*/
-
-    if ( 0 != wlan_hdd_set_callback(pTdlsPeer, callback) ) {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-              " %s TDLS set callback Failed",
-              __func__);
-        return -EINVAL;
-    }
-
-    return(0);
-
-}
-
-int wlan_hdd_tdls_extctrl_deconfig_peer(hdd_adapter_t *pAdapter, u8 *peer)
-{
-
-    hddTdlsPeer_t *pTdlsPeer;
-    hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-              " %s : NL80211_TDLS_TEARDOWN for " MAC_ADDRESS_STR,
-              __func__, MAC_ADDR_ARRAY(peer));
-
-    if ( (FALSE == pHddCtx->cfg_ini->fTDLSExternalControl) ||
-         (FALSE == pHddCtx->cfg_ini->fEnableTDLSImplicitTrigger) ) {
-
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
-              " %s TDLS External control and Implicit Trigger not enabled ",
-              __func__);
-        return -ENOTSUPP;
-    }
-
-
-    pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peer, TRUE);
-
-    if ( NULL == pTdlsPeer ) {
-        hddLog(VOS_TRACE_LEVEL_INFO, "%s: " MAC_ADDRESS_STR
-               " peer not exsting",
-               __func__, MAC_ADDR_ARRAY(peer));
-        return -EINVAL;
-    }
-    else {
-        wlan_hdd_tdls_indicate_teardown(pAdapter, pTdlsPeer,
-                           eSIR_MAC_TDLS_TEARDOWN_UNSPEC_REASON);
-    }
-
-    if ( 0 != wlan_hdd_tdls_set_force_peer(pAdapter, peer, FALSE) )
-        return -EINVAL;
-
-    /*EXT TDLS*/
-
-    if ( 0 != wlan_hdd_set_callback(pTdlsPeer, NULL )) {
-
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-              " %s TDLS set callback Failed",
-              __func__);
-        return -EINVAL;
-    }
-    return(0);
-
-}
-static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
+static int wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
                  u8 *peer, enum nl80211_tdls_operation oper)
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -14084,9 +9039,7 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device 
                             return -EINVAL;
                         }
                     }
-                    wlan_hdd_tdls_set_peer_link_status(pTdlsPeer,
-                                                       eTDLS_LINK_CONNECTED,
-                                                       eTDLS_LINK_SUCCESS);
+                    wlan_hdd_tdls_set_peer_link_status(pTdlsPeer, eTDLS_LINK_CONNECTED);
                     /* Mark TDLS client Authenticated .*/
                     status = WLANTL_ChangeSTAState( pHddCtx->pvosContext,
                                                     pTdlsPeer->staId,
@@ -14151,12 +9104,6 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device 
                 {
                     long status;
 
-
-                    wlan_hdd_tdls_set_peer_link_status(pTdlsPeer,
-                              eTDLS_LINK_TEARING,
-                              (pTdlsPeer->link_status == eTDLS_LINK_TEARING)?
-                              eTDLS_LINK_UNSPECIFIED:
-                              eTDLS_LINK_DROPPED_BY_REMOTE);
                     INIT_COMPLETION(pAdapter->tdls_del_station_comp);
 
                     sme_DeleteTdlsPeerSta( WLAN_HDD_GET_HAL_CTX(pAdapter),
@@ -14164,16 +9111,15 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device 
 
                     status = wait_for_completion_interruptible_timeout(&pAdapter->tdls_del_station_comp,
                               msecs_to_jiffies(WAIT_TIME_TDLS_DEL_STA));
-                    wlan_hdd_tdls_set_peer_link_status(pTdlsPeer,
-                                                       eTDLS_LINK_IDLE,
-                                                       eTDLS_LINK_UNSPECIFIED);
                     if (status <= 0)
                     {
+                        wlan_hdd_tdls_set_peer_link_status(pTdlsPeer, eTDLS_LINK_IDLE);
                         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                                   "%s: Del station failed status %ld",
                                   __func__, status);
                         return -EPERM;
                     }
+                    wlan_hdd_tdls_set_peer_link_status(pTdlsPeer, eTDLS_LINK_IDLE);
                 }
                 else
                 {
@@ -14184,27 +9130,70 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device 
             break;
         case NL80211_TDLS_TEARDOWN:
             {
-                status = wlan_hdd_tdls_extctrl_deconfig_peer(pAdapter, peer);
+                VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                          " %s : NL80211_TDLS_TEARDOWN for " MAC_ADDRESS_STR,
+                          __func__, MAC_ADDR_ARRAY(peer));
 
-                if (0 != status)
-                {
-                    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                               "%s: Error in TDLS Teardown", __func__);
-                    return status;
+                if ( (FALSE == pHddCtx->cfg_ini->fTDLSExternalControl) ||
+                     (FALSE == pHddCtx->cfg_ini->fEnableTDLSImplicitTrigger) ) {
+
+                    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                          " %s TDLS External control and Implicit Trigger not enabled ",
+                          __func__);
+                    return -ENOTSUPP;
                 }
+
+
+                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peer, TRUE);
+
+                if ( NULL == pTdlsPeer ) {
+                    hddLog(VOS_TRACE_LEVEL_INFO, "%s: " MAC_ADDRESS_STR
+                           " peer not exsting",
+                           __func__, MAC_ADDR_ARRAY(peer));
+                    return -EINVAL;
+                }
+                else {
+                    wlan_hdd_tdls_indicate_teardown(pAdapter, pTdlsPeer,
+                                       eSIR_MAC_TDLS_TEARDOWN_UNSPEC_REASON);
+                }
+
+                if ( 0 != wlan_hdd_tdls_set_force_peer(pAdapter, peer, FALSE) )
+                    return -EINVAL;
                 break;
             }
         case NL80211_TDLS_SETUP:
             {
-                status = wlan_hdd_tdls_extctrl_config_peer(pAdapter,
-                                                           peer,
-                                                           NULL);
+                hddTdlsPeer_t *pTdlsPeer;
+                VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                          " %s : NL80211_TDLS_SETUP for " MAC_ADDRESS_STR,
+                          __func__, MAC_ADDR_ARRAY(peer));
 
-                if (0 != status)
-                {
-                    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                               "%s: Error in TDLS Setup", __func__);
-                    return status;
+                if ( (FALSE == pHddCtx->cfg_ini->fTDLSExternalControl) ||
+                     (FALSE == pHddCtx->cfg_ini->fEnableTDLSImplicitTrigger) ) {
+
+                    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                          " %s TDLS External control and Implicit Trigger not enabled ",
+                          __func__);
+                    return -ENOTSUPP;
+                }
+
+                /* To cater the requirement of establishing the TDLS link
+                 * irrespective of the data traffic , get an entry of TDLS peer.
+                 */
+                pTdlsPeer = wlan_hdd_tdls_get_peer(pAdapter, peer);
+                if (pTdlsPeer == NULL) {
+                    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                              "%s: peer " MAC_ADDRESS_STR " not existing",
+                              __func__, MAC_ADDR_ARRAY(peer));
+                    return -EINVAL;
+                }
+
+                if ( 0 != wlan_hdd_tdls_set_force_peer(pAdapter, peer, TRUE) ) {
+
+                    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                          " %s TDLS Add Force Peer Failed",
+                          __func__);
+                    return -EINVAL;
                 }
                 break;
             }
@@ -14220,18 +9209,6 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device 
             return -ENOTSUPP;
     }
     return 0;
-}
-
-static int wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
-                 u8 *peer, enum nl80211_tdls_operation oper)
-{
-    int ret;
-
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_tdls_oper(wiphy, dev, peer, oper);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
 }
 
 int wlan_hdd_cfg80211_send_tdls_discover_req(struct wiphy *wiphy,
@@ -14313,10 +9290,10 @@ void wlan_hdd_cfg80211_update_replayCounterCallback(void *callbackContext,
 }
 
 /*
- * FUNCTION: __wlan_hdd_cfg80211_set_rekey_data
+ * FUNCTION: wlan_hdd_cfg80211_set_rekey_data
  * This function is used to offload GTK rekeying job to the firmware.
  */
-int __wlan_hdd_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev,
+int wlan_hdd_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev,
                                      struct cfg80211_gtk_rekey_data *data)
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -14391,13 +9368,6 @@ int __wlan_hdd_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *d
             VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                     "%s: sme_SetGTKOffload failed, returned %d",
                     __func__, status);
-
-           /* Need to clear any trace of key value in the memory.
-            * Thus zero out the memory even though it is local
-            * variable.
-            */
-            vos_mem_zero(&hddGtkOffloadReqParams,
-                          sizeof(hddGtkOffloadReqParams));
             return status;
         }
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
@@ -14410,28 +9380,10 @@ int __wlan_hdd_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *d
                 __func__);
     }
 
-    /* Need to clear any trace of key value in the memory.
-     * Thus zero out the memory even though it is local
-     * variable.
-     */
-    vos_mem_zero(&hddGtkOffloadReqParams,
-                  sizeof(hddGtkOffloadReqParams));
-
     return eHAL_STATUS_SUCCESS;
 }
-
-int wlan_hdd_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev,
-                                     struct cfg80211_gtk_rekey_data *data)
-{
-    int ret;
-
-    vos_ssr_protect(__func__);
-    ret =  __wlan_hdd_cfg80211_set_rekey_data(wiphy, dev, data);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
 #endif /*WLAN_FEATURE_GTK_OFFLOAD*/
+
 /*
  * FUNCTION: wlan_hdd_cfg80211_set_mac_acl
  * This function is used to set access control policy
@@ -14567,38 +9519,29 @@ static int wlan_hdd_cfg80211_set_mac_acl(struct wiphy *wiphy,
 
 #ifdef WLAN_NL80211_TESTMODE
 #ifdef FEATURE_WLAN_LPHB
-void wlan_hdd_cfg80211_lphb_ind_handler
+static void wlan_hdd_cfg80211_lphb_wait_timeout_ind_handler
 (
    void *pAdapter,
    void *indCont
 )
 {
-   tSirLPHBInd     *lphbInd;
-   struct sk_buff  *skb;
-   hdd_context_t  *pHddCtxt;
+   tSirLPHBTimeoutInd   *lphbTimeoutInd;
+   struct sk_buff       *skb;
 
    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-             "LPHB indication arrived");
-
-   if (pAdapter == NULL)
-   {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                 "%s: pAdapter is NULL\n",__func__);
-       return;
-   }
+             "LPHB wait timeout indication arrived");
 
    if (NULL == indCont)
    {
       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                "LPHB IND, invalid argument");
+                "LPHB timeout, invalid argument");
       return;
    }
 
-   pHddCtxt  = (hdd_context_t *)pAdapter;
-   lphbInd = (tSirLPHBInd *)indCont;
+   lphbTimeoutInd = (tSirLPHBTimeoutInd *)indCont;
    skb = cfg80211_testmode_alloc_event_skb(
-                  pHddCtxt->wiphy,
-                  sizeof(tSirLPHBInd),
+                  ((hdd_adapter_t *)pAdapter)->wdev.wiphy,
+                  sizeof(tSirLPHBTimeoutInd),
                   GFP_ATOMIC);
    if (!skb)
    {
@@ -14607,25 +9550,10 @@ void wlan_hdd_cfg80211_lphb_ind_handler
       return;
    }
 
-   if(nla_put_u32(skb, WLAN_HDD_TM_ATTR_CMD, WLAN_HDD_TM_CMD_WLAN_HB))
-   {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                "WLAN_HDD_TM_ATTR_CMD put fail");
-      goto nla_put_failure;
-   }
-   if(nla_put_u32(skb, WLAN_HDD_TM_ATTR_TYPE, lphbInd->protocolType))
-   {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                "WLAN_HDD_TM_ATTR_TYPE put fail");
-      goto nla_put_failure;
-   }
-   if(nla_put(skb, WLAN_HDD_TM_ATTR_DATA,
-           sizeof(tSirLPHBInd), lphbInd))
-   {
-      VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                "WLAN_HDD_TM_ATTR_DATA put fail");
-      goto nla_put_failure;
-   }
+   NLA_PUT_U32(skb, WLAN_HDD_TM_ATTR_CMD, WLAN_HDD_TM_CMD_WLAN_HB);
+   NLA_PUT_U32(skb, WLAN_HDD_TM_ATTR_TYPE, lphbTimeoutInd->protocolType);
+   NLA_PUT(skb, WLAN_HDD_TM_ATTR_DATA,
+           sizeof(tSirLPHBTimeoutInd), lphbTimeoutInd);
    cfg80211_testmode_event(skb, GFP_ATOMIC);
    return;
 
@@ -14638,13 +9566,12 @@ nla_put_failure:
 }
 #endif /* FEATURE_WLAN_LPHB */
 
-static int __wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, void *data, int len)
+static int wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, void *data, int len)
 {
     struct nlattr *tb[WLAN_HDD_TM_ATTR_MAX + 1];
     int err = 0;
 #ifdef FEATURE_WLAN_LPHB
     hdd_context_t *pHddCtx = wiphy_priv(wiphy);
-    eHalStatus smeStatus;
 #endif /* FEATURE_WLAN_LPHB */
 
     err = nla_parse(tb, WLAN_HDD_TM_ATTR_MAX, data, len, wlan_hdd_tm_policy);
@@ -14697,14 +9624,42 @@ static int __wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, void *data, int len
             }
 
             vos_mem_copy(hb_params, buf, buf_len);
-            smeStatus = sme_LPHBConfigReq((tHalHandle)(pHddCtx->hHal),
-                               hb_params,
-                               wlan_hdd_cfg80211_lphb_ind_handler);
-            if (eHAL_STATUS_SUCCESS != smeStatus)
+
+            /* LPHB enable and disable request will send to FW
+             * when host suspend and resume
+             * host suspend -> enable LPHB
+             * host resume  -> disable LPHB
+             * if host is not suspend, cache into HDD context
+             * and when host goes to suspend, send request to FW */
+            if ((LPHB_SET_EN_PARAMS_INDID == hb_params->cmd) &&
+               (!pHddCtx->hdd_wlan_suspended))
             {
-               VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                         "LPHB Config Fail, disable");
+               /* Feature enable command cache into HDD context,
+                * if WLAN is not suspend
+                * When WLAN goes into suspend, send enable command to FW */
+               pHddCtx->lphbEnableReq.enable  =
+                                    hb_params->params.lphbEnableReq.enable;
+               pHddCtx->lphbEnableReq.item    =
+                                    hb_params->params.lphbEnableReq.item;
+               pHddCtx->lphbEnableReq.session =
+                                    hb_params->params.lphbEnableReq.session;
                vos_mem_free(hb_params);
+            }
+            else
+            {
+               eHalStatus smeStatus;
+
+               /* If WLAN is suspend state, send enable command immediately */
+               smeStatus = sme_LPHBConfigReq((tHalHandle)(pHddCtx->hHal),
+                              hb_params,
+                              wlan_hdd_cfg80211_lphb_wait_timeout_ind_handler);
+               if (eHAL_STATUS_SUCCESS != smeStatus)
+               {
+                  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                            "LPHB Config Fail, disable");
+                  pHddCtx->lphbEnableReq.enable = 0;
+                  vos_mem_free(hb_params);
+               }
             }
             return 0;
          }
@@ -14717,20 +9672,9 @@ static int __wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, void *data, int len
 
    return err;
 }
-
-static int wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, void *data, int len)
-{
-   int ret;
-
-   vos_ssr_protect(__func__);
-   ret = __wlan_hdd_cfg80211_testmode(wiphy, data, len);
-   vos_ssr_unprotect(__func__);
-
-   return ret;
-}
 #endif /* CONFIG_NL80211_TESTMODE */
 
-static int __wlan_hdd_cfg80211_dump_survey(struct wiphy *wiphy,
+static int wlan_hdd_cfg80211_dump_survey(struct wiphy *wiphy,
                                          struct net_device *dev,
                                          int idx, struct survey_info *survey)
 {
@@ -14832,19 +9776,6 @@ static int __wlan_hdd_cfg80211_dump_survey(struct wiphy *wiphy,
      }
 
      return 0;
-}
-
-static int wlan_hdd_cfg80211_dump_survey(struct wiphy *wiphy,
-                                         struct net_device *dev,
-                                         int idx, struct survey_info *survey)
-{
-     int ret;
-
-     vos_ssr_protect(__func__);
-     ret = __wlan_hdd_cfg80211_dump_survey(wiphy, dev, idx, survey);
-     vos_ssr_unprotect(__func__);
-
-     return ret;
 }
 
 /*

@@ -18,14 +18,28 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
+ * Airgo Networks, Inc proprietary. All rights reserved.
  * This file pmmApi.cc contains functions related to the API exposed
  * by power management module
  *
@@ -1642,7 +1656,7 @@ void pmmExitImpsRequestHandler (tpAniSirGlobal pMac)
     {
         // PE in invalid state 
         PELOGE(pmmLog(pMac, LOGE, 
-                      FL("pmmImps: Wakeup Req received in invalid state: %d"),
+                      FL("pmmImps: Wakeup Req received in invalid state: %x"),
                       pMac->pmm.gPmmState);)
 
         resultCode = eSIR_SME_INVALID_PMM_STATE;
@@ -1711,7 +1725,7 @@ void pmmExitImpsResponseHandler(tpAniSirGlobal pMac, eHalStatus rspStatus)
         {
             resultCode = eSIR_SME_SUCCESS;
             pMac->pmm.gPmmState = ePMM_STATE_IMPS_WAKEUP;
-            PELOG2(pmmLog(pMac, LOG2,
+            PELOG2(pmmLog(pMac, LOG2, 
                           FL("pmmImps: Received WDA_EXIT_IMPS_RSP with Successful response from HAL"));)
             //update power save statistics
             pmmImpsUpdateWakeupStats(pMac);
@@ -1734,7 +1748,8 @@ void pmmExitImpsResponseHandler(tpAniSirGlobal pMac, eHalStatus rspStatus)
 
     }
 
-
+    //update power save statistics
+    pmmImpsUpdateWakeupStats(pMac);
 
     limSendSmeRsp(pMac,
                   eWNI_PMC_EXIT_IMPS_RSP,
@@ -1924,7 +1939,7 @@ void pmmExitUapsdRequestHandler(tpAniSirGlobal pMac)
     else
     {
         PELOGE(pmmLog(pMac, LOGE,
-            FL("pmmUapsd: Rcv EXIT_UAPSD from PMC in invalid state: %d"),
+            FL("pmmUapsd: Rcv EXIT_UAPSD from PMC in invalid state: %x"),
             pMac->pmm.gPmmState);)
 
         resultCode = eSIR_SME_INVALID_PMM_STATE;

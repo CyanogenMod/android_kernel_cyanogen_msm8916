@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,14 +18,26 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
-
-
 
 
 #ifndef WLAN_QCT_TLI_H
@@ -172,15 +184,12 @@ when        who    what, where, why
 #define WLANTL_80211_DATA_TYPE         0x02
 #define WLANTL_80211_DATA_QOS_SUBTYPE  0x08
 #define WLANTL_80211_NULL_QOS_SUBTYPE  0x0C
-#define WLANTL_80211_MGMT_ACTION_SUBTYPE  0x0D
-#define WLANTL_80211_MGMT_ACTION_NO_ACK_SUBTYPE  0x0E
 
 /*Defines for internal utility functions */
 #define WLANTL_FRAME_TYPE_BCAST 0xff
 #define WLANTL_FRAME_TYPE_MCAST 0x01
 #define WLANTL_FRAME_TYPE_UCAST 0x00
 
-#define WLANTL_FRAME_TYPESUBTYPE_MASK 0x3F
 
 /*-------------------------------------------------------------------------
   BT-AMP related definition - !!! should probably be moved to BT-AMP header
@@ -273,11 +282,6 @@ typedef enum
 
   /* Serialized Snapshot request indication */
   WLANTL_TX_SNAPSHOT = 6,
-
-  /* Detected a fatal error issue SSR */
-  WLANTL_TX_FATAL_ERROR = 7,
-
-  WLANTL_TX_FW_DEBUG = 8,
 
   WLANTL_TX_MAX
 }WLANTL_TxSignalsType;
@@ -497,7 +501,6 @@ typedef struct
   v_TIME_t              cacheClearTime;
 }WLANTL_CacheInfoType;
 
-
 /*---------------------------------------------------------------------------
   STA Client type
 ---------------------------------------------------------------------------*/
@@ -679,20 +682,6 @@ typedef struct
   v_U8_t ptkInstalled;
 
   v_U32_t       linkCapacity;
-
-#ifdef WLAN_FEATURE_LINK_LAYER_STATS
-
-  /* Value of the averaged Data RSSI for this station */
-  v_S7_t                        rssiDataAvg;
-
-  /* Value of the averaged Data RSSI for this station in BMPS */
-  v_S7_t                        rssiDataAvgBmps;
-
-  /* Value of the Alpha to calculate Data RSSI average */
-  v_S7_t                        rssiDataAlpha;
-
-  WLANTL_InterfaceStatsType         interfaceStats;
-#endif
 }WLANTL_STAClientType;
 
 /*---------------------------------------------------------------------------
