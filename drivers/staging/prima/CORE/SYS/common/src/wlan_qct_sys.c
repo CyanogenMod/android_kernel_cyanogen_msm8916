@@ -18,11 +18,25 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
 /*===========================================================================
@@ -205,8 +219,8 @@ typedef struct sPolFileHeader
 {
   tPolFileVersion FileVersion;
   tPolFileVersion HWCapabilities;
-  unsigned int   FileLength;
-  unsigned int   NumDirectoryEntries;
+  unsigned long   FileLength;
+  unsigned long   NumDirectoryEntries;
 
 } tPolFileHeader;
 
@@ -225,9 +239,9 @@ typedef enum ePolFileDirTypes
 
 typedef struct sPolFileDirEntry
 {
-  unsigned int DirEntryType;
-  unsigned int DirEntryFileOffset;
-  unsigned int DirEntryLength;
+  unsigned long DirEntryType;
+  unsigned long DirEntryFileOffset;
+  unsigned long DirEntryLength;
 
 } tPolFileDirEntry;
 
@@ -346,7 +360,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
             /* Handling for this message is not needed now so adding 
              *debug print and VOS_ASSERT*/
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       " Received SYS_MSG_ID_MC_START message msgType= %d [0x%08x]",
+                       " Received SYS_MSG_ID_MC_START message msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             VOS_ASSERT(0);
             break;
@@ -384,7 +398,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
          case SYS_MSG_ID_MC_THR_PROBE:
          {
             VOS_TRACE(VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       " Received SYS_MSG_ID_MC_THR_PROBE message msgType = %d [0x%08x]",
+                       " Received SYS_MSG_ID_MC_THR_PROBE message msgType = %d [0x%08lx]",
                        pMsg->type, pMsg->type);
             break;
          }
@@ -408,7 +422,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
          default:
          {
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       "Unknown message type in sysMcProcessMsg() msgType= %d [0x%08x]",
+                       "Unknown message type in sysMcProcessMsg() msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             break;
         }
@@ -428,7 +442,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
 
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
                        "Received SYS message cookie with unidentified "
-                       "MC message type= %d [0x%08X]", pMsg->type, pMsg->type );
+                       "MC message type= %d [0x%08lX]", pMsg->type, pMsg->type );
 
             vosStatus = VOS_STATUS_E_BADMSG;
             if (pMsg->bodyptr) 
@@ -473,7 +487,7 @@ VOS_STATUS sysTxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
            /* Handling for this message is not needed now so adding 
             * debug print and VOS_ASSERT*/
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       " Received SYS_MSG_ID_TX_THR_PROBE message msgType= %d [0x%08x]",
+                       " Received SYS_MSG_ID_TX_THR_PROBE message msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             VOS_ASSERT(0);
 
@@ -494,7 +508,7 @@ VOS_STATUS sysTxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
          default:
          {
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       "Unknown message type in sysTxProcessMsg() msgType= %d [0x%08x]",
+                       "Unknown message type in sysTxProcessMsg() msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             break;
         }
@@ -507,7 +521,7 @@ VOS_STATUS sysTxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
 
       VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
                  "Received SYS message cookie with unidentified TX message "
-                 " type= %d [0x%08X]", pMsg->type, pMsg->type );
+                 " type= %d [0x%08lX]", pMsg->type, pMsg->type );
 
       vosStatus = VOS_STATUS_E_BADMSG;
    }   // end else
@@ -552,7 +566,7 @@ VOS_STATUS sysRxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
          default:
          {
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       "Unknown message type in sysRxProcessMsg() msgType= %d [0x%08x]",
+                       "Unknown message type in sysRxProcessMsg() msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             break;
         }
@@ -565,7 +579,7 @@ VOS_STATUS sysRxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
 
       VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
                  "Received SYS message cookie with unidentified RX message "
-                 " type= %d [0x%08X]", pMsg->type, pMsg->type );
+                 " type= %d [0x%08lX]", pMsg->type, pMsg->type );
 
       vosStatus = VOS_STATUS_E_BADMSG;
    }   // end else
