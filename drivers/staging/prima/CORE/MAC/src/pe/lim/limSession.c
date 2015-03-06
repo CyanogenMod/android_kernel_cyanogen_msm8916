@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -18,25 +18,11 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * This file was originally distributed by Qualcomm Atheros, Inc.
+ * under proprietary terms before Copyright ownership was assigned
+ * to the Linux Foundation.
  */
 
 /**=========================================================================
@@ -61,8 +47,8 @@
 #include "limDebug.h"
 #include "limSession.h"
 #include "limUtils.h"
-#if defined(FEATURE_WLAN_CCX) && !defined(FEATURE_WLAN_CCX_UPLOAD)
-#include "ccxApi.h"
+#if defined(FEATURE_WLAN_ESE) && !defined(FEATURE_WLAN_ESE_UPLOAD)
+#include "eseApi.h"
 #endif
 
 /*--------------------------------------------------------------------------
@@ -178,11 +164,11 @@ tpPESession peCreateSession(tpAniSirGlobal pMac, tANI_U8 *bssid , tANI_U8* sessi
             pMac->lim.gpSession[i].is11Rconnection = FALSE;
 #endif
 
-#ifdef FEATURE_WLAN_CCX
-            pMac->lim.gpSession[i].isCCXconnection = FALSE;
+#ifdef FEATURE_WLAN_ESE
+            pMac->lim.gpSession[i].isESEconnection = FALSE;
 #endif
 
-#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_CCX || defined(FEATURE_WLAN_LFR)
+#if defined WLAN_FEATURE_VOWIFI_11R || defined FEATURE_WLAN_ESE || defined(FEATURE_WLAN_LFR)
             pMac->lim.gpSession[i].isFastTransitionEnabled = FALSE;
 #endif
 #ifdef FEATURE_WLAN_LFR
@@ -198,6 +184,7 @@ tpPESession peCreateSession(tpAniSirGlobal pMac, tANI_U8 *bssid , tANI_U8* sessi
 #ifdef FEATURE_WLAN_TDLS
             vos_mem_set(pMac->lim.gpSession[i].peerAIDBitmap,
                   sizeof(pMac->lim.gpSession[i].peerAIDBitmap), 0);
+            pMac->lim.gpSession[i].tdlsChanSwitProhibited = 0;
 #endif
             pMac->lim.gpSession[i].fWaitForProbeRsp = 0;
             pMac->lim.gpSession[i].fIgnoreCapsChange = 0;
@@ -376,8 +363,19 @@ void peDeleteSession(tpAniSirGlobal pMac, tpPESession psessionEntry)
             }
         }
     }
-    
-    if(psessionEntry->pLimStartBssReq != NULL)
+
+#ifdef WLAN_FEATURE_11AC
+
+    /* Unblock the MuBF for other session if the MuBf session is deleted
+     */
+    if(psessionEntry->txMuBformee)
+    {
+        pMac->isMuBfsessionexist = FALSE;
+    }
+
+#endif
+
+    if (psessionEntry->pLimStartBssReq != NULL)
     {
         vos_mem_free( psessionEntry->pLimStartBssReq );
         psessionEntry->pLimStartBssReq = NULL;
@@ -466,7 +464,7 @@ void peDeleteSession(tpAniSirGlobal pMac, tpPESession psessionEntry)
         psessionEntry->limAssocResponseData = NULL;
     }
 
-#if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
+#if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR)
     if (NULL != psessionEntry->pLimMlmReassocRetryReq)
     {
         vos_mem_free( psessionEntry->pLimMlmReassocRetryReq);
@@ -480,8 +478,8 @@ void peDeleteSession(tpAniSirGlobal pMac, tpPESession psessionEntry)
         psessionEntry->pLimMlmReassocReq = NULL;
     }
 
-#if defined(FEATURE_WLAN_CCX) && !defined(FEATURE_WLAN_CCX_UPLOAD)
-    limCleanupCcxCtxt(pMac, psessionEntry); 
+#if defined(FEATURE_WLAN_ESE) && !defined(FEATURE_WLAN_ESE_UPLOAD)
+    limCleanupEseCtxt(pMac, psessionEntry);
 #endif
 
     psessionEntry->valid = FALSE;

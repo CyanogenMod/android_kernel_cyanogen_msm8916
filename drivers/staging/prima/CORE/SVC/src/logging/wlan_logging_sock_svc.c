@@ -37,8 +37,8 @@
 #include <wlan_nlink_common.h>
 #include <wlan_logging_sock_svc.h>
 #include <vos_types.h>
-#include <vos_trace.h>
 #include <kthread.h>
+#include "vos_memory.h"
 
 #define LOGGING_TRACE(level, args...) \
 		VOS_TRACE(VOS_MODULE_ID_HDD, level, ## args)
@@ -46,6 +46,7 @@
 /* Global variables */
 
 #define ANI_NL_MSG_LOG_TYPE 89
+#define ANI_NL_MSG_READY_IND_TYPE 90
 #define INVALID_PID -1
 
 #define MAX_LOGMSG_LENGTH 4096
@@ -83,11 +84,12 @@ struct wlan_logging {
 	struct completion   shutdown_comp;
 	/* Indicates to logger thread to exit */
 	bool exit;
+	/* wakeup indication */
+	bool wakeEvent;
 	/* Holds number of dropped logs*/
 	unsigned int drop_count;
 	/* current logbuf to which the log will be filled to */
 	struct log_msg *pcur_node;
-	bool is_buffer_free;
 };
 
 static struct wlan_logging gwlan_logging;
@@ -95,6 +97,64 @@ static struct log_msg *gplog_msg;
 
 /* PID of the APP to log the message */
 static int gapp_pid = INVALID_PID;
+static char wlan_logging_ready[] = "WLAN LOGGING READY";
+
+/*
+ * Broadcast Logging service ready indication to any Logging application
+ * Each netlink message will have a message of type tAniMsgHdr inside.
+ */
+void wlan_logging_srv_nl_ready_indication(void)
+{
+	struct sk_buff *skb = NULL;
+	struct nlmsghdr *nlh;
+	tAniNlHdr *wnl = NULL;
+	int payload_len;
+	int    err;
+	static int rate_limit;
+
+	payload_len = sizeof(tAniHdr) + sizeof(wlan_logging_ready) +
+		sizeof(wnl->radio);
+	skb = dev_alloc_skb(NLMSG_SPACE(payload_len));
+	if (NULL == skb) {
+		if (!rate_limit) {
+			LOGGING_TRACE(VOS_TRACE_LEVEL_ERROR,
+					"NLINK: skb alloc fail %s", __func__);
+		}
+		rate_limit = 1;
+		return;
+	}
+	rate_limit = 0;
+
+	nlh = nlmsg_put(skb, 0, 0, ANI_NL_MSG_LOG, payload_len,
+			NLM_F_REQUEST);
+	if (NULL == nlh) {
+		LOGGING_TRACE(VOS_TRACE_LEVEL_ERROR,
+				"%s: nlmsg_put() failed for msg size[%d]",
+				__func__, payload_len);
+		kfree_skb(skb);
+		return;
+	}
+
+	wnl = (tAniNlHdr *) nlh;
+	wnl->radio = 0;
+	wnl->wmsg.type = ANI_NL_MSG_READY_IND_TYPE;
+	wnl->wmsg.length = sizeof(wlan_logging_ready);
+	memcpy((char*)&wnl->wmsg + sizeof(tAniHdr),
+			wlan_logging_ready,
+			sizeof(wlan_logging_ready));
+
+	/* sender is in group 1<<0 */
+	NETLINK_CB(skb).dst_group = WLAN_NLINK_MCAST_GRP_ID;
+
+	/*multicast the message to all listening processes*/
+	err = nl_srv_bcast(skb);
+	if (err) {
+		LOGGING_TRACE(VOS_TRACE_LEVEL_INFO_LOW,
+			"NLINK: Ready Indication Send Fail %s, err %d",
+			__func__, err);
+	}
+	return;
+}
 
 /* Utility function to send a netlink message to an application
  * in user space
@@ -139,7 +199,7 @@ static int wlan_send_sock_msg_to_app(tAniHdr *wmsg, int radio,
 
 	wnl = (tAniNlHdr *) nlh;
 	wnl->radio = radio;
-	memcpy(&wnl->wmsg, wmsg, wmsg_length);
+	vos_mem_copy(&wnl->wmsg, wmsg, wmsg_length);
 	LOGGING_TRACE(VOS_TRACE_LEVEL_INFO,
 			"%s: Sending Msg Type [0x%X] to pid[%d]\n",
 			__func__, be16_to_cpu(wmsg->type), pid);
@@ -184,7 +244,6 @@ static int wlan_queue_logmsg_for_app(void)
 {
 	char *ptr;
 	int ret = 0;
-
 	ptr = &gwlan_logging.pcur_node->logbuf[sizeof(tAniHdr)];
 	ptr[gwlan_logging.pcur_node->filled_length] = '\0';
 
@@ -200,8 +259,6 @@ static int wlan_queue_logmsg_for_app(void)
 		gwlan_logging.pcur_node =
 			(struct log_msg *)(gwlan_logging.free_list.next);
 		list_del_init(gwlan_logging.free_list.next);
-		 /* reset when free list is available. */
-		gwlan_logging.is_buffer_free = FALSE;
 	} else if (!list_empty(&gwlan_logging.filled_list)) {
 		/* Get buffer from filled list */
 		/* This condition will drop the packet from being
@@ -209,13 +266,13 @@ static int wlan_queue_logmsg_for_app(void)
 		 */
 		gwlan_logging.pcur_node =
 			(struct log_msg *)(gwlan_logging.filled_list.next);
-		if (gapp_pid != INVALID_PID && !gwlan_logging.is_buffer_free) {
+		++gwlan_logging.drop_count;
+		/* print every 64th drop count */
+		if (gapp_pid != INVALID_PID && (!(gwlan_logging.drop_count % 0x40))) {
 			pr_err("%s: drop_count = %u index = %d filled_length = %d\n",
-				__func__, ++gwlan_logging.drop_count,
+				__func__, gwlan_logging.drop_count,
 				gwlan_logging.pcur_node->index,
 				gwlan_logging.pcur_node->filled_length);
-				/* print above logs only 1st time. */
-				gwlan_logging.is_buffer_free = TRUE;
 		}
 		list_del_init(gwlan_logging.filled_list.next);
 		ret = 1;
@@ -249,7 +306,7 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 		 * register with driver immediately and start logging all the
 		 * messages.
 		 */
-		pr_info("%s\n", to_be_sent);
+		pr_err("%s\n", to_be_sent);
 	}
 
 	/* Format the Log time [Secondselapsedinaday.microseconds] */
@@ -262,10 +319,11 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 	total_log_len = length + tlen + 1 + 1;
 
 	spin_lock_irqsave(&gwlan_logging.spin_lock, flags);
+
 	// wlan logging svc resources are not yet initialized
 	if (!gwlan_logging.pcur_node) {
-		spin_unlock_irqrestore(&gwlan_logging.spin_lock, flags);
-		return -EIO;
+	    spin_unlock_irqrestore(&gwlan_logging.spin_lock, flags);
+	    return -EIO;
 	}
 
 	pfilled_length = &gwlan_logging.pcur_node->filled_length;
@@ -293,8 +351,8 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 		total_log_len = MAX_LOGMSG_LENGTH - sizeof(tAniNlHdr) - 2;
 	}
 
-	memcpy(&ptr[*pfilled_length], tbuf, tlen);
-	memcpy(&ptr[*pfilled_length + tlen], to_be_sent,
+	vos_mem_copy(&ptr[*pfilled_length], tbuf, tlen);
+	vos_mem_copy(&ptr[*pfilled_length + tlen], to_be_sent,
 			min(length, (total_log_len - tlen)));
 	*pfilled_length += tlen + min(length, total_log_len - tlen);
 	ptr[*pfilled_length] = '\n';
@@ -303,14 +361,26 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 	spin_unlock_irqrestore(&gwlan_logging.spin_lock, flags);
 
 	/* Wakeup logger thread */
-	if ((true == wake_up_thread) && (gapp_pid != INVALID_PID))
-		wake_up_interruptible(&gwlan_logging.wait_queue);
+	if ((true == wake_up_thread)) {
+		/* If there is logger app registered wakeup the logging
+                 * thread Else broadcast a Ready Indication message,
+                 * apps which are waiting on this message can
+                 * register for the logs.
+                 */
+		if ( (gapp_pid != INVALID_PID)) {
+			gwlan_logging.wakeEvent = TRUE;
+			wake_up_interruptible(&gwlan_logging.wait_queue);
+		}
+		else {
+			wlan_logging_srv_nl_ready_indication();
+		}
+	}
 
 	if ((gapp_pid != INVALID_PID)
 		&& gwlan_logging.log_fe_to_console
 		&& ((VOS_TRACE_LEVEL_FATAL == log_level)
 		|| (VOS_TRACE_LEVEL_ERROR == log_level))) {
-		pr_info("%s\n", to_be_sent);
+		pr_err("%s\n", to_be_sent);
 	}
 
 	return 0;
@@ -327,17 +397,23 @@ static int send_filled_buffers_to_user(void)
 	struct nlmsghdr *nlh;
 	static int nlmsg_seq;
 	unsigned long flags;
+	static int rate_limit;
 
 	while (!list_empty(&gwlan_logging.filled_list)
 		&& !gwlan_logging.exit) {
 
 		skb = dev_alloc_skb(MAX_LOGMSG_LENGTH);
 		if (skb == NULL) {
-			pr_err("%s: dev_alloc_skb() failed for msg size[%d]\n",
-				__func__, MAX_LOGMSG_LENGTH);
+			if (!rate_limit) {
+				pr_err("%s: dev_alloc_skb() failed for msg size[%d] drop count = %u\n",
+					__func__, MAX_LOGMSG_LENGTH,
+					gwlan_logging.drop_count);
+			}
+			rate_limit = 1;
 			ret = -ENOMEM;
 			break;
 		}
+		rate_limit = 0;
 
 		spin_lock_irqsave(&gwlan_logging.spin_lock, flags);
 
@@ -371,7 +447,7 @@ static int send_filled_buffers_to_user(void)
 
 		wnl = (tAniNlHdr *) nlh;
 		wnl->radio = plog_msg->radio;
-		memcpy(&wnl->wmsg, plog_msg->logbuf,
+		vos_mem_copy(&wnl->wmsg, plog_msg->logbuf,
 				plog_msg->filled_length +
 				sizeof(tAniHdr));
 
@@ -387,6 +463,8 @@ static int send_filled_buffers_to_user(void)
 			skb = NULL;
 			gapp_pid = INVALID_PID;
 			clear_default_logtoapp_log_level();
+			wlan_logging_srv_nl_ready_indication();
+			break;
 		} else {
 			skb = NULL;
 			ret = 0;
@@ -405,6 +483,7 @@ static int send_filled_buffers_to_user(void)
 static int wlan_logging_thread(void *Arg)
 {
 	int ret_wait_status = 0;
+	int ret = 0;
 
 	set_user_nice(current, -2);
 
@@ -415,8 +494,9 @@ static int wlan_logging_thread(void *Arg)
 	while (!gwlan_logging.exit) {
 		ret_wait_status = wait_event_interruptible(
 		    gwlan_logging.wait_queue,
-		    (!list_empty(&gwlan_logging.filled_list)
-		  || gwlan_logging.exit));
+		    (gwlan_logging.wakeEvent || gwlan_logging.exit));
+
+		gwlan_logging.wakeEvent = FALSE;
 
 		if (ret_wait_status == -ERESTARTSYS) {
 			pr_err("%s: wait_event_interruptible returned -ERESTARTSYS",
@@ -425,21 +505,24 @@ static int wlan_logging_thread(void *Arg)
 		}
 
 		if (gwlan_logging.exit) {
-			pr_err("%s: Exiting the thread\n", __func__);
-			break;
+		    pr_err("%s: Exiting the thread\n", __func__);
+		    break;
 		}
 
 		if (INVALID_PID == gapp_pid) {
-			pr_err("%s: Invalid PID\n", __func__);
-			continue;
+		    pr_err("%s: Invalid PID\n", __func__);
+		    continue;
 		}
 
-		send_filled_buffers_to_user();
+		ret = send_filled_buffers_to_user();
+		if (-ENOMEM == ret) {
+		    msleep(200);
+		}
 	}
 
-	complete_and_exit(&gwlan_logging.shutdown_comp, 0);
-
 	pr_info("%s: Terminating\n", __func__);
+
+	complete_and_exit(&gwlan_logging.shutdown_comp, 0);
 
 	return 0;
 }
@@ -475,6 +558,7 @@ static int wlan_logging_proc_sock_rx_msg(struct sk_buff *skb)
 			wlan_queue_logmsg_for_app();
 		}
 		spin_unlock_bh(&gwlan_logging.spin_lock);
+		gwlan_logging.wakeEvent = TRUE;
 		wake_up_interruptible(&gwlan_logging.wait_queue);
 	} else {
 		/* This is to set the default levels (WLAN logging
@@ -532,6 +616,7 @@ int wlan_logging_sock_activate_svc(int log_fe_to_console, int num_buf)
 
 	init_waitqueue_head(&gwlan_logging.wait_queue);
 	gwlan_logging.exit = false;
+	gwlan_logging.wakeEvent = FALSE;
 	init_completion(&gwlan_logging.shutdown_comp);
 	gwlan_logging.thread = kthread_create(wlan_logging_thread, NULL,
 					"wlan_logging_thread");
@@ -549,6 +634,8 @@ int wlan_logging_sock_activate_svc(int log_fe_to_console, int num_buf)
 
 	nl_srv_register(ANI_NL_MSG_LOG, wlan_logging_proc_sock_rx_msg);
 
+	//Broadcast SVC ready message to logging app/s running
+	wlan_logging_srv_nl_ready_indication();
 	pr_info("%s: Activated wlan_logging svc\n", __func__);
 	return 0;
 }
@@ -564,10 +651,10 @@ int wlan_logging_sock_deactivate_svc(void)
 	clear_default_logtoapp_log_level();
 	gapp_pid = INVALID_PID;
 
-	gwlan_logging.exit = true;
 	INIT_COMPLETION(gwlan_logging.shutdown_comp);
+	gwlan_logging.exit = true;
 	wake_up_interruptible(&gwlan_logging.wait_queue);
-	wait_for_completion_interruptible(&gwlan_logging.shutdown_comp);
+	wait_for_completion(&gwlan_logging.shutdown_comp);
 
 	spin_lock_irqsave(&gwlan_logging.spin_lock, irq_flag);
 	vfree(gplog_msg);
