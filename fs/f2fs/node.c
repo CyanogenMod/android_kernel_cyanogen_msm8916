@@ -1832,6 +1832,7 @@ static void __flush_nat_entry_set(struct f2fs_sb_info *sbi,
 	struct f2fs_nat_block *nat_blk;
 	struct nat_entry *ne, *cur;
 	struct page *page = NULL;
+	struct f2fs_nm_info *nm_i = NM_I(sbi);
 
 	/*
 	 * there are two steps to flush nat entries:
@@ -1885,7 +1886,9 @@ static void __flush_nat_entry_set(struct f2fs_sb_info *sbi,
 
 	f2fs_bug_on(sbi, set->entry_cnt);
 
+	down_write(&nm_i->nat_tree_lock);
 	radix_tree_delete(&NM_I(sbi)->nat_set_root, set->set);
+	up_write(&nm_i->nat_tree_lock);
 	kmem_cache_free(nat_entry_set_slab, set);
 }
 
@@ -1913,6 +1916,7 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
 	if (!__has_cursum_space(sum, nm_i->dirty_nat_cnt, NAT_JOURNAL))
 		remove_nats_in_journal(sbi);
 
+	down_write(&nm_i->nat_tree_lock);
 	while ((found = __gang_lookup_nat_set(nm_i,
 					set_idx, SETVEC_SIZE, setvec))) {
 		unsigned idx;
@@ -1921,6 +1925,7 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
 			__adjust_nat_entry_set(setvec[idx], &sets,
 							MAX_NAT_JENTRIES(sum));
 	}
+	up_write(&nm_i->nat_tree_lock);
 
 	/* flush dirty nats in nat entry set */
 	list_for_each_entry_safe(set, tmp, &sets, set_list)
