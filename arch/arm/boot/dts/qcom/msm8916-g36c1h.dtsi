@@ -126,7 +126,7 @@
 			mstar,irq-gpio = <&msm_gpio 13 0x00>;
 			mstar,display-coords = <0 0 480 854>;
 			mstar,panel-coords = <0 0 480 946>;
-			mstar,button-map= <139 158 172>;
+			mstar,button-map= <580 158 172>;
 			mstar,no-force-update;
 			mstar,i2c-pull-up;
 		};
