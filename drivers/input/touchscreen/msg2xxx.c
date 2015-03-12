@@ -267,8 +267,8 @@ static struct attribute_group tp_ps_attribute_group = {
 };
 #endif
 
-#define MAX_KEY_NUM    (4)
-static int tpd_key_array[MAX_KEY_NUM] = {0};//{ KEY_MENU, KEY_BACK,KEY_HOMEPAGE,KEY_SEARCH};//modify : 根据项目实际情况修改
+#define MAX_KEY_NUM    (3)
+static int tpd_key_array[MAX_KEY_NUM] = {0};//{ KEY_APPSELECT, KEY_BACK,KEY_HOMEPAGE,KEY_SEARCH};//modify : 根据项目实际情况修改
 
 #define FIRMWARE_UPDATE
 #ifdef FIRMWARE_UPDATE
@@ -987,6 +987,7 @@ static void msg_do_work(struct work_struct *work)
 static void _msg_init_input(void)//modify :输入子系统，根据项目修改
 {
 	int err;
+	int i;
 
 	TPD_DEBUG("%s: msg21xx_i2c_client->name:%s\n", __func__,tpd_i2c_client->name);
 	input = input_allocate_device();
@@ -1004,12 +1005,12 @@ static void _msg_init_input(void)//modify :输入子系统，根据项目修改
 	set_bit(BTN_MISC,input->keybit);
        set_bit(KEY_OK, input->keybit);
 
-	input_set_capability(input, EV_KEY,KEY_MENU);
-	input_set_capability(input, EV_KEY,KEY_BACK);
-	input_set_capability(input, EV_KEY,KEY_HOMEPAGE);
-	input_set_capability(input, EV_KEY,KEY_SEARCH);
+	for (i = 0; i < MAX_KEY_NUM; i++) {
+		input_set_capability(input, EV_KEY, tpd_key_array[i]);
+	}
 
-  	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 2, 0, 0);
+
+	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 2, 0, 0);
 	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 2, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, this_data->pdata->x_max , 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, this_data->pdata->y_max, 0, 0);
