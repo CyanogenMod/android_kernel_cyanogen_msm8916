@@ -109,7 +109,7 @@ static bool mhl_det_in_progress;
 static struct regulator *hsusb_3p3;
 static struct regulator *hsusb_1p8;
 static struct regulator *hsusb_vdd;
-#if !defined(CONFIG_YL_BQ24157_CHARGER) || !defined(CONFIG_YL_FAN5405_CHARGER)
+#if !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 static struct regulator *vbus_otg;
 #endif
 static struct regulator *mhl_usb_hs_switch;
@@ -1949,7 +1949,7 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 		return;
 	}
 
-#if !defined(CONFIG_YL_BQ24157_CHARGER) || !defined(CONFIG_YL_FAN5405_CHARGER)
+#if !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 	if (!vbus_otg) {
 		pr_err("vbus_otg is NULL.");
 		return;
@@ -1966,9 +1966,11 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 		msm_otg_notify_host_mode(motg, on);
 #ifdef CONFIG_YL_BQ24157_CHARGER
 		ret = bq24157_enable_otg_mode(true);
-#elif defined(CONFIG_YL_FAN5405_CHARGER)
+#endif
+#ifdef CONFIG_YL_FAN5405_CHARGER
 		ret = fan5405_enable_otg_mode(true);
-#else
+#endif
+#if !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 		ret = regulator_enable(vbus_otg);
 #endif
 		if (ret) {
@@ -1979,9 +1981,11 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 	} else {
 #ifdef CONFIG_YL_BQ24157_CHARGER
 		ret = bq24157_enable_otg_mode(false);
-#elif defined(CONFIG_YL_FAN5405_CHARGER)
+#endif
+#ifdef CONFIG_YL_FAN5405_CHARGER
 		ret = fan5405_enable_otg_mode(false);
-#else
+#endif
+#if !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 		ret = regulator_disable(vbus_otg);
 #endif
 		if (ret) {
@@ -2007,7 +2011,7 @@ static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
 		return -ENODEV;
 	}
 
-#if !defined(CONFIG_YL_BQ24157_CHARGER) || !defined(CONFIG_YL_FAN5405_CHARGER)
+#if !defined(CONFIG_YL_BQ24157_CHARGER) && !defined(CONFIG_YL_FAN5405_CHARGER)
 	if (!motg->pdata->vbus_power && host) {
 		vbus_otg = devm_regulator_get(motg->phy.dev, "vbus_otg");
 		if (IS_ERR(vbus_otg)) {
