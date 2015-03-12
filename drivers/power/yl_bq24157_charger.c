@@ -1548,7 +1548,7 @@ int bq24157_enable_otg_mode(bool enable)
 	//OPA:0 HZ:0   ==> charge mode
 
 	bq24157_masked_write(this_chip, BQ24157_CONTROL1,
-			OPA_MODE_MASK, 1);
+			OPA_MODE_MASK, enable ? 1 : 0);
 	bq24157_masked_write(this_chip, BQ24157_CONTROL1,
 			HZ_MODE_MASK, 0);
 
