@@ -1445,7 +1445,7 @@ int fan5405_enable_otg_mode(bool enable)
 	//OPA:0 HZ:0   ==> charge mode
 
 	fan5405_masked_write(this_chip, FAN5405_CONTROL1,
-			OPA_MODE_MASK, 1);
+			OPA_MODE_MASK, enable ? 1 : 0);
 	fan5405_masked_write(this_chip, FAN5405_CONTROL1,
 			HZ_MODE_MASK, 0);
 
