@@ -67,7 +67,9 @@ struct fan5405_chip {
 	int        batt_capa;
 
 	int        batt_temp_hot;
+        int        batt_temp_too_hot;   //modify by sunxiaogang for codes platform design 2014.12.22
 	int        batt_temp_cold;
+        int        batt_temp_too_cold;  //modify by sunxiaogang for codes platform design 2014.12.22
 	/*  */
 	int        set_ivbus_max;
 
@@ -104,7 +106,9 @@ struct fan5405_chip {
 	struct pinctrl_state *int_state_suspend;
 	/* added for reporting batt info in suspend */
 	struct wake_lock wait_report_info_lock;
-
+        /* add by sunxiaogang@yulong.com
+           no suspend during charging  2014.12.09*/
+        struct wake_lock charging_wlock;
 };
 
 static struct fan5405_chip *this_chip;
@@ -180,8 +184,8 @@ enum batt_temp_threshold {
 	BATT_TEMP_TOO_COLD_THRESHOLD = 0,           /*  0 celsius*/
 	BATT_TEMP_COLD_THRESHOLD = 100,                 /* 10 celsius */
 	BATT_TEMP_COOL_THRESHOLD = 200,                 /* 20 celsius */
-	BATT_TEMP_NUM_THRESHOLD = 520,            /* 50 celsius (real temp), Micromax requested*/
-	BATT_TEMP_HOT_THRESHOLD = 590,            /* 57 celsius (real temp), Micromax requested*/
+	BATT_TEMP_NUM_THRESHOLD = 520,                   /* 45 celsius */ //change 490 to 520 by sunxiaogang 20140928
+	BATT_TEMP_HOT_THRESHOLD = 550,                   /* 60 celsius */ //change 600 to 550 by sunxiaogang 20140928
 };
 
 #define BATT_FULL_CAPA   2500
@@ -722,7 +726,10 @@ static void fan5405_update_t32s_work(struct work_struct *work)
 	mutex_unlock(&chip->r_completed_lock);
 	
 	chip->vbus_present = (1 == get_yl_pm8916_vbus_status());
-	rc = fan5405_set_chg_reg(chip);
+/*modify begin by sunxiaogang@yulong.com 2105.03.10 reset the t32s timer register of fan5405*/
+        rc = fan5405_masked_write(chip, FAN5405_CONTROL0,
+                                TMR_RST_MASK |EN_STAT_MASK, TMR_RST_MASK | EN_STAT_MASK);
+/*modify end by sunxiaogang@yulong.com*/
 	fan5405_dump_registers(chip);
 	pr_debug(" %s: charge_stat = %d, vbus_present = %d, chip->charging_disabled = %d \n", __func__, 
 			chip->charge_stat, chip->vbus_present, chip->charging_disabled);
@@ -772,22 +779,24 @@ static int get_batt_temp_status(struct fan5405_chip *chip)
 	int batt_temp;
 	
 	batt_temp = chip->batt_temp;
-
-	if (batt_temp < BATT_TEMP_TOO_COLD_THRESHOLD)  /* battery temp < 0 celsius*/
-	//if (batt_temp < chip->batt_temp_cold)  /* battery temp < 0 celsius*/
-		b_status = BATT_TEMP_TOO_COLD;
-	else if (batt_temp < BATT_TEMP_COLD_THRESHOLD)  /* 0 celsius <= battery temp < 10 celsius */
-		b_status = BATT_TEMP_COLD;
-	else if (batt_temp < BATT_TEMP_COOL_THRESHOLD)  /* 10 celsius <= battery temp < 20 celsius */
-		b_status = BATT_TEMP_COOL;
-	else if (batt_temp < BATT_TEMP_NUM_THRESHOLD)   /* 20 celsius <= battery temp <= 45 celsius */
-	//else if (batt_temp < chip->batt_temp_hot)   /* 20 celsius <= battery temp <= 45 celsius */
-		b_status = BATT_TEMP_NUM;
-	else if (batt_temp < BATT_TEMP_HOT_THRESHOLD)    /* 45 celsius < battery temp < 60 celsius */
-		b_status = BATT_TEMP_HOT;
-	else 
-		b_status = BATT_TEMP_TOO_HOT;     /* 60 celsius <= battery temp */
-	
+        /*modify begin by sunxiaogang for codes platform design 2014.12.22*/
+        //if (batt_temp < BATT_TEMP_TOO_COLD_THRESHOLD)  /* battery temp < 0 celsius*/
+        if (batt_temp < chip->batt_temp_too_cold)  /* battery temp < 0 celsius*/
+            b_status = BATT_TEMP_TOO_COLD;
+        //else if (batt_temp < BATT_TEMP_COLD_THRESHOLD)  /* 0 celsius <= battery temp < 10 celsius */
+        else if (batt_temp < chip->batt_temp_cold)
+            b_status = BATT_TEMP_COLD;
+        else if (batt_temp < BATT_TEMP_COOL_THRESHOLD)  /* 10 celsius <= battery temp < 20 celsius */
+            b_status = BATT_TEMP_COOL;
+        //else if (batt_temp < BATT_TEMP_NUM_THRESHOLD)   /* 20 celsius <= battery temp <= 45 celsius */
+        else if (batt_temp < chip->batt_temp_hot)   /* 20 celsius <= battery temp <= 45 celsius */
+            b_status = BATT_TEMP_NUM;
+        //else if (batt_temp < BATT_TEMP_HOT_THRESHOLD)    /* 45 celsius < battery temp < 60 celsius */
+        else if (batt_temp < chip->batt_temp_too_hot)
+            b_status = BATT_TEMP_HOT;
+        else
+            b_status = BATT_TEMP_TOO_HOT;     /* 60 celsius <= battery temp */
+        /*modify end*/
 	pr_debug("batt_temp =%d, b_status = %d\n", batt_temp, b_status);
 	return b_status;
 }
@@ -795,6 +804,7 @@ static int get_batt_temp_status(struct fan5405_chip *chip)
 
 #define STEP_CHG_THRESHOLD_VOLT_MV        4000
 #define STEP_CHG_DELTA_VOLT_MV                  20
+static bool batt_charge_disable = false; //add by sunxiaogang to realize the recharge function 20140928
 static int fan5405_temp_appropriate_charging(struct fan5405_chip *chip)
 {
 	static int last_temp_sts = BATT_TEMP_STATUS_UNKOWN;
@@ -802,7 +812,6 @@ static int fan5405_temp_appropriate_charging(struct fan5405_chip *chip)
 	static bool batt_volt_low = false;
 	static bool batt_too_cold = false;
 	static bool batt_too_hot = false;
-	static bool batt_charge_disable = false; //add by shunxiaogang to realize the recharge function 20140928
 
 	
 	int batt_volt_mv = 0;
@@ -1135,22 +1144,68 @@ static int fan5405_get_prop_batt_temp(struct fan5405_chip *chip)
 	return ret.intval;
 }
 
+//add begin by sunxiaogang@yulong.com 2014.12.04
+//solve the problem of battery capacity goes down fast from 100% to 99%
+#ifdef CHARGE_CONFIG_MICROMAX   //add by sunxiaogang for codes platform design 2014.12.22*/
+static bool batt_full_flag = false;
+#define CAPA_100 100
+#define CAPA_99  99
+#endif
+//add end
 
 static int fan5405_get_prop_batt_capa(struct fan5405_chip *chip)
 {
 	union power_supply_propval ret = {0,};
 
-	if (chip->battery_psy != NULL) {
-		/* if battery has been registered, use the type property */
-		chip->battery_psy->get_property(chip->battery_psy,
-					POWER_SUPPLY_PROP_CAPACITY, &ret);
-		chip->batt_capa = ret.intval;
-	} else {
-		pr_err("battery property is unregisted . \n");
-		chip->batt_capa = 88;
-	}
-	pr_debug("batt_capa= %d \n", chip->batt_capa);
-	return chip->batt_capa;
+        if (chip->battery_psy != NULL) {
+                /* if battery has been registered, use the type property */
+                chip->battery_psy->get_property(chip->battery_psy,
+                                 POWER_SUPPLY_PROP_CAPACITY, &ret);
+                //add begin by sunxiaogang@yulong.lcom 2014.12.04
+                //solve the problem of battery capacity goes down fast from 100% to 99%
+                #ifdef CHARGE_CONFIG_MICROMAX   //add by sunxiaogang for codes platform design 2014.12.22*/
+                if(1 == get_yl_pm8916_vbus_status())
+                {
+                        if((CAPA_100 == ret.intval)&&(1 == chip->charge_stat))
+                        {
+                                ret.intval = CAPA_99;
+                                batt_full_flag = true;
+                        }
+                        else
+                        {
+                                batt_full_flag = false;
+                        }
+                }
+                else if((true == batt_full_flag)&&(CAPA_100 == ret.intval))
+                {
+                        ret.intval = CAPA_99;
+                }
+                else
+                {
+                        batt_full_flag = false;
+                }
+                pr_info(" %s: charge_stat = %d, vbus_present = %d,val->capacity = %d,batt_full_flag = %d\n",
+                __func__,chip->charge_stat, chip->vbus_present,ret.intval,batt_full_flag);
+                #endif
+                //add end
+               /*modify begin by sunxiaogang@yulong.com 2014.01.06
+                to solve the problem of battery capacity suddenly goes 0% and power off*/
+                if((0 == get_yl_pm8916_vbus_status())&&(ret.intval > chip->batt_capa)&&(0 != chip->batt_capa))
+                {
+                        ret.intval = chip->batt_capa;
+                        pr_info(" %s: charge_stat = %d, vbus_present = %d,val->capacity = %d\n",
+                        __func__,chip->charge_stat, chip->vbus_present,ret.intval);
+                }
+                /*add end*/
+                chip->batt_capa = ret.intval;
+        }
+        else
+        {
+                pr_err("battery property is unregisted . \n");
+                chip->batt_capa = 88;
+        }
+
+        return chip->batt_capa;
 }
 
 static int fan5405_battery_get_property(struct power_supply *psy, 
@@ -1219,6 +1274,19 @@ static int fan5405_battery_is_writeable(struct power_supply *psy,
 	return rc;
 }
 
+/*add bengin by sunxiaogang@yulong.com 2014.12.09 no suspend on charging*/
+void fan5405_set_wake_lock(struct fan5405_chip *chip)
+{
+        if ((chip->set_ivbus_max <= 2) || chip->charging_disabled)
+        {
+            wake_unlock(&chip->charging_wlock);
+        }
+        else
+        {
+            wake_lock(&chip->charging_wlock);
+        }
+}
+/*add end*/
 static int fan5405_battery_set_property(struct power_supply *psy,
 				       enum power_supply_property prop,
 				       const union power_supply_propval *val)
@@ -1278,6 +1346,8 @@ static void fan5405_external_power_changed(struct power_supply *psy)
 
 
 	rc = fan5405_set_ivbus_max(chip, chip->set_ivbus_max); //VBUS CURRENT
+        /*add by sunxiaogang@yulong.com no suspend on charging 2014.12.09*/
+        fan5405_set_wake_lock(chip);
 
 	power_supply_changed(&chip->batt_psy);
 	pr_info("current_limit = %d\n", chip->set_ivbus_max);
@@ -1366,26 +1436,47 @@ static int fan5405_parse_dt(struct fan5405_chip *chip)
 	rc = of_property_read_u32(node, "yl,batt-temp-hot", &chip->batt_temp_hot);
 	if (rc < 0) {
 		dev_err(chip->dev, "Failed to read batt-temp-hot\n");
-		chip->batt_temp_hot = 490;
+        chip->batt_temp_hot = 460;/*modify by sunxiaogang for codes platform design 2014.12.22*/
 		rc = 0;
 	}
 
+        /*add begin by sunxiaogang for codes platform design 2014.12.22*/
+        rc = of_property_read_u32(node, "yl,batt-temp-too-hot", &chip->batt_temp_too_hot);
+        if (rc < 0)
+        {
+            dev_err(chip->dev, "Failed to read batt-temp-too-hot\n");
+            chip->batt_temp_too_hot = 490;
+            rc = 0;
+        }
+        /*add end*/
+
 	rc = of_property_read_u32(node, "yl,batt-temp-cold", &chip->batt_temp_cold);
 	if (rc < 0) {
-		dev_err(chip->dev, "Failed to read batt-temp-hot\n");
-		chip->batt_temp_cold = 0;
+		dev_err(chip->dev, "Failed to read batt-temp-cold\n");
+        chip->batt_temp_cold = 100;/*modify by sunxiaogang for codes platform design 2014.12.22*/
 		rc = 0;
 	}
+
+        /*add begin by sunxiaogang for codes platform design 2014.12.22*/
+        rc = of_property_read_u32(node, "yl,batt-temp-too-cold", &chip->batt_temp_too_cold);
+        if (rc < 0)
+        {
+            dev_err(chip->dev, "Failed to read batt-temp-too-cold\n");
+            chip->batt_temp_too_cold = 0;
+            rc = 0;
+        }
+        /*add end*/
 
 	chip->enable_te = of_property_read_bool(node, "yl,enable-te");
 	chip->charging_disabled = of_property_read_bool(node, "yl,charging-disabled");
 
 	chip->batt_temp_mark = of_property_read_bool(node, "yl,batt-temp-cold-negative");
 	if(chip->batt_temp_mark){
-		chip->batt_temp_cold = -chip->batt_temp_cold;
+        /*modify by sunxiaogang for codes platform design 2014.12.22*/
+        chip->batt_temp_too_cold = -chip->batt_temp_too_cold;
 	}
-	
-	dev_info(chip->dev, "batt_temp_hot = %d, batt_temp_cold = %d\n", chip->batt_temp_hot, chip->batt_temp_cold);
+
+	dev_info(chip->dev, "batt_temp_hot = %d, batt_temp_cold = %d,batt_temp_too_hot = %d, batt_temp_too_cold = %d\n", chip->batt_temp_hot, chip->batt_temp_cold,chip->batt_temp_too_hot,chip->batt_temp_too_cold);
 	return rc;
 }
 
@@ -1499,7 +1590,6 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
 		dev_err(&client->dev, "this IC is not FAN5405, exit fan5405 probe \n");
 		return -EINVAL;
 	} 
-
 	/* 1. set charge safety register */
 	if (!chip->safe_curr)
 		chip->safe_curr = 1500;
@@ -1512,6 +1602,7 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
 			dev_err(chip->dev,"fail to set  charge safety register, rc = %d\n", rc);
 
 	}
+        fan5405_set_chg_reg(chip);//add by sunxiaogang@yulong.com 2015.03.10 to init the fan5405 when probe
 	//fan5405_hw_init(chip);
 
 	usb_psy = power_supply_get_by_name("usb");
@@ -1533,6 +1624,8 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
 	chip->batt_capa = ret.intval;
 
 	wake_lock_init(&chip->wait_report_info_lock, WAKE_LOCK_SUSPEND, "fan5405-report-info");
+        /*add by sunxiaogang@yulong.com no suspend on charging 2014.12.09*/
+        wake_lock_init(&chip->charging_wlock, WAKE_LOCK_SUSPEND, "fan5405-charging-wlock");
 	
 	/* register battery power supply */
 	chip->batt_psy.name		= chip->batt_psy_name;
@@ -1593,7 +1686,10 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	queue_delayed_work(chip->fan5405_wq, &chip->update_heartbeat_work,
 		msecs_to_jiffies(UPDATE_HEART_PERIOD_FAST_MS - 10000));
-
+/*add begin by sunxiaogang@yulong.com 2015.03.10 to start the update_t32s_work when probe*/
+        queue_delayed_work(chip->fan5405_wq, &chip->update_t32s_work,
+                msecs_to_jiffies(UPDATE_T32S_PERIOD_MS));
+/*add end by sunxiaogang@yulong.com*/
 	wake_lock_init(&chip->batt_info_alarm_wlock, WAKE_LOCK_SUSPEND, "batt_info_alarm");
 	INIT_WORK(&chip->batt_info_alarm_work, batt_info_alarm_work);
 	alarm_init(&chip->report_batt_info_alarm, ALARM_REALTIME,
@@ -1611,6 +1707,8 @@ unregister_batt_psy:
 	gpio_free(chip->en_gpio);	
 fail_hw_init:
 	wake_lock_destroy(&chip->wait_report_info_lock);
+        /*add by sunxiaogang@yulong.com no suspend on charging 2014.12.09*/
+        wake_lock_destroy(&chip->charging_wlock);
 		
 	return rc;
 }

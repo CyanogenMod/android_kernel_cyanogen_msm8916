@@ -1266,8 +1266,8 @@ static int bq24157_battery_is_writeable(struct power_supply *psy,
 	return rc;
 }
 
-/*add bengin by sunxiaogang@yulong.com 2014.12.09 no suspend on charging*/
-void set_wake_lock(struct bq24157_chip *chip)
+/*modify bengin by sunxiaogang@yulong.com 2015.03.10 distinguish to fan5405*/
+void bq24157_set_wake_lock(struct bq24157_chip *chip)
 {
         if ((chip->set_ivbus_max <= 2) || chip->charging_disabled)
         {
@@ -1278,7 +1278,7 @@ void set_wake_lock(struct bq24157_chip *chip)
             wake_lock(&chip->charging_wlock);
         }
 }
-/*add end*/
+/*modify end*/
 
 static int bq24157_battery_set_property(struct power_supply *psy,
 				       enum power_supply_property prop,
@@ -1339,8 +1339,8 @@ static void bq24157_external_power_changed(struct power_supply *psy)
 
 
 	rc = bq24157_set_ivbus_max(chip, chip->set_ivbus_max); //VBUS CURRENT
-        /*add by sunxiaogang@yulong.com no suspend on charging 2014.12.09*/
-        set_wake_lock(chip);
+        /*modify by sunxiaogang@yulong.com 2015.03.10 distinguish to fan5405*/
+        bq24157_set_wake_lock(chip);
 
 	power_supply_changed(&chip->batt_psy);
 	pr_info("current_limit = %d\n", chip->set_ivbus_max);
@@ -1603,7 +1603,6 @@ static int bq24157_probe(struct i2c_client *client, const struct i2c_device_id *
 		return -EINVAL;
 	} 
 	dev_err(&client->dev, "this IC is BQ24517,  probe \n");
-
 	/* 1. set charge safety register */
 	if (!chip->safe_curr)
 		chip->safe_curr = 1500;
