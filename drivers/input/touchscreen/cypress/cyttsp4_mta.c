@@ -62,6 +62,7 @@ static void cyttsp4_input_report(struct input_dev *input, int sig,
 static void cyttsp4_report_slot_liftoff(struct cyttsp4_mt_data *md,
 		int max_slots)
 {
+	input_report_abs(md->input, ABS_MT_TRACKING_ID, 0xffffffff);
 	input_report_key(md->input, BTN_TOUCH, CY_BTN_RELEASED);
 	input_report_key(md->input, BTN_TOOL_FINGER, CY_BTN_RELEASED);
 	input_report_key(md->input, BTN_TOOL_PEN, CY_BTN_RELEASED);
