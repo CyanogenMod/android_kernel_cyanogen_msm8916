@@ -184,8 +184,8 @@ enum batt_temp_threshold {
 	BATT_TEMP_TOO_COLD_THRESHOLD = 0,           /*  0 celsius*/
 	BATT_TEMP_COLD_THRESHOLD = 100,                 /* 10 celsius */
 	BATT_TEMP_COOL_THRESHOLD = 200,                 /* 20 celsius */
-	BATT_TEMP_NUM_THRESHOLD = 520,
-	BATT_TEMP_HOT_THRESHOLD = 590,
+	BATT_TEMP_NUM_THRESHOLD = 490,
+	BATT_TEMP_HOT_THRESHOLD = 600,
 };
 
 #define BATT_FULL_CAPA   2500
