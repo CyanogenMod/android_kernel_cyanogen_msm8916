@@ -83,6 +83,10 @@
 		qcom,mdss-dsi-lane-2-state;
 		qcom,mdss-dsi-lane-3-state;
 		qcom,mdss-dsi-panel-timings = [e6 38 26 00 68 6e 2a 3c 2c 03 04 00];
+		qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 02 0A 08];
+		qcom,mdss-dsi-panel-status-command-state ="dsi_lp_mode";
+		qcom,mdss-dsi-panel-status-check-mode = "reg_read";
+		qcom,mdss-dsi-panel-status-value = <0x1c>;
 		qcom,mdss-dsi-t-clk-post = <0x02>;
 		qcom,mdss-dsi-t-clk-pre = <0x2b>;
 		qcom,mdss-dsi-bl-min-level = <1>;
