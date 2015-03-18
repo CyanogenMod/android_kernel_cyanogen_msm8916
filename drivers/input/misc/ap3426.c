@@ -48,7 +48,6 @@
 #include <linux/interrupt.h>
 #include <linux/input.h>
 #include <linux/string.h>
-#include <mach/gpio.h>
 #include <linux/miscdevice.h>
 #include <asm/uaccess.h>
 #include <linux/workqueue.h>
@@ -703,7 +702,7 @@ static ssize_t ap3426_store_range(struct device *dev,
 
 
 //kevindang for msm8916 20141010
-static ssize_t ap3426_als_enable_set(struct sensors_classdev *sensors_cdev, 
+static int ap3426_als_enable_set(struct sensors_classdev *sensors_cdev,
 						unsigned int enabled) 
 { 
 	struct ap3426_data *als_data = container_of(sensors_cdev, 
@@ -718,7 +717,7 @@ static ssize_t ap3426_als_enable_set(struct sensors_classdev *sensors_cdev,
 	return 0; 
 } 
 
-static ssize_t ap3426_als_poll_delay_set(struct sensors_classdev *sensors_cdev, 
+static int ap3426_als_poll_delay_set(struct sensors_classdev *sensors_cdev,
 					   unsigned int delay_msec) 
 { 
    struct ap3426_data *als_data = container_of(sensors_cdev, 
@@ -739,7 +738,7 @@ static ssize_t ap3426_als_poll_delay_set(struct sensors_classdev *sensors_cdev,
    return 0; 
 } 
 
-static ssize_t ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev, 
+static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 					   unsigned int enabled) 
 { 
    struct ap3426_data *ps_data = container_of(sensors_cdev, 
