@@ -1206,25 +1206,25 @@
 			05 01 00 00 78 00 02 10 00
 		];
 		qcom,panel-ce-cmds = [
-			29 01 00 00 00 00 02 55 83
+			29 01 00 00 00 00 02 55 80
 		];
 		qcom,panel-ce-off-cmds = [
 			29 01 00 00 00 00 02 55 00
 		];
 		qcom,panel-ce-level1-cmds = [
-			29 01 00 00 00 00 02 55 B0
+			29 01 00 00 00 00 02 55 83
 		];
 		qcom,panel-ce-level2-cmds = [
-			29 01 00 00 00 00 02 55 90
+			29 01 00 00 00 00 02 55 93
 		];
 		qcom,panel-ce-level3-cmds = [
-			29 01 00 00 00 00 02 55 B1
+			29 01 00 00 00 00 02 55 B3
 		];
 		qcom,panel-cabc-ui-cmds = [
-			29 01 00 00 00 00 02 55 91
+			29 01 00 00 00 00 02 55 01
 		];
 		qcom,panel-cabc-moving-cmds = [
-			29 01 00 00 00 00 02 55 92
+			29 01 00 00 00 00 02 55 03
 		];
 		qcom,panel-cabc-off-cmds = [
 			29 01 00 00 00 00 02 55 00
