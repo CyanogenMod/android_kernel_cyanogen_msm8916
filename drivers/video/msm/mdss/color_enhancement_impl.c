@@ -4,57 +4,57 @@
 #include <linux/kernel.h>
 #include <linux/color_enhancement.h>
 #include <linux/fb.h>
-#include <linux/console.h>
-#include <linux/uaccess.h>
-#include <linux/delay.h>
-#include <linux/backlight.h>
 #include "mdss_dsi.h"
+
+#define MDSS_CE_OFF	0
+#define MDSS_CE_L1	1
+#define MDSS_CE_L2	2
+#define MDSS_CE_L3	3
 
 extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 		struct dsi_panel_cmds *pcmds);
 
 struct mdss_color_enhancement_t {
 	struct mdss_dsi_ctrl_pdata *ctrl;
-	struct work_struct set_ce_work;
 	struct mutex set_ce_lock;
-	u32 settings;
-	bool first_set_ce;
+	int current_level;
 };
 
 static struct mdss_color_enhancement_t mdss_ce_data;
 
 static int r69429_ce_set_level_impl(struct mdss_color_enhancement_t *impl_data, int level)
 {
-	impl_data->settings &= (~CE_MASK);
+	mutex_lock(&impl_data->set_ce_lock);
 
 	switch (level) {
-	case 0:
+	case MDSS_CE_OFF:
 		if (impl_data->ctrl->ce_off_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
 					&impl_data->ctrl->ce_off_cmds);
-		impl_data->settings &= (~EN);
 		break;
-	case 1:
+
+	case MDSS_CE_L1:
 		if (impl_data->ctrl->ce_level1_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
 					&impl_data->ctrl->ce_level1_cmds);
-		impl_data->settings |= (EN | LEVEL1);
 		break;
 
-	case 2:
+	case MDSS_CE_L2:
 		if (impl_data->ctrl->ce_level2_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
 					&impl_data->ctrl->ce_level2_cmds);
-		impl_data->settings |= (EN | LEVEL2);
 		break;
 
-	case 3:
+	case MDSS_CE_L3:
 		if (impl_data->ctrl->ce_level3_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
 					&impl_data->ctrl->ce_level3_cmds);
-		impl_data->settings |= (EN | DEFAULT);
 		break;
 	}
+
+	impl_data->current_level = level;
+
+	mutex_unlock(&impl_data->set_ce_lock);
 
 	return 0;
 }
@@ -82,12 +82,13 @@ static int r69429_get_mode(struct color_enhancement_t *ce)
 		return -ENODEV;
 	}
 
-	return impl_data->settings;
+	return impl_data->current_level;
 }
 
 static int r69429_ce_init(struct color_enhancement_t *ce)
 {
 	mutex_init(&mdss_ce_data.set_ce_lock);
+	mdss_ce_data.current_level = MDSS_CE_OFF;
 
 	ce->impl_data = (void *) &mdss_ce_data;
 
@@ -109,6 +110,13 @@ struct ce_impl_ops_t ce_impl_ops = {
 	.init_setting = NULL,
 	.get_mode = r69429_get_mode,
 };
+
+void color_enhancement_impl_apply(void)
+{
+	struct mdss_color_enhancement_t *ce = &mdss_ce_data;
+
+	r69429_ce_set_level_impl(ce, ce->current_level);
+}
 
 void color_enhancement_impl_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 {
