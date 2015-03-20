@@ -17,14 +17,14 @@
 
 static struct color_enhancement_t ce_data;
 
-ssize_t color_enhancement_read(struct file *filp, char __user *buff,
-		size_t count, loff_t *offp)
+static ssize_t color_enhancement_read(struct file *filp,
+		char __user *buff, size_t count, loff_t *offp)
 {
 	return 0;
 }
 
-ssize_t color_enhancement_write(struct file *filp, const char __user *buff,
-		size_t count, loff_t *offp)
+static ssize_t color_enhancement_write(struct file *filp,
+		const char __user *buff, size_t count, loff_t *offp)
 {
 	return 0;
 }
