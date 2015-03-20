@@ -39,21 +39,21 @@ static int r69429_ce_set_level_impl(struct mdss_color_enhancement_t *impl_data, 
 	case 1:
 		if (impl_data->ctrl->ce_level1_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
-					&impl_data->ctrl->ce_level2_cmds);
+					&impl_data->ctrl->ce_level1_cmds);
 		impl_data->settings |= (EN | LEVEL1);
 		break;
 
 	case 2:
 		if (impl_data->ctrl->ce_level2_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
-					&impl_data->ctrl->ce_level3_cmds);
+					&impl_data->ctrl->ce_level2_cmds);
 		impl_data->settings |= (EN | LEVEL2);
 		break;
 
 	case 3:
 		if (impl_data->ctrl->ce_level3_cmds.cmd_cnt)
 			mdss_dsi_panel_cmds_send(impl_data->ctrl,
-					&impl_data->ctrl->ce_level1_cmds);
+					&impl_data->ctrl->ce_level3_cmds);
 		impl_data->settings |= (EN | DEFAULT);
 		break;
 	}
