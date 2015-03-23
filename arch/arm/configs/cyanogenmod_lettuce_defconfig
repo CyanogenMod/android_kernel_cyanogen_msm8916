@@ -1665,12 +1665,12 @@ CONFIG_SERIAL_MSM_SMD=y
 #
 # Diag Support
 #
-# CONFIG_DIAG_CHAR is not set
+CONFIG_DIAG_CHAR=y
 
 #
 # DIAG traffic over USB
 #
-# CONFIG_DIAG_OVER_USB is not set
+CONFIG_DIAG_OVER_USB=y
 
 #
 # HSIC/SMUX support for DIAG
