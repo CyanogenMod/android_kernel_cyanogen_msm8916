@@ -695,8 +695,6 @@ static unsigned char TestBase(char *str_result,int size)
 		return OK_NG;
 	}
 
-	memset(up_origin,'\0',sizeof(up_origin));
-	memset(low_origin,'\0',sizeof(low_origin));
 	memset(str_result,'\0',size);
 	
 	for (i=0;i<drv_num;i++)
@@ -892,7 +890,7 @@ static unsigned char TestRate(char *str_result,int size)
 			//sprintf(temp,"(group:%d-max_sen:%d-min_sen:%d)",i,k,l);
 			GSL_STRCAT(str_result,temp,size);
 			GSL_STRCAT(dac_rate_temp,temp,sizeof(dac_rate_temp));
-			memset(temp,'\0',sizeof(temp));
+			memset(temp,'\0',1024);
 			err = 0;
 		}else
 		{
