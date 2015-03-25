@@ -2057,7 +2057,7 @@ static ssize_t gsl_test_show(void)
 	return result;
 }
 
-static s32 gsl_openshort_proc_read(struct file *file, char __user *buf,size_t count, loff_t *ppos)
+static ssize_t gsl_openshort_proc_read(struct file *file, char __user *buf,size_t count, loff_t *ppos)
 {
 	char *ptr = buf;
 	int test_result  = 0;
@@ -2086,7 +2086,7 @@ static s32 gsl_openshort_proc_read(struct file *file, char __user *buf,size_t co
 	return test_result;
 }
 
-static s32 gsl_openshort_proc_write(struct file *filp, const char __user *userbuf,size_t count, loff_t *ppos)
+static ssize_t gsl_openshort_proc_write(struct file *filp, const char __user *userbuf,size_t count, loff_t *ppos)
 {
 	return -1;
 }

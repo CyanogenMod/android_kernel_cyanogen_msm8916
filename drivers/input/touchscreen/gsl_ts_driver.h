@@ -16,7 +16,6 @@
  */
 
 //#include <mach/ldo.h>
-#include <mach/gpio.h>
 #include <asm/uaccess.h>
 #include <linux/gpio.h>
 #include <linux/mutex.h>
