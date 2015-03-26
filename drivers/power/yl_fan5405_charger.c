@@ -56,6 +56,7 @@ struct fan5405_chip {
 	bool 		batt_temp_mark;
 	int        charge_stat;
 	
+	bool		otg_enabled;
 	bool      vbus_present;
 	/* battery status tracking */
 	bool      batt_present;
@@ -1054,7 +1055,7 @@ static int fan5405_get_prop_batt_status(struct fan5405_chip *chip)
 	}
 	
 	chip->vbus_present = (1 == get_yl_pm8916_vbus_status());
-	if (true == chip->vbus_present) {
+	if (true == chip->vbus_present && !chip->otg_enabled) {
 		if (chip->batt_capa >= 100)
 			ret.intval = POWER_SUPPLY_STATUS_FULL;
 		else
@@ -1545,6 +1546,7 @@ int fan5405_enable_otg_mode(bool enable)
 	if (rc < 0)
 		dev_err(this_chip->dev, "Couldn't %s OTG mode rc=%d\n",
 				enable ? "enable" : "disable", rc);
+	this_chip->otg_enabled = enable;
 	return rc;
 }
 
@@ -1603,6 +1605,7 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	}
         fan5405_set_chg_reg(chip);//add by sunxiaogang@yulong.com 2015.03.10 to init the fan5405 when probe
+	chip->otg_enabled = false;
 	//fan5405_hw_init(chip);
 
 	usb_psy = power_supply_get_by_name("usb");
