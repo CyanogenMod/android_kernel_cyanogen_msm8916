@@ -56,6 +56,7 @@ struct bq24157_chip {
 	bool		batt_temp_mark;
 	int        charge_stat;
 	
+	bool		otg_enabled;
 	bool      vbus_present;
 	/* battery status tracking */
 	bool      batt_present;
@@ -1046,7 +1047,7 @@ static int bq24157_get_prop_batt_status(struct bq24157_chip *chip)
 	} 
 	
 	chip->vbus_present = (1 == get_yl_pm8916_vbus_status());
-	if (true == chip->vbus_present) {
+	if (true == chip->vbus_present && !chip->otg_enabled) {
 		if (chip->batt_capa >= 100)
 			ret.intval = POWER_SUPPLY_STATUS_FULL;
 		else
@@ -1557,6 +1558,7 @@ int bq24157_enable_otg_mode(bool enable)
 	if (rc < 0)
 		dev_err(this_chip->dev, "Couldn't %s OTG mode rc=%d\n",
 				enable ? "enable" : "disable", rc);
+	this_chip->otg_enabled = enable;
 	return rc;
 }
 ///bq24157 VBUS boost output in OTG mode. frankie. 2014.08.26 end.
@@ -1617,6 +1619,7 @@ static int bq24157_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 	
 	bq24157_set_chg_reg(chip);
+	chip->otg_enabled = false;
 	//bq24157_hw_init(chip);
 
 	usb_psy = power_supply_get_by_name("usb");
