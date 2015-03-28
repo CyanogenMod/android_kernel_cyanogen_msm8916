@@ -1,7 +1,7 @@
 //*****************************************************************************
 //*****************************************************************************
 //  FILENAME: Driver.h
-//  TrueTouch Host Emulator Version Information: 3.2.9, b3407
+//  TrueTouch Host Emulator Version Information: 3.2.7, b3363
 //  TrueTouch Firmware Version Information: @GenXLFW@
 //
 //  DESCRIPTION: This file contains configuration values.
@@ -12,7 +12,7 @@
 //-----------------------------------------------------------------------------
 /* Touchscreen Version Information */
 static u8 ttconfig_fw_ver[] = {
-	0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0B, 0x0A, 0x97, 0x01, 0x44, 0x24, 0x90, 0x00, 0x00
+	0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0B, 0x0A, 0x97
 };
 
 /* Touchscreen Parameters Endianess (Endianess: 0:Little; 1:Big)*/
@@ -24,7 +24,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0xFC, 0x07,  /* CONFIG_DATA_SIZE */
 	0xFC, 0x07,  /* CONFIG_DATA_MAX_SIZE */
 	0x4C, 0x00, 0x00, 0x00,  /* SDK_CTRL_CFG_SIZE */
-	0x08, 0x00,  /* CONFIG_VER */
+	0x09, 0x00,  /* CONFIG_VER */
 	0x0C, 0x1B,  /* X_LEN_PHY */
 	0xB8, 0x2F,  /* Y_LEN_PHY */
 	0x00,  /* PANELID_ENABLE */
@@ -88,7 +88,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x64, 0x00, 0x00, 0x00,  /* MAX_MUTUAL_SCAN_INTERVAL */
 	0x64, 0x00, 0x00, 0x00,  /* MAX_BALANCED_SCAN_INTERVAL */
 	0x0A, 0x00, 0x00, 0x00,  /* SELF_Z_THRSH */
-	0x01, 0x00, 0x00, 0x00,  /* SELF_Z_MODE */
+	0x03, 0x00, 0x00, 0x00,  /* SELF_Z_MODE */
 	0x01, 0x00, 0x00, 0x00,  /* SMART_SCAN_ENABLE */
 	0x00, 0x00, 0x00, 0x00,  /* T_COMP_ENABLE */
 	0xD0, 0x07, 0x00, 0x00,  /* T_COMP_INTERVAL */
@@ -100,7 +100,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x30, 0xF8, 0xFF, 0xFF,  /* T_COMP_RECAL_SELF_LOW */
 	0x01, 0x00, 0x00, 0x00,  /* CHARGER_ARMOR_ENABLE */
 	0x01, 0x00, 0x00, 0x00,  /* AFH_ENABLE */
-	0x08, 0x00, 0x00, 0x00,  /* AFH_LISTENING_SCAN_COUNT */
+	0x09, 0x00, 0x00, 0x00,  /* AFH_LISTENING_SCAN_COUNT */
 	0x06, 0x00, 0x00, 0x00,  /* AFH_LISTEN_SCAN_CYCLE_REPEATS */
 	0x7D, 0x00, 0x00, 0x00,  /* CA_BLOCK_NOISE_THRESHOLD */
 	0x03, 0x00, 0x00, 0x00,  /* CA_BLOCK_NOISE_HYSTERESIS */
@@ -214,7 +214,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x96,  /* MAX_FAT_FINGER_SIZE_GLOVE */
 	0x96,  /* MIN_FAT_FINGER_SIZE_GLOVE */
 	0x96, 0x00,  /* FINGER_THRESH_MUTUAL */
-	0x64, 0x00,  /* FINGER_THRESH_SELF */
+	0xAA, 0x00,  /* FINGER_THRESH_SELF */
 	0x0F,  /* INNER_EDGE_GAIN */
 	0x0C,  /* OUTER_EDGE_GAIN */
 	0x38, 0x04, 0x00, 0x00,  /* X_RESOLUTION */
@@ -240,8 +240,8 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x04,  /* Y_INNER_EDGE_GAIN */
 	0x04,  /* Y_OUTER_EDGE_GAIN */
 	0x0A, 0x00,  /* SMALLSIG_FORBID_AFTER_TOUCH_LIFT_OFF */
-	0x1E, 0x00,  /* GLOVE_THRESH_SELF */
-	0x14, 0x00,  /* GLOVE_THRESH_MUTUAL */
+	0x14, 0x00,  /* GLOVE_THRESH_SELF */
+	0x1E, 0x00,  /* GLOVE_THRESH_MUTUAL */
 	0x02,  /* GLOVE_DEBOUNCE */
 	0x00,  /* Reserved441 */
 	0xB8, 0x0B,  /* FAT_FINGER_EDGE_MAX_MF_Z_SUM */
@@ -252,13 +252,13 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x0A,  /* ESD_LONG_DEBOUNCE */
 	0xD0, 0x07,  /* ESD_FINGER_THRESHOLD */
 	0x20, 0x03,  /* WET_FINGER_EXIST_THRESHOLD */
-	0x02,  /* WET_FINGER_FT_ASCEND_COEF */
+	0x04,  /* WET_FINGER_FT_ASCEND_COEF */
 	0x03,  /* WET_FINGER_NEG_COUNT */
 	0x02,  /* LO_LIFTOFF_DEBOUNCE */
 	0x00,  /* LO_REPORT_TOUCH  */
-	0xC8, 0x00,  /* THINGLOVE_THRESH_SELF */
-	0x64, 0x00,  /* THINGLOVE_THRESH_MUTUAL */
-	0xC8, 0x00,  /* THINGLOVE_MODE_HYST_MUTUAL */
+	0x3C, 0x00,  /* THINGLOVE_THRESH_SELF */
+	0xAA, 0x00,  /* THINGLOVE_THRESH_MUTUAL */
+	0x64, 0x00,  /* THINGLOVE_MODE_HYST_MUTUAL */
 	0x20, 0x03,  /* SD_ENTER_PEAK_THOLD */
 	0xE8, 0x03,  /* SD_EXIT_PEAK_THOLD */
 	0x09,  /* SD_SIZE_THOLD */
@@ -266,14 +266,14 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0xF4, 0x01,  /* WATER_RAW_DETECT_THOLD */
 	0x20, 0x03,  /* WATER_RAW_HIGH_LEVEL_THOLD */
 	0x90, 0x01,  /* WATER_DIFF_DETECT_THOLD */
-	0x2C, 0x01,  /* WATER_RAW_CALC_THOLD */
-	0x14, 0x00,  /* WATER_DIFF_CALC_THOLD */
+	0x64, 0x00,  /* WATER_RAW_CALC_THOLD */
+	0x50, 0x00,  /* WATER_DIFF_CALC_THOLD */
 	0x05,  /* CALC_THRESHOLD */
-	0x06,  /* FINGERMODES_MODE_SWITCH_DEBOUNCE */
-	0xB4, 0x00,  /* FINGERMODES_FIRSTTOUCH_THOLD */
-	0x64, 0x00,  /* FINGERMODES_FIRSTTOUCH_THOLD_SELF */
-	0x2C, 0x01,  /* FINGERMODES_GLOVE_MAXPEAK */
-	0xE8, 0x03,  /* FINGREMODES_MIN_FINGER_5X5SUM */
+	0x02,  /* FINGERMODES_MODE_SWITCH_DEBOUNCE */
+	0x28, 0x00,  /* FINGERMODES_FIRSTTOUCH_THOLD */
+	0x14, 0x00,  /* FINGERMODES_FIRSTTOUCH_THOLD_SELF */
+	0xFA, 0x00,  /* FINGERMODES_GLOVE_MAXPEAK */
+	0xC8, 0x00,  /* FINGREMODES_MIN_FINGER_5X5SUM */
 	0x00, 0x00, 0x00, 0x00,  /* Reserved492 */
 	0x0B, 0x00, 0x00, 0x00,  /* BTN_CFG_SIZE */
 	0x64, 0x00,  /* BTN_THRSH_MUT_0 */
@@ -310,7 +310,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x06,  /* RAW_FILT_IIR_COEFF_BUTTONS */
 	0x00,  /* Reserved553 */
 	0x78, 0x00,  /* RAW_FILT_IIR_THRESHOLD_MUTUAL */
-	0x5F, 0x00,  /* RAW_FILT_IIR_THRESHOLD_SELF */
+	0x64, 0x00,  /* RAW_FILT_IIR_THRESHOLD_SELF */
 	0x46, 0x00,  /* RAW_FILT_IIR_THRESHOLD_BUTTONS */
 	0x77, 0x70,  /* RAW_FILTER_MASK_CA */
 	0x04,  /* RAW_FILT_IIR_COEFF_MUTUAL_CA */
@@ -328,7 +328,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x14,  /* BL_DELAY_BAL */
 	0x03,  /* BL_DELAY_BTN */
 	0x78, 0x00,  /* BL_THR_MUT */
-	0x5A, 0x00,  /* BL_THR_SELF */
+	0xAA, 0x00,  /* BL_THR_SELF */
 	0x08, 0x00,  /* BL_THR_MUT_GLOVE */
 	0x0F, 0x00,  /* BL_THR_SELF_GLOVE */
 	0x14, 0x00,  /* BL_MAX_INTRVL_GLOVE_SPECIAL */
@@ -406,13 +406,13 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x3A, 0xA0, 0x00, 0xE0,  /* TSS_RX_CONFIG_MUT */
 	0x00, 0x00, 0x00, 0x00,  /* Reserved772 */
 	0x05, 0x04, 0xFF, 0x81,  /* TSS_CONTROL_SELF */
-	0x02, 0x05, 0x00, 0x00,  /* TSS_LENGTH_SELF */
+	0x03, 0x0A, 0x00, 0x00,  /* TSS_LENGTH_SELF */
 	0xFF, 0x02, 0xAF, 0xC0,  /* TSS_TX_CONFIG_SELF */
 	0xFF, 0xFF, 0xD0, 0x00,  /* TSS_TX_CONTROL_SELF */
 	0x22, 0x02, 0x7F, 0x81,  /* TSS_SEQ_CONFIG1_SELF */
 	0x7F, 0x72, 0x01, 0x80,  /* TSS_SEQ_CONFIG2_SELF */
 	0x01, 0x81, 0x40, 0x04,  /* TSS_SEQ_CONFIG3_SELF */
-	0x5B, 0x17, 0x5B, 0x17,  /* TSS_SEQ_CONFIG4_SELF */
+	0x64, 0x14, 0x64, 0x14,  /* TSS_SEQ_CONFIG4_SELF */
 	0x12, 0x01, 0x01, 0x00,  /* TSS_SEQ_CONFIG5_SELF */
 	0x04, 0x01, 0x08, 0x10,  /* TSS_SEQ_CONFIG6_SELF */
 	0x01, 0x04, 0x00, 0x00,  /* TSS_SEQ_CONFIG7_SELF */
@@ -747,7 +747,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00,  /* Reserved1998 */
-	0xC8, 0xBB,  /* CONFIG_CRC */
+	0xCD, 0x55,  /* CONFIG_CRC */
 };
 
 /* Touchscreen Parameters Field Sizes (Writable: 0:Readonly; 1:Writable) */
