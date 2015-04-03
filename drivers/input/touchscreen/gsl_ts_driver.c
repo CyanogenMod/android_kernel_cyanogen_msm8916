@@ -586,7 +586,7 @@ static ssize_t gsl_config_write_proc(struct file *file, const char __user *buffe
 	print_info("[tp-gsl][%s] \n",__func__);
 	if(count > 512)
 	{
-		print_info("size not match [%d:%d]\n", CONFIG_LEN, count);
+		print_info("size not match [%d:%zu]\n", CONFIG_LEN, count);
         	return -EFAULT;
 	}
 	path_buf=kzalloc(count,GFP_KERNEL);
