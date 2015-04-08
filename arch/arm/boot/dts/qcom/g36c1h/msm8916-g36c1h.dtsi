@@ -10,7 +10,8 @@
  * GNU General Public License for more details.
  */
 
-#include "msm8916-qrd.dtsi"
+#include "msm8916-camera-sensor-g36c1h.dtsi"
+#include "dsi-panel-ili9806e-fwvga-hsd-helitai-video.dtsi"
 
 &soc {
 	gpio-leds {

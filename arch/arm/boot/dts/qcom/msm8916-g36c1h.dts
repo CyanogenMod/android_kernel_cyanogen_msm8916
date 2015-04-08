@@ -12,10 +12,9 @@
 
 /dts-v1/;
 
-#include "msm8916-g36c1h.dtsi"
+#include "msm8916-qrd.dtsi"
 #include "msm8916-memory.dtsi"
-#include "g36c1h/dsi-panel-ili9806e-fwvga-hsd-helitai-video.dtsi"
-#include "g36c1h/hymost-camera.dtsi"
+#include "g36c1h/msm8916-g36c1h.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. MSM 8916 QRD SKUI";
