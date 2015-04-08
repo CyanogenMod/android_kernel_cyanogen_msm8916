@@ -92,16 +92,18 @@ static u8 ap3426_reg_to_idx_array[AP3426_MAX_REG_NUM] = {
 	15,	16,	17,	18,	19,	20,	21,	0xff,
 	22,	23,	24,	25,	26,	27         //20-2f
 };
+#ifdef LSC_DBG
 static u8 ap3426_reg[AP3426_NUM_CACHABLE_REGS] = {
 	0x00,0x01,0x02,0x06,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,
 	0x10,0x1A,0x1B,0x1C,0x1D,0x20,0x21,0x22,0x23,0x24,
 	0x25,0x26,0x28,0x29,0x2A,0x2B,0x2C,0x2D
 };
+static u8 *reg_array = ap3426_reg;
+#endif
 // AP3426 range
 static int ap3426_range[4] = {32768,8192,2048,512};
 //static u16 ap3426_threshole[8] = {28,444,625,888,1778,3555,7222,0xffff};
 
-static u8 *reg_array = ap3426_reg;
 static int *range = ap3426_range;
 
 static int cali = 320;
@@ -419,7 +421,7 @@ static int ap3426_ps_enable(struct ap3426_data *ps_data,int enable)
     if(ret < 0){
 	printk("ps enable error!!!!!!\n");
     }
-
+     msleep(50);
 	if(enable){
 		enable_irq(ps_data->client->irq);
 		wake_lock(&ps_data->ps_wake_lock);
@@ -452,7 +454,7 @@ static int ap3426_ls_enable(struct ap3426_data *ps_data,int enable)
     if(ret < 0){
         printk("ls enable error!!!!!!\n");
     } 
-
+     msleep(50);
 	if(enable)
 		enable_irq(ps_data->client->irq);
 	else
@@ -1236,8 +1238,8 @@ static const struct attribute_group ap3426_attr_group = {
 
 static int ap3426_init_client(struct i2c_client *client)
 {
-    struct ap3426_data *data = i2c_get_clientdata(client);
-    int i;
+   // struct ap3426_data *data = i2c_get_clientdata(client);
+    //int i;
 
     i2c_smbus_write_byte_data(client, 0x02, 0x80);
 
@@ -1256,7 +1258,7 @@ static int ap3426_init_client(struct i2c_client *client)
 	//hight
     i2c_smbus_write_byte_data(client, 0x2C, 0xA0);
     i2c_smbus_write_byte_data(client, 0x2D, 0x00);
-
+#if 0
     /* read all the registers once to fill the cache.
      * if one of the reads fails, we consider the init failed */
     for (i = 0; i < AP3426_NUM_CACHABLE_REGS; i++) {
@@ -1265,6 +1267,7 @@ static int ap3426_init_client(struct i2c_client *client)
 	    return -ENODEV;
 	data->reg_cache[i] = v;
     }
+#endif	
     /* set defaults */
     ap3426_set_range(client, AP3426_ALS_RANGE_0);
     ap3426_set_mode(client, AP3426_SYS_DEV_DOWN);
