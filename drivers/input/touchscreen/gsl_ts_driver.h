@@ -31,7 +31,7 @@
 //#define GSL_DEBUG		//调试信息开关，打开则输出调试信息
 #define GSL_TIMER		//定时器开关
 #define TPD_PROC_DEBUG	//proc文件系统接口红开关
-#define GSL9XX_VDDIO_1800  0
+#define GSL9XX_VDDIO_1800  1
 //#define GSL_REPORT_POINT_SLOT
 //#define GSL_PROXIMITY_SENSOR //Proximity sensor replaced by touch panel
 //#define GSL_GESTURE			 //Resuming the circcity by touch panel
