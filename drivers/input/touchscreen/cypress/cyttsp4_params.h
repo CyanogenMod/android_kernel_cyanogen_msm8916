@@ -24,7 +24,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0xFC, 0x07,  /* CONFIG_DATA_SIZE */
 	0xFC, 0x07,  /* CONFIG_DATA_MAX_SIZE */
 	0x4C, 0x00, 0x00, 0x00,  /* SDK_CTRL_CFG_SIZE */
-	0x09, 0x00,  /* CONFIG_VER */
+	0x0A, 0x00,  /* CONFIG_VER */
 	0x0C, 0x1B,  /* X_LEN_PHY */
 	0xB8, 0x2F,  /* Y_LEN_PHY */
 	0x00,  /* PANELID_ENABLE */
@@ -221,20 +221,20 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x80, 0x07, 0x00, 0x00,  /* Y_RESOLUTION */
 	0x01, 0x00, 0x00, 0x00,  /* SENSOR_ASSIGNMENT */
 	0x40, 0x00, 0x00, 0x00,  /* Z_SCALING */
-	0x01,  /* RX_LINE_FILTER */
-	0x01,  /* MULTI_TOUCH_DEBOUNCE */
+	0x02,  /* RX_LINE_FILTER */
+	0x00,  /* MULTI_TOUCH_DEBOUNCE */
 	0xC8, 0x00,  /* CA_FINGER_THRESHOLD_MUTUAL */
 	0x14, 0x00,  /* FINGER_THRESH_MUTUAL_HYST */
-	0x03,  /* RX_LINE_FILTER_DEBOUNCE */
-	0x5A,  /* RX_LINE_FILTER_THRESHOLD */
+	0x01,  /* RX_LINE_FILTER_DEBOUNCE */
+	0x28,  /* RX_LINE_FILTER_THRESHOLD */
 	0x05,  /* CLIPPING_X_LOW */
 	0x05,  /* CLIPPING_X_HIGH */
 	0x08,  /* CLIPPING_Y_LOW */
 	0x08,  /* CLIPPING_Y_HIGH */
-	0x40,  /* VALID_SIGNAL_MULTIPLIER */
+	0x20,  /* VALID_SIGNAL_MULTIPLIER */
 	0x18,  /* PEAK_PATTERN_MULTIPLIER */
-	0x7C, 0x15,  /* MAX_MF_Z9 */
-	0xAC, 0x0D,  /* MIN_FF_Z9 */
+	0xB8, 0x0B,  /* MAX_MF_Z9 */
+	0xDC, 0x05,  /* MIN_FF_Z9 */
 	0x04,  /* X_INNER_EDGE_GAIN */
 	0x04,  /* X_OUTER_EDGE_GAIN */
 	0x04,  /* Y_INNER_EDGE_GAIN */
@@ -391,7 +391,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x22, 0x02, 0x7F, 0x81,  /* TSS_SEQ_CONFIG1_MUT */
 	0x7F, 0x72, 0x01, 0x80,  /* TSS_SEQ_CONFIG2_MUT */
 	0x01, 0x81, 0x40, 0x04,  /* TSS_SEQ_CONFIG3_MUT */
-	0x78, 0x17, 0x78, 0x17,  /* TSS_SEQ_CONFIG4_MUT */
+	0x8C, 0x17, 0x8C, 0x17,  /* TSS_SEQ_CONFIG4_MUT */
 	0x12, 0x01, 0x01, 0x00,  /* TSS_SEQ_CONFIG5_MUT */
 	0x04, 0x01, 0x08, 0x10,  /* TSS_SEQ_CONFIG6_MUT */
 	0x01, 0x04, 0x00, 0x00,  /* TSS_SEQ_CONFIG7_MUT */
@@ -489,7 +489,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x01, 0x00, 0x00, 0x00,  /* ABSOLUTE_CR_CORRECTION */
 	0x02, 0x00, 0x00, 0x00,  /* SCANNING_MODE_MUTUAL */
 	0x02, 0x00, 0x00, 0x00,  /* SCANNING_MODE_BUTTON */
-	0x1E, 0x00,  /* DETECT_CHARGER_THRESHOLD */
+	0x28, 0x00,  /* DETECT_CHARGER_THRESHOLD */
 	0x00,  /* CA_LX_SCAN_MODE */
 	0x00,  /* SUB_SLOT_SCAN */
 	0x6E,  /* NOISE_METRIC1_THRESHOLD */
@@ -747,7 +747,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00,  /* Reserved1998 */
-	0xCD, 0x55,  /* CONFIG_CRC */
+	0xA9, 0xE2,  /* CONFIG_CRC */
 };
 
 /* Touchscreen Parameters Field Sizes (Writable: 0:Readonly; 1:Writable) */
