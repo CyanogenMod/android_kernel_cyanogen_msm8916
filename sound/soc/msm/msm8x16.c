@@ -2481,6 +2481,20 @@ int get_cdc_gpio_lines(struct pinctrl *pinctrl, int ext_pa)
 			pr_err("failed to enable codec gpios\n");
 		break;
 	default:
+#ifdef CONFIG_MACH_CP8675
+		pinctrl_info.cdc_lines_dmic_sus = pinctrl_lookup_state(pinctrl,
+			"cdc_lines_dmic_sus");
+		if (IS_ERR(pinctrl_info.cdc_lines_dmic_sus)) {
+			pr_err("%s: Unable to get pinctrl cdc_lines_dmic_sus handle\n",
+								__func__);
+		}
+		pinctrl_info.cdc_lines_dmic_act = pinctrl_lookup_state(pinctrl,
+			"cdc_lines_dmic_act");
+		if (IS_ERR(pinctrl_info.cdc_lines_dmic_act)) {
+			pr_err("%s: Unable to get pinctrl cdc_lines_dmic_act handle\n",
+								__func__);
+		}
+#endif
 		pinctrl_info.cdc_lines_sus = pinctrl_lookup_state(pinctrl,
 			"cdc_lines_sus");
 		if (IS_ERR(pinctrl_info.cdc_lines_sus)) {
@@ -2803,22 +2817,7 @@ static int msm8x16_asoc_machine_probe(struct platform_device *pdev)
 					__func__, ret);
 			goto err;
 		}
-#ifdef CONFIG_MACH_CP8675
-	pinctrl_info.cdc_lines_dmic_sus = pinctrl_lookup_state(pinctrl,
-		"cdc_lines_dmic_sus");
-	if (IS_ERR(pinctrl_info.cdc_lines_dmic_sus)) {
-		pr_err("%s: Unable to get pinctrl cdc_lines_dmic_sus handle\n",
-							__func__);
 	}
-	pinctrl_info.cdc_lines_dmic_act = pinctrl_lookup_state(pinctrl,
-		"cdc_lines_dmic_act");
-	if (IS_ERR(pinctrl_info.cdc_lines_dmic_act)) {
-		pr_err("%s: Unable to get pinctrl cdc_lines_dmic_act handle\n",
-							__func__);
-	}
-#endif
-	}
-
 
 	ret = of_property_read_string(pdev->dev.of_node,
 		hs_micbias_type, &type);
