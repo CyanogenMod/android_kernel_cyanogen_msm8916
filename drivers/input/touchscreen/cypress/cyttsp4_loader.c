@@ -1147,7 +1147,7 @@ static int upgrade_firmware_from_class(struct cyttsp4_device *ttsp)
 
 	dev_vdbg(&ttsp->dev, "%s: Enabling firmware class loader\n", __func__);
 
-	retval = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG, "",
+	retval = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG, "CK2015.bin",
 			&ttsp->dev, GFP_KERNEL, ttsp, _cyttsp4_firmware_cont);
 	if (retval < 0) {
 		dev_err(&ttsp->dev, "%s: Fail request firmware class file load\n",

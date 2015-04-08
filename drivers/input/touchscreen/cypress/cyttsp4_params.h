@@ -24,7 +24,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0xFC, 0x07,  /* CONFIG_DATA_SIZE */
 	0xFC, 0x07,  /* CONFIG_DATA_MAX_SIZE */
 	0x4C, 0x00, 0x00, 0x00,  /* SDK_CTRL_CFG_SIZE */
-	0x0A, 0x00,  /* CONFIG_VER */
+	0x0B, 0x00,  /* CONFIG_VER */
 	0x0C, 0x1B,  /* X_LEN_PHY */
 	0xB8, 0x2F,  /* Y_LEN_PHY */
 	0x00,  /* PANELID_ENABLE */
@@ -227,10 +227,10 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x14, 0x00,  /* FINGER_THRESH_MUTUAL_HYST */
 	0x01,  /* RX_LINE_FILTER_DEBOUNCE */
 	0x28,  /* RX_LINE_FILTER_THRESHOLD */
-	0x05,  /* CLIPPING_X_LOW */
-	0x05,  /* CLIPPING_X_HIGH */
-	0x08,  /* CLIPPING_Y_LOW */
-	0x08,  /* CLIPPING_Y_HIGH */
+	0x0F,  /* CLIPPING_X_LOW */
+	0x0F,  /* CLIPPING_X_HIGH */
+	0x0F,  /* CLIPPING_Y_LOW */
+	0x0F,  /* CLIPPING_Y_HIGH */
 	0x20,  /* VALID_SIGNAL_MULTIPLIER */
 	0x18,  /* PEAK_PATTERN_MULTIPLIER */
 	0xB8, 0x0B,  /* MAX_MF_Z9 */
@@ -238,7 +238,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x04,  /* X_INNER_EDGE_GAIN */
 	0x04,  /* X_OUTER_EDGE_GAIN */
 	0x04,  /* Y_INNER_EDGE_GAIN */
-	0x04,  /* Y_OUTER_EDGE_GAIN */
+	0x05,  /* Y_OUTER_EDGE_GAIN */
 	0x0A, 0x00,  /* SMALLSIG_FORBID_AFTER_TOUCH_LIFT_OFF */
 	0x14, 0x00,  /* GLOVE_THRESH_SELF */
 	0x1E, 0x00,  /* GLOVE_THRESH_MUTUAL */
@@ -263,9 +263,9 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0xE8, 0x03,  /* SD_EXIT_PEAK_THOLD */
 	0x09,  /* SD_SIZE_THOLD */
 	0x0A,  /* WET_FINGER_MT_DEBOUNCE */
-	0xF4, 0x01,  /* WATER_RAW_DETECT_THOLD */
-	0x20, 0x03,  /* WATER_RAW_HIGH_LEVEL_THOLD */
-	0x90, 0x01,  /* WATER_DIFF_DETECT_THOLD */
+	0x20, 0x03,  /* WATER_RAW_DETECT_THOLD */
+	0xD0, 0x07,  /* WATER_RAW_HIGH_LEVEL_THOLD */
+	0x2C, 0x01,  /* WATER_DIFF_DETECT_THOLD */
 	0x64, 0x00,  /* WATER_RAW_CALC_THOLD */
 	0x50, 0x00,  /* WATER_DIFF_CALC_THOLD */
 	0x05,  /* CALC_THRESHOLD */
@@ -305,11 +305,11 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00,  /* Reserved539 */
 	0x1A, 0x00, 0x00, 0x00,  /* RAW_PROC_CFG_SIZE */
 	0x77, 0x77,  /* RAW_FILTER_MASK */
-	0x02,  /* RAW_FILT_IIR_COEFF_MUTUAL */
+	0x01,  /* RAW_FILT_IIR_COEFF_MUTUAL */
 	0x04,  /* RAW_FILT_IIR_COEFF_SELF */
 	0x06,  /* RAW_FILT_IIR_COEFF_BUTTONS */
 	0x00,  /* Reserved553 */
-	0x78, 0x00,  /* RAW_FILT_IIR_THRESHOLD_MUTUAL */
+	0xC8, 0x00,  /* RAW_FILT_IIR_THRESHOLD_MUTUAL */
 	0x64, 0x00,  /* RAW_FILT_IIR_THRESHOLD_SELF */
 	0x46, 0x00,  /* RAW_FILT_IIR_THRESHOLD_BUTTONS */
 	0x77, 0x70,  /* RAW_FILTER_MASK_CA */
@@ -391,7 +391,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x22, 0x02, 0x7F, 0x81,  /* TSS_SEQ_CONFIG1_MUT */
 	0x7F, 0x72, 0x01, 0x80,  /* TSS_SEQ_CONFIG2_MUT */
 	0x01, 0x81, 0x40, 0x04,  /* TSS_SEQ_CONFIG3_MUT */
-	0x8C, 0x17, 0x8C, 0x17,  /* TSS_SEQ_CONFIG4_MUT */
+	0x78, 0x17, 0x78, 0x17,  /* TSS_SEQ_CONFIG4_MUT */
 	0x12, 0x01, 0x01, 0x00,  /* TSS_SEQ_CONFIG5_MUT */
 	0x04, 0x01, 0x08, 0x10,  /* TSS_SEQ_CONFIG6_MUT */
 	0x01, 0x04, 0x00, 0x00,  /* TSS_SEQ_CONFIG7_MUT */
@@ -403,7 +403,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x80, 0x00, 0xFF, 0x07,  /* TSS_INT_CONFIG2_MUT */
 	0x00, 0x00, 0x00, 0x00,  /* TSS_INT_INTERVAL_MUT */
 	0x00, 0x00, 0x00, 0x00,  /* TSS_MCS_CONFIG_MUT */
-	0x3A, 0xA0, 0x00, 0xE0,  /* TSS_RX_CONFIG_MUT */
+	0x3A, 0xA0, 0x00, 0xF0,  /* TSS_RX_CONFIG_MUT */
 	0x00, 0x00, 0x00, 0x00,  /* Reserved772 */
 	0x05, 0x04, 0xFF, 0x81,  /* TSS_CONTROL_SELF */
 	0x03, 0x0A, 0x00, 0x00,  /* TSS_LENGTH_SELF */
@@ -747,7 +747,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00,  /* Reserved1998 */
-	0xA9, 0xE2,  /* CONFIG_CRC */
+	0x45, 0xA3,  /* CONFIG_CRC */
 };
 
 /* Touchscreen Parameters Field Sizes (Writable: 0:Readonly; 1:Writable) */
