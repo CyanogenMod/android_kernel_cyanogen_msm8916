@@ -7,6 +7,6 @@ endif
 
 if ARCH_MSM
 source "drivers/platform/msm/Kconfig"
-source "drivers/platform/smartfren/Kconfig"
+source "drivers/platform/haier/Kconfig"
 source "drivers/platform/yulong/Kconfig"
 endif

@@ -100,7 +100,7 @@ static const struct qpnp_vadc_map_pt adcmap_btm_threshold[] = {
 };
 #else
 static const struct qpnp_vadc_map_pt adcmap_btm_threshold[] = {
-#ifdef CONFIG_MACH_RENDANG_MSM8916
+#ifdef CONFIG_MACH_RENDANG
 	{-100,	1262},
 	{-80,	1232},
 	{-60,	1203},
@@ -228,7 +228,7 @@ static const struct qpnp_vadc_map_pt adcmap_btm_threshold[] = {
 	{770,	213},
 	{780,	208},
 	{790,	203}
-#endif /* CONFIG_MACH_RENDANG_MSM8916 */
+#endif /* CONFIG_MACH_RENDANG */
 };
 #endif
 
@@ -395,7 +395,7 @@ static const struct qpnp_vadc_map_pt adcmap_qrd_skug_btm_threshold[] = {
 };
 
 static const struct qpnp_vadc_map_pt adcmap_qrd_skuh_btm_threshold[] = {
-#ifdef CONFIG_MACH_RENDANG_MSM8916
+#ifdef CONFIG_MACH_RENDANG
 	{-100,	1262},
 	{-80,	1232},
 	{-60,	1203},
@@ -495,7 +495,7 @@ static const struct qpnp_vadc_map_pt adcmap_qrd_skuh_btm_threshold[] = {
 	{840,	530},
 	{860,	524},
 	{880,	520},
-#endif /* CONFIG_MACH_RENDANG_MSM8916 */
+#endif /* CONFIG_MACH_RENDANG */
 };
 
 /* Voltage to temperature */
