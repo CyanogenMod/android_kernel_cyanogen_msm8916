@@ -31,6 +31,8 @@ obj-$(CONFIG_TOUCHSCREEN_EETI)		+= eeti_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ELO)		+= elo.o
 obj-$(CONFIG_TOUCHSCREEN_EGALAX)	+= egalax_ts.o
 obj-$(CONFIG_TOUCHSCREEN_FUJITSU)	+= fujitsu_ts.o
+obj-$(CONFIG_TOUCHSCREEN_GSL1688E)	+= gsl_ts_driver.o gsl_ReadArrayData.o gsl_point_id.o
+obj-$(CONFIG_TOUCHSCREEN_GSL1688E_ARM64)	+= gsl_ts_driver.o gsl_ReadArrayData.o gsl_point_id_arm64.o
 obj-$(CONFIG_TOUCHSCREEN_GEN_VKEYS)	+= gen_vkeys.o
 obj-$(CONFIG_TOUCHSCREEN_ILI210X)	+= ili210x.o
 obj-$(CONFIG_TOUCHSCREEN_INEXIO)	+= inexio.o
@@ -41,6 +43,7 @@ obj-$(CONFIG_TOUCHSCREEN_MC13783)	+= mc13783_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MCS5000)	+= mcs5000_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MIGOR)		+= migor_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MMS114)	+= mms114.o
+obj-$(CONFIG_TOUCHSCREEN_MSG2XXX)	+= msg2xxx.o
 obj-$(CONFIG_TOUCHSCREEN_MTOUCH)	+= mtouch.o
 obj-$(CONFIG_TOUCHSCREEN_MK712)		+= mk712.o
 obj-$(CONFIG_TOUCHSCREEN_HP600)		+= hp680_ts_input.o
@@ -81,13 +84,11 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
 
-obj-$(CONFIG_TOUCHSCREEN_GSL1688E)  += gsl_ts_driver.o gsl_ReadArrayData.o gsl_point_id.o
-obj-$(CONFIG_TOUCHSCREEN_GSL1688E_ARM64) += gsl_ts_driver.o gsl_ReadArrayData.o gsl_point_id_arm64.o
-
 obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
-obj-$(CONFIG_TOUCHSCREEN_BU21150)	+= bu21150.o
-obj-$(CONFIG_INPUT_MT_WRAPPER)		+= input_mt_wrapper.o
 obj-$(CONFIG_TOUCHSCREEN_YL_GT9XX)	+= gt9xx_yl/
 obj-$(CONFIG_TOUCHSCREEN_WT_GT9XX)	+= gt9xx_wt/
+
+obj-$(CONFIG_TOUCHSCREEN_BU21150)	+= bu21150.o
+obj-$(CONFIG_INPUT_MT_WRAPPER)		+= input_mt_wrapper.o
+
 obj-$(CONFIG_MACH_YULONG)		+= touchscreen_yl.o
-obj-$(CONFIG_TOUCHSCREEN_MSG2XXX)	+= msg2xxx.o

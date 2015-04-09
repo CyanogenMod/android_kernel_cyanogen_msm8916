@@ -262,6 +262,26 @@ config TOUCHSCREEN_FUJITSU
 	  To compile this driver as a module, choose M here: the
 	  module will be called fujitsu-ts.
 
+config TOUCHSCREEN_GSL1688E
+	tristate "SLIEAD GSL1688E I2C Touchscreen support (ARM)"
+	depends on I2C
+	help
+	  Say Y here if you have an EDT "Polytouch" touchscreen based
+	  on the SLIEAD GSL1688E family of controllers connected to
+	  your system.
+
+	  If unsure, say N.
+
+config TOUCHSCREEN_GSL1688E_ARM64
+	tristate "SLIEAD GSL1688E I2C Touchscreen support (ARM64)"
+	depends on I2C
+	help
+	  Say Y here if you have an EDT "Polytouch" touchscreen based
+	  on the SLIEAD GSL1688E family of controllers connected to
+	  your system.
+
+	  If unsure, say N.
+
 config TOUCHSCREEN_ILI210X
 	tristate "Ilitek ILI210X based touchscreen"
 	depends on I2C
@@ -382,6 +402,24 @@ config TOUCHSCREEN_MMS114
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called mms114.
+
+config TOUCHSCREEN_MSG2XXX
+	bool "Mstar msg2xxx touchpanel"
+	depends on I2C
+	help
+	 Say Y here if you have a Mstar MSG2XXX touchscreen.
+	 MSG2XXX controllers are multi touch controllers which can
+	 report 2 or 5 touches at a time.
+
+	 If unsure, say N.
+
+config TOUCHSCREEN_PROXIMITY_SENSOR
+	tristate "Touchscreen proximity support"
+	depends on TOUCHSCREEN_MSG2XXX
+	default n
+	help
+	 Select for proximity sensor support in Mstar MSG2XXX touchscreen
+	 driver.
 
 config TOUCHSCREEN_MTOUCH
 	tristate "MicroTouch serial touchscreens"
@@ -1010,26 +1048,6 @@ config SECURE_TOUCH
 
 	  If unsure, say N.
 
-config TOUCHSCREEN_GSL1688E
-	tristate "SLIEAD GSL1688E I2C Touchscreen support (ARM)"
-	depends on I2C
-	help
-	  Say Y here if you have an EDT "Polytouch" touchscreen based
-	  on the SLIEAD GSL1688E family of controllers connected to
-	  your system.
-
-	  If unsure, say N.
-
-config TOUCHSCREEN_GSL1688E_ARM64
-	tristate "SLIEAD GSL1688E I2C Touchscreen support (ARM64)"
-	depends on I2C
-	help
-	  Say Y here if you have an EDT "Polytouch" touchscreen based
-	  on the SLIEAD GSL1688E family of controllers connected to
-	  your system.
-
-	  If unsure, say N.
-
 config TOUCHSCREEN_GT9XX
 	bool "Goodix touchpanel GT9xx series"
 	depends on I2C
@@ -1131,22 +1149,6 @@ config TOUCHSCREEN_BU21150
 	  your system.
 
 	  If unsure, say N.
-
-config TOUCHSCREEN_MSG2XXX
-	bool "Mstar msg2xxx touchpanel"
-	depends on I2C
-	help
-	 Say Y here if you have a Mstar Msg2XXX touchscreen.
-	 Msg2XXX controllers are multi touch controllers which can
-	 report 2 or 5 touches at a time.
-
-	 If unsure, say N.
-
-config TOUCHSCREEN_PROXIMITY_SENSOR
-	tristate "Touchscreen proximity support"
-	default n
-	help
-	 select for proximity sensor support.
 
 config INPUT_MT_WRAPPER
 	tristate "Input Multitouch Wrapper"
