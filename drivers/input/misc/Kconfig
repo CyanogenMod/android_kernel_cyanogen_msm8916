@@ -857,6 +857,17 @@ config SENSORS_BMI058
 	 If you say yes here, you get support for Bosch Sensortec's
 	 sensor driver of BMI058.
 
+config INPUT_LSM6DX0
+	tristate "STMicroelectronics LSM6DS0 and LSM6DL0"
+	depends on INPUT
+	depends on I2C
+	help
+	  Say Y here to enable STMicroelectronics LSM6DS0 or LSM6DL0inertial
+	  module.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called lsm6dx0.
+
 config SENSORS_ST480
 	tristate "Senodia ST480 magnetic sensor support"
 	depends on I2C
