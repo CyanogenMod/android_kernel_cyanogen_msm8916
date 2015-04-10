@@ -1,0 +1,164 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "dsi-panel-goworld-1080p-video.dtsi"
+#include "msm8939-audio-internal_codec-spirit.dtsi"
+#include "msm8939-camera-sensor-spirit.dtsi"
+#include "msm8939-pinctrl-spirit.dtsi"
+#include "msm8939-regulator-spirit.dtsi"
+
+&soc {
+	dmtvchip_sms4470{
+		compatible = "dmtv,sms4470_power";
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&sms4470_host_rst_default &sms4470_dtv_fm_sw_default
+			&sms4470_host_pwrcore_default &sms4470_host_pwrio_default
+			&dtv_sd_sw_default>;
+		mdtv,host-reset-pin = <&msm_gpio 108 0x0>;
+		mdtv,host-powercore-pin = <&msm_gpio 21 0x0>;
+		mdtv,host-powerio-pin = <&msm_gpio 20 0x0>;
+		mdtv,dtv_fm_sw = <&msm_gpio 109 0x0>;
+		mdtv,dtv_sd_sw = <&msm_gpio 50 0x0>;
+		vdd-io-supply = <&pm8916_l12>;
+		vdd-emi-supply = <&pm8916_l6>;
+	};
+
+	gpio_keys {
+		switch_lid {
+			label = "switch_lid";
+			gpios = <&msm_gpio 114 0x1>;
+			linux,input-type = <5>; /* EV_SW */
+			linux,code = <0>; /* SW_LID */
+			debounce-interval = <1>;
+			gpio-key,wakeup;
+		};
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&button_backlight_off>;
+
+		keypad-backlight {
+			gpios = <&msm_gpio 116 0>;
+			label = "button-backlight";
+			linux,default-trigger = "none";
+		};
+	};
+};
+
+&i2c_0 {
+	liteon@23 {
+		compatible = "liteon,ltr553";
+		reg = <0x23>;
+		pinctrl-names = "default","sleep";
+		pinctrl-0 = <&ltr553_default>;
+		pinctrl-1 = <&ltr553_sleep>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <113 0x2>;
+		vdd-supply = <&pm8916_l17>;
+		vio-supply = <&pm8916_l6>;
+		liteon,intr = <&msm_gpio 113 0x2>;
+		liteon,highthr = <800>;
+		liteon,lowthr = <300>;
+	};
+
+	awrgb@45 {
+		compatible = "aw,aw2013-rgb-leds";
+		reg = <0x45>;
+		pinctrl-names = "redled_gpio";
+		pinctrl-0 =  <&redled_gpio20_active>;
+		aw2013,red_gpio20 = <&msm_gpio 22 0>;
+		aw2013,maxbrightness = <255>;
+		aw2013,Imax = <3>;
+	};
+
+	st480@0c {
+		compatible = "senodia,st480";
+		reg = <0x0c>;
+		vdd-supply = <&pm8916_l17>;
+		vio-supply = <&pm8916_l6>;
+		senodia,axis-map-x = <1>;
+		senodia,axis-map-y = <0>;
+		senodia,axis-map-z = <2>;
+		senodia,negate-y;
+	};
+
+	lsm6ds0@6b {
+		compatible = "st,lsm6dx0";
+		reg = <0x6b>;
+		rot-matrix = /bits/ 16
+			<(-1) (0) (0)
+			 (0) (-1) (0)
+			 (0) (0) (1)>;
+		g-poll-interval = <100>;
+		g-min-interval = <2>;
+		g-fs-range = <0>;
+		x-poll-interval = <100>;
+		x-min-interval = <1>;
+		x-fs-range = <0>;
+		aa-filter-bw = <0>;
+	};
+};
+
+&i2c_5 {
+	tsc@24 {
+		compatible = "cy,cyttsp4_i2c_adapter";
+		reg = <0x24>;
+		interrupts = <13 0x2008>;
+		interrupt-parent = <&msm_gpio>;
+		vdd-supply = <&pm8916_l17>;
+		vcc_i2c-supply = <&pm8916_l6>;
+		pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		cy,adapter_id = "cyttsp4_i2c_adapter";
+
+		cy,core {
+			cy,name = "cyttsp4_core";
+			cy,id = "main_ttsp_core";
+			cy,num-max-touches = <5>;
+			cy,irq_gpio = <&msm_gpio 13 0x2008>;
+			cy,rst_gpio = <&msm_gpio 12 0x00>;
+			cy,flags = <1>;
+			cy,easy_wakeup_gesture = <3>;
+			cy,btn_keys = <139 172 158>;
+			cy,btn_keys-tag = <0>;
+
+			cy,mt {
+				cy,name = "cyttsp4_mt";
+				cy,inp_dev_name = "cyttsp4_mt";
+				cy,flags = <0x40>;
+				cy,abs = <0x35 0 1080 0 0
+					0x36 0 1920 0 0
+					0x3a 0 255 0 0
+					0xffff 0 255 0 0
+					0x39 0 15 0 0
+					0x30 0 255 0 0
+					0x31 0 255 0 0
+					0x34 0xfffffed7 127 0 0>;
+				cy,vkeys_x = <1080>;
+				cy,vkeys_y = <1920>;
+				cy,virtual_keys = <158 180 2009 360 142
+					172 540 2009 360 142
+					139 900 2009 360 142>;
+			};
+
+			cy,btn {
+				cy,name = "cyttsp4_btn";
+				cy,inp_dev_name = "cyttsp4_btn";
+			};
+		};
+	};
+};
