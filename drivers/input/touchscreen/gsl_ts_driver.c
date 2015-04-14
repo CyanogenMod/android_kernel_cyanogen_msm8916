@@ -818,13 +818,7 @@ static int gsl_compatible_id(struct i2c_client *client)
 struct regulator *vcc_ana;
 struct regulator *vcc_dig;
 struct regulator *vcc_i2c;
-#if 0
-static int reg_set_optimum_mode_check(struct regulator *reg, int load_uA)
-{
-	return (regulator_count_voltages(reg) > 0) ?
-		regulator_set_optimum_mode(reg, load_uA) : 0;
-}
-#endif
+
 static int gsl_regulator_configure(struct i2c_client *client, bool on)
 {
 	int rc;
@@ -893,7 +887,7 @@ hw_shutdown:
 
 	return 0;
 }
-#if 0
+
 static int gsl_power_on(struct i2c_client *client, bool on)
 {
 	int rc;
@@ -901,27 +895,12 @@ static int gsl_power_on(struct i2c_client *client, bool on)
 	if (on == false)
 		goto power_off;
 
-	rc = reg_set_optimum_mode_check(vcc_ana, MXT_ACTIVE_LOAD_UA);
-	if (rc < 0) {
-		dev_err(&client->dev,
-			"Regulator vcc_ana set_opt failed rc=%d\n", rc);
-		return rc;
-	}
-
 	rc = regulator_enable(vcc_ana);
 	if (rc) {
 		dev_err(&client->dev,
 			"Regulator vcc_ana enable failed rc=%d\n", rc);
 		goto error_reg_en_vcc_ana;
 	}
-
-	
-		rc = reg_set_optimum_mode_check(vcc_i2c, MXT_I2C_LOAD_UA);
-		if (rc < 0) {
-			dev_err(&client->dev,
-				"Regulator vcc_i2c set_opt failed rc=%d\n", rc);
-			goto error_reg_opt_i2c;
-		}
 
 		rc = regulator_enable(vcc_i2c);
 		if (rc) {
@@ -936,31 +915,26 @@ static int gsl_power_on(struct i2c_client *client, bool on)
 	return 0;
 
 error_reg_en_vcc_i2c:
-	reg_set_optimum_mode_check(vcc_i2c, 0);
-error_reg_opt_i2c:
 
 	regulator_disable(vcc_ana);
 error_reg_en_vcc_ana:
-	reg_set_optimum_mode_check(vcc_ana, 0);
 	return rc;
 
 power_off:
-	reg_set_optimum_mode_check(vcc_ana, 0);
 	regulator_disable(vcc_ana);
-	reg_set_optimum_mode_check(vcc_i2c, 0);
 	regulator_disable(vcc_i2c);
 	
 	msleep(50);
 	return 0;
 }
-#endif
+
 static void gsl_hw_init(void)
 {
 	//add power
 	//GSL_POWER_ON();	
 	//
        gsl_regulator_configure(ddata->client, true);
-       //gsl_power_on(ddata->client, true);
+       gsl_power_on(ddata->client, true);
 
 	
 	gpio_request(GSL_IRQ_GPIO_NUM,GSL_IRQ_NAME);
@@ -1830,12 +1804,14 @@ static void gsl_ts_suspend(void)
 		{
 			disable_irq_nosync(client->irq);
 			gpio_set_value(GSL_RST_GPIO_NUM, 0);		
+			gsl_power_on(client, false);
 		}
 #endif
 
 #ifndef GSL_GESTURE
 	disable_irq_nosync(client->irq);
 	gpio_set_value(GSL_RST_GPIO_NUM, 0);
+	gsl_power_on(client, false);
 #endif
 	
 	return;
@@ -1874,11 +1850,13 @@ static void gsl_ts_resume(void)
 		}
 		else
 		{
+			gsl_power_on(client, true);
 			gpio_set_value(GSL_RST_GPIO_NUM, 1);
 			msleep(20);
 			enable_irq(client->irq);		
 		}
 	#else
+		gsl_power_on(client, true);
 		gpio_set_value(GSL_RST_GPIO_NUM, 1);
 		msleep(20);
 		enable_irq(client->irq);
