@@ -1361,19 +1361,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 static ssize_t gsl_sysfs_tpgesture_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	u32 count = 0;
-	count += scnprintf(buf,PAGE_SIZE,"tp gesture is on/off:\n");
-	if(gsl_gesture_flag == 1){
-		count += scnprintf(buf+count,PAGE_SIZE-count,
-				" on \n");
-	}else if(gsl_gesture_flag == 0){
-		count += scnprintf(buf+count,PAGE_SIZE-count,
-				" off \n");
-	}
-	count += scnprintf(buf+count,PAGE_SIZE-count,"tp gesture:");
-	count += scnprintf(buf+count,PAGE_SIZE-count,
-			"%c\n",gsl_gesture_c);
-    	return count;
+	return scnprintf(buf, PAGE_SIZE, "%d\n", gsl_gesture_flag);
 }
 static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
@@ -1391,7 +1379,7 @@ static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 #endif
 	return count;
 }
-static DEVICE_ATTR(gesture, 0666, gsl_sysfs_tpgesture_show, gsl_sysfs_tpgesturet_store);
+static DEVICE_ATTR(gesture, 0664, gsl_sysfs_tpgesture_show, gsl_sysfs_tpgesturet_store);
 #endif
 
 static struct attribute *gsl_attrs[] = {
