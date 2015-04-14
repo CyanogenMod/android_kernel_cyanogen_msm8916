@@ -34,7 +34,7 @@
 #define GSL9XX_VDDIO_1800  1
 //#define GSL_REPORT_POINT_SLOT
 //#define GSL_PROXIMITY_SENSOR //Proximity sensor replaced by touch panel
-//#define GSL_GESTURE			 //Resuming the circcity by touch panel
+#define GSL_GESTURE			 //Resuming the circcity by touch panel
 
 /*define i2c addr and device name*/
 #define GSL_TS_ADDR 				0x40
