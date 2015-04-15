@@ -401,6 +401,10 @@ static int fastchg_current[] = {
 	450, 600, 750, 900, 1050, 1200, 1350, 1500,
 };
 
+#ifdef CONFIG_MACH_T86519A1
+static int high_temp_chg = 1;
+#endif
+
 static int is_between(int value, int left, int right)
 {
 	if (left >= right && left >= value && value >= right)
@@ -1629,6 +1633,16 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 							jeita_work);
 	temp = smb1360_get_prop_batt_temp(chip);
 
+#ifdef CONFIG_MACH_T86519A1
+	if(!high_temp_chg && temp < chip->warm_bat_decidegc) {
+		pr_info("low temp threshold, enable charging\n");
+		smb1360_charging_disable(chip, USER, 0);
+		power_supply_changed(&chip->batt_psy);
+		power_supply_changed(chip->usb_psy);
+		high_temp_chg = 1;
+	}
+#endif
+
 	if (temp > chip->hot_bat_decidegc) {
 		/* battery status is hot, only config thresholds */
 		rc = smb1360_set_soft_jeita_threshold(chip,
@@ -1642,6 +1656,15 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 		/* battery status is warm, do compensation manually */
 		chip->batt_warm = true;
 		chip->batt_cool = false;
+#ifdef CONFIG_MACH_T86519A1
+		if(high_temp_chg && temp >= chip->hot_bat_decidegc) {
+			high_temp_chg = 0;
+			pr_info("high temp threshold, disable charging\n");
+			smb1360_charging_disable(chip, USER, 1);
+			power_supply_changed(&chip->batt_psy);
+			power_supply_changed(chip->usb_psy);
+		}
+#endif
 		rc = smb1360_float_voltage_set(chip, chip->warm_bat_mv);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't set float voltage\n");
