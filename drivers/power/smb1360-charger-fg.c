@@ -243,7 +243,11 @@
 #define OTG_UVLO_SHIFT			2
 
 #define PRE_TO_FAST_MASK		SMB1360_MASK(7, 5)
+#ifdef CONFIG_MACH_SPIRIT
+#define PRE_TO_FAST_DATA		7
+#else
 #define PRE_TO_FAST_DATA		6
+#endif
 #define PRE_TO_FAST_SHIFT		5
 
 #define PRE_CHARGE_CURRENT_MASK		SMB1360_MASK(1, 0)
