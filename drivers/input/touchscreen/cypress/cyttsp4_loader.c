@@ -931,6 +931,7 @@ static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
 {
 	struct device *dev = &ttsp->dev;
 	struct cyttsp4_loader_data *data = dev_get_drvdata(dev);
+	int retry = 3;
 	int rc;
 
 	pm_runtime_get_sync(dev);
@@ -939,7 +940,18 @@ static int cyttsp4_upgrade_firmware(struct cyttsp4_device *ttsp,
 	if (rc < 0)
 		goto exit;
 
-	rc = _cyttsp4_load_app(ttsp, fw_img, fw_size);
+	while (retry--) {
+		rc = _cyttsp4_load_app(ttsp, fw_img, fw_size);
+		if (rc < 0) {
+			dev_err(dev, "%s: Firmware update failed rc=%d, retry:%d\n",
+					__func__, rc, retry);
+		}
+		else
+			break;
+		msleep(20);
+
+	}
+
 	if (rc < 0) {
 		dev_err(dev, "%s: Firmware update failed with error code %d\n",
 			__func__, rc);
