@@ -288,7 +288,6 @@
 		qcom,mdss-dsi-lane-1-state;
 		qcom,mdss-dsi-lane-2-state;
 		qcom,mdss-dsi-lane-3-state;
-		//qcom,mdss-dsi-panel-timings = [75 18 10 00 3a 3e 14 1a 13 03 04 00];
 		qcom,mdss-dsi-panel-timings = [82 1a 12 00 40 42 16 1e 14 03 04 00];
 		qcom,mdss-dsi-t-clk-post = <0x04>;
 		qcom,mdss-dsi-t-clk-pre = <0x1b>;
@@ -303,11 +302,11 @@
 		qcom,mdss-dsi-reset-sequence = <1 20>, <0 10>, <1 20>;
 
 		//add lcd esd
-		qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 02 0A 08];
-		qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode";
+		qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 02 AC 08];
+		qcom,mdss-dsi-panel-status-command-state = "dsi_hs_mode";
 		qcom,mdss-dsi-panel-status-check-mode = "reg_read";
-		qcom,mdss-dsi-panel-status-value = <0x9c>;
-		/delete-property/ qcom,esd-check-enabled;
+		qcom,mdss-dsi-panel-status-value = <0x00>;
+		qcom,esd-check-enabled;
 		//esd end
 	};
 };
