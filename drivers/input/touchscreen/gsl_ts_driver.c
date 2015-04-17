@@ -133,6 +133,11 @@ static void gsl_early_suspend(struct early_suspend *handler);
 static void gsl_early_resume(struct early_suspend *handler);
 #endif
 
+#ifdef GSL_GESTURE
+#define NUM_GESTURES KEY_F4
+static DECLARE_BITMAP(gesture_bmp, NUM_GESTURES);
+#endif
+
 #ifdef TOUCH_VIRTUAL_KEYS
 static ssize_t virtual_keys_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -1644,7 +1649,7 @@ static void gsl_report_work(struct work_struct *work)
 			
 			}
 	
-			if(key_data != 0){
+			if(test_bit(key_data, gesture_bmp)){
 				gsl_gesture_c = (char)(tmp_c & 0xff);
 				gsl_gesture_status = GE_WAKEUP;
 				print_info("gsl_obtain_gesture():tmp_c=%c\n",gsl_gesture_c);
@@ -2304,6 +2309,10 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	info += sprintf(info,"GSL915,");
 	info += sprintf(info,"%x",version);
 	//end
+
+#ifdef GSL_GESTURE
+	set_bit(KEY_POWER, gesture_bmp);
+#endif
 
 	//is_tp_driver_loaded = 1;
 	print_info("%s: ==probe over =\n",__func__);
