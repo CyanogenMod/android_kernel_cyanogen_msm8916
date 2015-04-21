@@ -24,14 +24,14 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0xFC, 0x07,  /* CONFIG_DATA_SIZE */
 	0xFC, 0x07,  /* CONFIG_DATA_MAX_SIZE */
 	0x4C, 0x00, 0x00, 0x00,  /* SDK_CTRL_CFG_SIZE */
-	0x10, 0x00,  /* CONFIG_VER */
+	0x11, 0x00,  /* CONFIG_VER */
 	0x0C, 0x1B,  /* X_LEN_PHY */
 	0xB8, 0x2F,  /* Y_LEN_PHY */
 	0x00,  /* PANELID_ENABLE */
 	0x24,  /* IMO_FREQ_MHZ */
 	0x00,  /* TSS_ADC_FRE_SELECTION */
 	0x14,  /* HST_MODE0 */
-	0x00,  /* ACT_DIST0 */
+	0x02,  /* ACT_DIST0 */
 	0x80,  /* SCAN_TYP0 */
 	0x0A,  /* ACT_INTRVL0 */
 	0x03,  /* ACT_LFT_INTRVL0 */
@@ -57,7 +57,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00,  /* GIDAC_BUTTON_OPEN */
 	0x00,  /* GAIN_BUTTON_OPEN */
 	0x00,  /* POST_CFG */
-	0x00,  /* ACT_DIST2 */
+	0x02,  /* ACT_DIST2 */
 	0x00,  /* EXTERN_SYNC */
 	0x05,  /* PANEL_ID0 */
 	0x10,  /* PANEL_ID1 */
@@ -184,10 +184,10 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00, 0x00,  /* Reserved318 */
 	0x1C, 0x00, 0x00, 0x00,  /* XY_FILT_CFG_SIZE */
 	0xF0,  /* XY_FILTER_MASK */
-	0x08,  /* XY_FILT_IIR_SLOW_COEFF */
+	0x04,  /* XY_FILT_IIR_SLOW_COEFF */
 	0x20,  /* XY_FILT_IIR_FAST_COEFF */
 	0x01,  /* XY_FILT_Z_IIR_COEFF */
-	0x32, 0x00,  /* XY_FILT_XY_SLOW_THR */
+	0x0A, 0x00,  /* XY_FILT_XY_SLOW_THR */
 	0xC8, 0x00,  /* XY_FILT_XY_FAST_THR */
 	0xF0,  /* XY_FILTER_MASK_CA */
 	0x08,  /* XY_FILT_IIR_SLOW_COEFF_CA */
@@ -231,10 +231,10 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x28,  /* CLIPPING_X_HIGH */
 	0x30,  /* CLIPPING_Y_LOW */
 	0x28,  /* CLIPPING_Y_HIGH */
-	0x40,  /* VALID_SIGNAL_MULTIPLIER */
+	0x20,  /* VALID_SIGNAL_MULTIPLIER */
 	0x28,  /* PEAK_PATTERN_MULTIPLIER */
 	0x10, 0x27,  /* MAX_MF_Z9 */
-	0xC4, 0x09,  /* MIN_FF_Z9 */
+	0xAC, 0x0D,  /* MIN_FF_Z9 */
 	0x00,  /* X_INNER_EDGE_GAIN */
 	0x00,  /* X_OUTER_EDGE_GAIN */
 	0x00,  /* Y_INNER_EDGE_GAIN */
@@ -323,8 +323,8 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00,  /* Reserved572 */
-	0x02,  /* BL_DELAY_MUT */
-	0x0A,  /* BL_DELAY_SELF */
+	0x0A,  /* BL_DELAY_MUT */
+	0x0F,  /* BL_DELAY_SELF */
 	0x14,  /* BL_DELAY_BAL */
 	0x03,  /* BL_DELAY_BTN */
 	0x96, 0x00,  /* BL_THR_MUT */
@@ -747,7 +747,7 @@ static const uint8_t cyttsp4_param_regs[] = {
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00,  /* Reserved1998 */
-	0xDD, 0x45,  /* CONFIG_CRC */
+	0xD8, 0xED,  /* CONFIG_CRC */
 };
 
 /* Touchscreen Parameters Field Sizes (Writable: 0:Readonly; 1:Writable) */
