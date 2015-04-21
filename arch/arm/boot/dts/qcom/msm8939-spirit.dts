@@ -13,12 +13,11 @@
 /dts-v1/;
 
 #include "msm8939.dtsi"
-#include "msm8939-qrd-skuk.dtsi"
 #include "spirit/msm8939-spirit.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. MSM 8939 SPIRIT";
-	compatible = "qcom,msm8939-mtp", "qcom,msm8939", "qcom,mtp";
+	compatible = "qcom,msm8939";
 	qcom,board-id = <0x1000b 8>, <0x2000b 5>;
 };
 

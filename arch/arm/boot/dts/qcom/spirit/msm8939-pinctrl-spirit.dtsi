@@ -10,6 +10,8 @@
  * GNU General Public License for more details.
  */
 
+#include "../msm8939-pinctrl.dtsi"
+
 &soc {
 	tlmm_pinmux: pinctrl@1000000 {
 
