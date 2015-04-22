@@ -290,6 +290,50 @@ static int gsl_ts_read_version(void)
 
 #ifdef GSL_GESTURE
 #define READ_LEN 64
+static int gsl_ts_write(struct i2c_client *client, u8 addr, u8 *pdata,
+			int datalen)
+{
+	int ret = 0;
+	u8 tmp_buf[128];
+	unsigned int bytelen = 0;
+	if (datalen > 125) {
+		print_info( "%s too big datalen = %d!\n",
+							__func__, datalen);
+		return -EPERM;
+	}
+
+	tmp_buf[0] = addr;
+	bytelen++;
+
+	if (datalen != 0 && pdata != NULL) {
+		memcpy(&tmp_buf[bytelen], pdata, datalen);
+		bytelen += datalen;
+	}
+
+	ret = i2c_master_send(client, tmp_buf, bytelen);
+	return ret;
+}
+
+
+static int gsl_ts_read(struct i2c_client *client, u8 addr, u8 *pdata,
+		       unsigned int datalen)
+{
+	int ret = 0;
+
+	if (datalen > 126) {
+		print_info( "%s too big datalen = %d!\n",
+				__func__, datalen);
+		return -EPERM;
+	}
+
+	ret = gsl_ts_write(client, addr, NULL, 0);
+	if (ret < 0) {
+		print_info( "%s set data address fail!\n", __func__);
+		return ret;
+	}
+
+	return i2c_master_recv(client, pdata, datalen);
+}
 static unsigned int gsl_read_oneframe_data(unsigned int *data,
 				unsigned int addr,unsigned int len)
 {
@@ -298,22 +342,34 @@ static unsigned int gsl_read_oneframe_data(unsigned int *data,
 	printk("tp-gsl-gesture %s\n",__func__);
 	printk("gsl_read_oneframe_data:::addr=%x,len=%x\n",addr,len);
 
-	#if 1
+	for(i = 0; i < len; i ++)
+	{
+		buf[0] = ((addr+i*4)/0x80)&0xff;
+		buf[1] = (((addr+i*4)/0x80)>>8)&0xff;
+		buf[2] = (((addr+i*4)/0x80)>>16)&0xff;
+		buf[3] = (((addr+i*4)/0x80)>>24)&0xff;
+		gsl_ts_write(ddata->client,0xf0,buf,4);
+		if(gsl_ts_read(ddata->client,(addr+i*4)%0x80,(char *)&data[i],4) < 0){
+			//printk("the first i2c read failed and need read again!\n");	
+			gsl_ts_read(ddata->client,(addr+i*4)%0x80,(char *)&data[i],4);
+		}
+	}
+	#if 0
 	for(i=0;i<len/2;i++){
 		buf[0] = ((addr+i*8)/0x80)&0xff;
 		buf[1] = (((addr+i*8)/0x80)>>8)&0xff;
 		buf[2] = (((addr+i*8)/0x80)>>16)&0xff;
 		buf[3] = (((addr+i*8)/0x80)>>24)&0xff;
-		gsl_write_interface(ddata->client,0xf0,buf,4);
-		gsl_read_interface(ddata->client,(addr+i*8)%0x80,(u8 *)&data[i*2],8);
+		gsl_ts_write(ddata->client,0xf0,buf,4);
+		gsl_ts_read(ddata->client,(addr+i*8)%0x80,(u8 *)&data[i*2],8);
 	}
 	if(len%2){
 		buf[0] = ((addr+len*4 - 4)/0x80)&0xff;
 		buf[1] = (((addr+len*4 - 4)/0x80)>>8)&0xff;
 		buf[2] = (((addr+len*4 - 4)/0x80)>>16)&0xff;
 		buf[3] = (((addr+len*4 - 4)/0x80)>>24)&0xff;
-		gsl_write_interface(ddata->client,0xf0,buf,4);
-		gsl_read_interface(ddata->client,(addr+len*4 - 4)%0x80,(u8 *)&data[len-1],4);
+		gsl_ts_write(ddata->client,0xf0,buf,4);
+		gsl_ts_read(ddata->client,(addr+len*4 - 4)%0x80,(u8 *)&data[len-1],4);
 	}
 	#endif
 
@@ -1310,11 +1366,14 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	//u32 tmp;
 
 	gsl_gesture_status = GE_DISABLE;
+	free_irq(ts->client->irq,ddata);
 		
+	gpio_direction_output(GSL_IRQ_GPIO_NUM,0);
 	gpio_set_value(GSL_RST_GPIO_NUM,0);
 	msleep(20);
 	gpio_set_value(GSL_RST_GPIO_NUM,1);
 	msleep(20);
+	gpio_direction_input(GSL_IRQ_GPIO_NUM);
 	
 	buf[0] = 0xa;
 	buf[1] = 0;
@@ -1659,8 +1718,8 @@ static void gsl_report_work(struct work_struct *work)
 				//input_report_key(tpd->dev,key_data,0);
 				input_report_key(idev,KEY_POWER,0);
 				input_sync(idev);
-                            msleep(50);
 			}
+			msleep(400);
 			goto schedule;
 		}
 #endif
@@ -1852,6 +1911,14 @@ static void gsl_ts_resume(void)
 	#ifdef GSL_GESTURE
 		if(gsl_gesture_flag == 1){
 			gsl_quit_doze(ddata);
+			{
+			int err = 0;
+			msleep(10);
+			err = request_irq(client->irq, gsl_ts_interrupt, IRQF_TRIGGER_RISING, client->name, ddata);
+			if (err < 0) {
+				dev_err(&client->dev, " request irq failed\n");
+			}
+			}
 		}
 		else
 		{
