@@ -46,11 +46,11 @@
 			qcom,iterm-ma = <100>;
 			qcom,thermal-mitigation = <1500 700 600 0>;
 			qcom,config-hard-thresholds;
-			qcom,hot-bat-decidegc = <550>;
+			qcom,hot-bat-decidegc = <580>;
 			qcom,cold-bat-decidegc = <0>;
 			qcom,soft-jeita-supported;
-			qcom,warm-bat-decidegc = <450>;
-			qcom,cool-bat-decidegc = <150>;
+			qcom,warm-bat-decidegc = <500>;
+			qcom,cool-bat-decidegc = <100>;
 			qcom,warm-bat-mv = <4100>;
 			qcom,cool-bat-mv = <4350>;
 			qcom,warm-bat-ma = <600>;
