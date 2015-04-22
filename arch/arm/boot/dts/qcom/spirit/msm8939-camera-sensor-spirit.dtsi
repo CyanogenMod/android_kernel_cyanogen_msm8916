@@ -109,17 +109,14 @@
 		pinctrl-1 = <&cam_sensor_mclk0_sleep &cam_sensor_rear_sleep>;
 		gpios = <&msm_gpio 26 0>,
 			<&msm_gpio 35 0>,
-			<&msm_gpio 34 0>,
-			<&msm_gpio 8 0>;
+			<&msm_gpio 34 0>;
 		qcom,gpio-reset = <1>;
 		qcom,gpio-standby = <2>;
-		qcom,gpio-af-pwdm = <3>;
-		qcom,gpio-req-tbl-num = <0 1 2 3>;
-		qcom,gpio-req-tbl-flags = <1 0 0 0>;
+		qcom,gpio-req-tbl-num = <0 1 2>;
+		qcom,gpio-req-tbl-flags = <1 0 0>;
 		qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
 			"MCAM_RESET",
-			"MCAM_STANDBY",
-			"MCAM_AF_PWDM";
+			"MCAM_STANDBY";
 
 		qcom,cam-power-seq-type = "sensor_vreg",
 			"sensor_gpio", "sensor_gpio",
@@ -230,16 +227,19 @@
 		gpios = <&msm_gpio 26 0>,
 			<&msm_gpio 35 0>,
 			<&msm_gpio 34 0>,
-			<&msm_gpio 8 0>;
+			<&msm_gpio 8 0>,
+			<&msm_gpio 9 0>;
 		qcom,gpio-reset = <1>;
 		qcom,gpio-standby = <2>;
-		qcom,gpio-af-pwdm = <3>;
-		qcom,gpio-req-tbl-num = <0 1 2 3>;
-		qcom,gpio-req-tbl-flags = <1 0 0 0>;
+		qcom,gpio-vdig = <3>;
+		qcom,gpio-vana = <4>;
+		qcom,gpio-req-tbl-num = <0 1 2 3 4>;
+		qcom,gpio-req-tbl-flags = <1 0 0 0 0>;
 		qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
 			"MCAM_RESET",
 			"MCAM_STANDBY",
-			"MCAM_AF_PWDM";
+			"MCAM_GPIO_DVDD",
+			"MCAM_GPIO_AVDD";
 		qcom,sensor-position = <0>;
 		qcom,sensor-mode = <0>;
 		qcom,cci-master = <0>;
@@ -272,16 +272,19 @@
 		gpios = <&msm_gpio 27 0>,
 			<&msm_gpio 28 0>,
 			<&msm_gpio 33 0>,
+			<&msm_gpio 8 0>,
 			<&msm_gpio 9 0>;
 		qcom,gpio-reset = <1>;
 		qcom,gpio-standby = <2>;
-		qcom,gpio-af-pwdm = <3>;
-		qcom,gpio-req-tbl-num = <0 1 2 3>;
-		qcom,gpio-req-tbl-flags = <1 0 0 0>;
+		qcom,gpio-vdig = <3>;
+		qcom,gpio-vana = <4>;
+		qcom,gpio-req-tbl-num = <0 1 2 3 4>;
+		qcom,gpio-req-tbl-flags = <1 0 0 0 0>;
 		qcom,gpio-req-tbl-label = "CAMIF_MCLK1",
 			"SCAM_RESET",
 			"SCAM_STANDBY",
-			"MCAM_AF_PWDM";
+			"SCAM_GPIO_DVDD",
+			"SCAM_GPIO_AVDD";
 		qcom,sensor-position = <1>;
 		qcom,sensor-mode = <0>;
 		qcom,cci-master = <0>;
