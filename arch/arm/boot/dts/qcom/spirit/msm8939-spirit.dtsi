@@ -14,7 +14,6 @@
 #include "msm8939-audio-internal_codec-spirit.dtsi"
 #include "msm8939-pinctrl-spirit.dtsi"
 #include "msm8939-camera-sensor-spirit.dtsi"
-#include "msm8939-regulator-spirit.dtsi"
 
 &blsp1_uart1 {
 	status = "disabled";
