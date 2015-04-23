@@ -4668,10 +4668,6 @@ static int smb1360_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct smb1360_chip *chip = i2c_get_clientdata(client);
 
-#ifdef CONFIG_MACH_T86519A1
-	power_supply_changed(&chip->batt_psy);
-#endif
-
 	/* Restore the IRQ config */
 	for (i = 0; i < 3; i++) {
 		rc = smb1360_write(chip, IRQ_CFG_REG + i,
@@ -4689,7 +4685,7 @@ static int smb1360_resume(struct device *dev)
 	} else {
 		mutex_unlock(&chip->irq_complete);
 	}
-
+	power_supply_changed(&chip->batt_psy);
 	return 0;
 }
 
