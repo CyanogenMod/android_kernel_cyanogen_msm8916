@@ -50,7 +50,7 @@
 #include <linux/input/lsm6dx0.h>
 
 #define GRAVITY_REG_UNIT       0x3FFF
-#define GRAVITY_HAL_UNIT       1024
+#define GRAVITY_HAL_UNIT       16384
 
 #define GYR_REG_RANG           0x7FFF
 #define GYR_RANG               245
