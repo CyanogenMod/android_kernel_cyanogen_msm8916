@@ -36,13 +36,13 @@ static struct sensors_classdev sensors_cdev = {
 	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
 	.type = SENSOR_TYPE_MAGNETIC_FIELD,
 	.max_range = "4800",
-	.resolution = "0.146484375",
+	.resolution = "0.1",
 	.sensor_power = "0.4",
-	.min_delay = 1000,
+	.min_delay = 10000,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
 	.enabled = 0,
-	.delay_msec = 100,
+	.delay_msec = ST480_DEFAULT_DELAY,
 	.sensors_enable = NULL,
 	.sensors_poll_delay = NULL,
 };
@@ -565,9 +565,8 @@ static int st480_set_enable(struct st480_data *st480, bool on)
 
 static int st480_set_poll_delay(struct st480_data *st480, unsigned int msecs)
 {
-	/* FIXME: must larger than ST480 minimun delay 28 ms, otherwise ecc error */
-	if (msecs <= 30)
-		msecs = 30;
+	if (msecs <= 40)
+		msecs = ST480_DEFAULT_DELAY;
 
 	write_lock(&st480->lock);
 	st480->poll_interval = msecs;

@@ -59,8 +59,8 @@
  */
 #define ST480_SIZE_3X3_QFN	0
 #define ST480_SIZE_2X2_BGA	0
-#define ST480_SIZE_1_6X1_6_LGA	1
-#define ST480_SIZE_1_6X1_6_BGA	0
+#define ST480_SIZE_1_6X1_6_LGA	0
+#define ST480_SIZE_1_6X1_6_BGA	1
 
 /*
  * register shift
@@ -111,7 +111,7 @@
  * Miscellaneous set.
  */
 #define MAX_FAILURE_COUNT 3
-#define ST480_DEFAULT_DELAY   30
+#define ST480_DEFAULT_DELAY   40
 #define ST480_AUTO_TEST 0
 #define OLD_KERNEL_VERSION 0
 
