@@ -55,6 +55,7 @@
 #define GYR_REG_RANG           0x7FFF
 #define GYR_RANG               245
 #define GYR_HAL_COMPENSTATE    16
+#define GYR_CONTRARY           -1
 
 #ifdef CONFIG_INPUT_LSM6DX0_SW_COMP
 #define COMP_X_FACTOR_ADDR		(0x7F)
@@ -1763,6 +1764,8 @@ static int32_t lsm6dx0_gyr_get_data(struct lsm6dx0_status *stat, int32_t *xyz)
 				stat->pdata_main->rot_matrix[2][i] * hw_d[2];
 		xyz[i] = (xyz[i] * GYR_RANG * GYR_HAL_COMPENSTATE) / GYR_REG_RANG;
 	}
+	xyz[0] = xyz[0] * GYR_CONTRARY;
+	xyz[2] = xyz[2] * GYR_CONTRARY;
 
 	dev_dbg(&stat->client->dev, "%s<%d>, x:%d, y:%d, z:%d\n", __FUNCTION__,
 			__LINE__, xyz[0], xyz[1], xyz[2]);
