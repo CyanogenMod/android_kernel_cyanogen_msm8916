@@ -106,8 +106,8 @@
 		vdd-supply = <&pm8916_l17>;
 		vio-supply = <&pm8916_l6>;
 		liteon,intr = <&msm_gpio 113 0x2>;
-		liteon,highthr = <800>;
-		liteon,lowthr = <300>;
+		liteon,highthr = <120>;
+		liteon,lowthr = <80>;
 	};
 
 	awrgb@45 {
