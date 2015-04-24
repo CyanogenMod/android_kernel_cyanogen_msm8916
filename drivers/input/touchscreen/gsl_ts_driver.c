@@ -80,7 +80,7 @@ typedef enum{
 	GE_NOWORK =3,
 }GE_T;
 static GE_T gsl_gesture_status = GE_DISABLE;
-static volatile unsigned int gsl_gesture_flag = 1;
+static volatile unsigned int gsl_gesture_flag = 0;
 static char gsl_gesture_c = 0;
 #endif
 
@@ -2362,7 +2362,8 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	enable_irq(client->irq);
 
 #ifdef GSL_GESTURE
-	enable_irq_wake(client->irq);
+	if (gsl_gesture_flag)
+		enable_irq_wake(client->irq);
 #endif
 
 	//zhangpeng add for TW test.
