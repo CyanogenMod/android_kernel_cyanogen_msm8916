@@ -745,6 +745,12 @@ config SENSORS_MMC3416X
 	  To compile this driver as a module, choose M here: the
 	  module will be called mmc3416x.
 
+config SENSORS_MMC3416X_ALLOW_OVERFLOW
+	tristate "MMC3416X sensor overflow check"
+	depends on SENSORS_MMC3416X
+	help
+	  Say Y here if you want to allow overflow in MMC3416X sensor.
+
 config SENSORS_AKM09911
 	tristate "AKM09911 3-axis electronic compass sensor driver"
 	depends on I2C
