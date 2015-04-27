@@ -1754,15 +1754,15 @@ static int32_t lsm6dx0_gyr_get_data(struct lsm6dx0_status *stat, int32_t *xyz)
 			((int32_t)(stat->k_fs * stat->k_coeff[2])) / 896;
 #endif
 
-	//hw_d[0] = hw_d[0] * stat->sensitivity_gyr;
-	//hw_d[1] = hw_d[1] * stat->sensitivity_gyr;
-	//hw_d[2] = hw_d[2] * stat->sensitivity_gyr;
+	hw_d[0] = hw_d[0] * stat->sensitivity_gyr;
+	hw_d[1] = hw_d[1] * stat->sensitivity_gyr;
+	hw_d[2] = hw_d[2] * stat->sensitivity_gyr;
 
 	for (i = 0; i < 3; i++) {
 		xyz[i] = stat->pdata_main->rot_matrix[0][i] * hw_d[0] +
 				stat->pdata_main->rot_matrix[1][i] * hw_d[1] +
 				stat->pdata_main->rot_matrix[2][i] * hw_d[2];
-		xyz[i] = (xyz[i] * GYR_RANG * GYR_HAL_COMPENSTATE) / GYR_REG_RANG;
+//		xyz[i] = (xyz[i] * GYR_RANG * GYR_HAL_COMPENSTATE) / GYR_REG_RANG;
 	}
 	xyz[0] = xyz[0] * GYR_CONTRARY;
 	xyz[2] = xyz[2] * GYR_CONTRARY;
