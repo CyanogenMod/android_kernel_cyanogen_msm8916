@@ -24,25 +24,24 @@
 };
 
 &soc {
-	flash_SGM314: flashlight {
-		compatible = "qcom,leds-gpio-flash";
+	flash_SGM314: flashlight@0 {
+		compatible = "qcom,leds-gpio-flash-ckt";
 		status = "okay";
 		pinctrl-names = "flash_default";
 		pinctrl-0 = <&SGM314_default>;
 		qcom,flash-en = <&msm_gpio 31 0>;
 		qcom,flash-now = <&msm_gpio 32 0>;
 		qcom,torch-en = <&msm_gpio 10 0>;
-		qcom,flash-front-enable = <&msm_gpio 16 0>;
-		qcom,flash-rear-enable = <&msm_gpio 17 0>;
-		qcom,op-seq = "flash_en", "flash_now", "torch_en", "enable_multi";
+		qcom,flash-rear = <&msm_gpio 17 0>;
+		qcom,flash-front = <&msm_gpio 16 0>;
+		qcom,op-seq = "flash_en", "flash_now", "torch_en", "flash_select";
 		qcom,torch-seq-val = <1 0 1 1>;
-		qcom,pre-seq-val = <1 0 0 1>;
 		qcom,flash-seq-val = <1 1 0 1>;
 		linux,name = "flashlight";
 		linux,default-trigger = "flashlight-trigger";
 	};
 
-	led_flash0: qcom,camera-led-flash {
+	led_flash0: qcom,camera-led-flash@0 {
 		cell-index = <0>;
 		reg = <0x00>;
 		compatible = "qcom,camera-led-flash";
