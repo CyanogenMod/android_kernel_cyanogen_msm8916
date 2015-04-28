@@ -432,7 +432,7 @@ static void gsl_io_control(struct i2c_client *client)
 #if GSL9XX_VDDIO_1800
 	u8 buf[4] = {0};
 	int i;
-	for(i=0;i<5;i++){
+	for(i=0;i<2;i++){
 		buf[0] = 0;
 		buf[1] = 0;
 		buf[2] = 0xfe;
@@ -443,9 +443,9 @@ static void gsl_io_control(struct i2c_client *client)
 		buf[2] = 0;
 		buf[3] = 0x80;
 		gsl_write_interface(client,0x78,buf,4);
-		msleep(5);
+		mdelay(5);
 	}
-	msleep(50);
+	//msleep(50);
 #endif
 }
 
@@ -468,35 +468,51 @@ static void gsl_reset_core(struct i2c_client *client)
 	
 	buf[0] = 0x88;
 	gsl_write_interface(client,0xe0,buf,4);
-	msleep(5);
+	mdelay(2);
 
 	buf[0] = 0x04;
 	gsl_write_interface(client,0xe4,buf,4);
-	msleep(5);
+	mdelay(2);
 	
 	buf[0] = 0;
 	gsl_write_interface(client,0xbc,buf,4);
-	msleep(5);
+	mdelay(2);
 
 	gsl_io_control(client);
 }
 
+static void gsl_reset_core_without_vddio(struct i2c_client *client)
+{
+	u8 buf[4] = {0x00};
+	
+	buf[0] = 0x88;
+	gsl_write_interface(client,0xe0,buf,4);
+	mdelay(2);
+
+	buf[0] = 0x04;
+	gsl_write_interface(client,0xe4,buf,4);
+	mdelay(2);
+	
+	buf[0] = 0;
+	gsl_write_interface(client,0xbc,buf,4);
+	mdelay(2);
+}
 static void gsl_clear_reg(struct i2c_client *client)
 {
 	u8 buf[4]={0};
 	//clear reg
 	buf[0]=0x88;
 	gsl_write_interface(client,0xe0,buf,4);
-	msleep(20);
+	mdelay(10);
 	buf[0]=0x3;
 	gsl_write_interface(client,0x80,buf,4);
-	msleep(5);
+	mdelay(2);
 	buf[0]=0x4;
 	gsl_write_interface(client,0xe4,buf,4);
-	msleep(5);
+	mdelay(2);
 	buf[0]=0x0;
 	gsl_write_interface(client,0xe0,buf,4);
-	msleep(20);
+	mdelay(10);
 	//clear reg
 
 }
@@ -1019,9 +1035,9 @@ static void gsl_sw_init(struct i2c_client *client)
 	ddata->gsl_sw_flag = 1;
 	
 	gpio_set_value(GSL_RST_GPIO_NUM, 0);
-	msleep(20);
+	mdelay(10);
 	gpio_set_value(GSL_RST_GPIO_NUM, 1);
-	msleep(20);	
+	mdelay(10);	
 
 	gsl_clear_reg(client);
 	gsl_reset_core(client);
@@ -1036,9 +1052,9 @@ static void gsl_sw_init(struct i2c_client *client)
 
 static void check_mem_data(struct i2c_client *client)
 {
-
+#if 0
 	u8 read_buf[4]  = {0};
-	msleep(30);
+	mdelay(30);
 	gsl_read_interface(client,0xb0,read_buf,4);
 	if (read_buf[3] != 0x5a || read_buf[2] != 0x5a 
 		|| read_buf[1] != 0x5a || read_buf[0] != 0x5a)
@@ -1047,6 +1063,30 @@ static void check_mem_data(struct i2c_client *client)
 			read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
 		gsl_sw_init(client);
 	}
+#else
+	u8 i = 0;
+	u8 read_buf[4]  = {0};
+	for(; i<6; i++)
+	{
+		gsl_read_interface(client,0xb0,read_buf,4);
+			if (read_buf[3] != 0x5a || read_buf[2] != 0x5a 
+		|| read_buf[1] != 0x5a || read_buf[0] != 0x5a)
+		{
+			mdelay(5);
+		}
+		else
+		{
+			break;
+		}
+	}
+	if (read_buf[3] != 0x5a || read_buf[2] != 0x5a 
+		|| read_buf[1] != 0x5a || read_buf[0] != 0x5a)
+	{
+		print_info("0xb4 ={0x%02x%02x%02x%02x}\n",
+			read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
+		gsl_sw_init(client);
+	}
+#endif	
 }
 
 #define GSL_CHIP_NAME	"gslx68x"
@@ -1370,9 +1410,9 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 		
 	gpio_direction_output(GSL_IRQ_GPIO_NUM,0);
 	gpio_set_value(GSL_RST_GPIO_NUM,0);
-	msleep(20);
+	mdelay(5);
 	gpio_set_value(GSL_RST_GPIO_NUM,1);
-	msleep(20);
+	mdelay(20);
 	gpio_direction_input(GSL_IRQ_GPIO_NUM);
 	
 	buf[0] = 0xa;
@@ -1385,7 +1425,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	buf[2] = 0;
 	buf[3] = 0x5a;
 	gsl_write_interface(ts->client,0x8,buf,4);
-	msleep(10);
+	mdelay(5);
 
 #if 0
 	gsl_reset_core(ddata->client);
@@ -1708,7 +1748,11 @@ static void gsl_report_work(struct work_struct *work)
 			
 			}
 	
-			if(test_bit(key_data, gesture_bmp)){
+			if(!test_bit(key_data, gesture_bmp)){
+				gsl_reset_core_without_vddio(client);	
+				gsl_start_core(client);
+			}
+			else {
 				gsl_gesture_c = (char)(tmp_c & 0xff);
 				gsl_gesture_status = GE_WAKEUP;
 				print_info("gsl_obtain_gesture():tmp_c=%c\n",gsl_gesture_c);
@@ -1718,8 +1762,8 @@ static void gsl_report_work(struct work_struct *work)
 				//input_report_key(tpd->dev,key_data,0);
 				input_report_key(idev,KEY_POWER,0);
 				input_sync(idev);
+				mdelay(50);
 			}
-			msleep(400);
 			goto schedule;
 		}
 #endif
@@ -1913,7 +1957,7 @@ static void gsl_ts_resume(void)
 			gsl_quit_doze(ddata);
 			{
 			int err = 0;
-			msleep(10);
+			//msleep(10);
 			err = request_irq(client->irq, gsl_ts_interrupt, IRQF_TRIGGER_RISING, client->name, ddata);
 			if (err < 0) {
 				dev_err(&client->dev, " request irq failed\n");

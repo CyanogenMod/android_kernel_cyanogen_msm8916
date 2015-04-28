@@ -1652,6 +1652,33 @@ s32 gtp_read_version(struct i2c_client *client, u16* version)
     return ret;
 }
 
+
+static int gtp_slave_address_test(struct i2c_client *client)
+{
+	u8 buf[3] = { GTP_REG_CONFIG_DATA >> 8, GTP_REG_CONFIG_DATA & 0xff };
+	int ret = -EIO;
+	struct i2c_msg msgs[2];
+       
+    GTP_DEBUG_FUNC();
+
+    msgs[0].flags = !I2C_M_RD;
+    msgs[0].addr  = client->addr;
+    msgs[0].len   = GTP_ADDR_LENGTH;
+    msgs[0].buf   = &buf[0];
+    //msgs[0].scl_rate = 300 * 1000;    // for Rockchip, etc.
+    
+    msgs[1].flags = I2C_M_RD;
+    msgs[1].addr  = client->addr;
+    msgs[1].len   = 3 - GTP_ADDR_LENGTH;
+    msgs[1].buf   = &buf[GTP_ADDR_LENGTH];
+    //msgs[1].scl_rate = 300 * 1000;
+
+   
+        ret = i2c_transfer(client->adapter, msgs, 2);
+      
+       return ret;
+}
+
 /*******************************************************
 Function:
     I2c test Function.
@@ -2474,7 +2501,12 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
         }
     }
 #endif
-
+	ret = gtp_slave_address_test(client);
+	if (ret != 2) {
+		dev_err(&client->dev, "I2C communication ERROR!\n");
+		goto exit_init_failed;
+	}
+	
     ret = gtp_i2c_test(client);
     if (ret < 0)
     {
