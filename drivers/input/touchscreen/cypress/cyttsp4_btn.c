@@ -73,6 +73,10 @@ static inline void cyttsp4_btn_key_action(struct cyttsp4_btn_data *bd,
 			si->btn[btn_no].state == btn_state)
 		return;
 
+	if (!si->btn_enabled) {
+		return;
+	}
+
 	si->btn[btn_no].state = btn_state;
 	input_report_key(bd->input, si->btn[btn_no].key_code, btn_state);
 	input_sync(bd->input);

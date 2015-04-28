@@ -573,6 +573,7 @@ struct cyttsp4_sysinfo {
 	u8 *btn_rec_data;		/* button diff count data */
 	u8 *xy_mode;			/* operational mode and status regs */
 	u8 *xy_data;			/* operational touch regs */
+	bool btn_enabled;
 };
 
 #endif /* _CYTTSP4_REGS_H */
