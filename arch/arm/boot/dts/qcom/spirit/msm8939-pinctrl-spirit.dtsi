@@ -23,30 +23,8 @@
 			/delete-property/ qcom,pins;
 		};
 
-		sms4470_host_pwrio_pin {
-			qcom,pins = <&gp 20>;
-			qcom,num-grp-pins = <1>;
-			label = "sms4470_host_pwrio_pin";
-
-			sms4470_host_pwrio_default: host_pwrio_default {
-				drive-strength = <2>;
-				bias-pull-down;
-			};
-		};
-
 		pmx_rd_nfc_int {
 			/delete-property/ qcom,pins;
-		};
-
-		sms4470_host_pwrcore_pin {
-			qcom,pins = <&gp 21>;
-			qcom,num-grp-pins = <1>;
-			label = "sms4470_host_pwrcore_pin";
-
-			sms4470_host_pwrcore_default: host_pwrcore_default {
-				drive-strength = <2>;
-				bias-pull-down;
-			};
 		};
 
 		red_led_gpio20 {
@@ -66,16 +44,6 @@
 			};
 		};
 
-		dtv_sd_sw_pin {
-			qcom,pins = <&gp 50>;
-			qcom,num-grp-pins = <1>;
-			label = "dtv_sd_sw_pin";
-			dtv_sd_sw_default: dtv_sd_sw_default {
-				drive-strength = <2>;
-				bias-pull-down;
-			};
-		};
-
 		tlmm_gpio_key {
 			qcom,pins = <&gp 107>;
 			qcom,pin-func = <0>;
@@ -86,27 +54,6 @@
 				bias-pull-up;
 			};
 			gpio_key_suspend: gpio_key_suspend {
-				drive-strength = <2>;
-				bias-pull-up;
-			};
-		};
-
-		sms4470_host_rst_pin {
-			qcom,pins = <&gp 108>;
-			qcom,num-grp-pins = <1>;
-			label = "sms4470_host_rst_pin";
-			sms4470_host_rst_default: host_rst_default {
-				drive-strength = <2>;
-				bias-pull-up;
-			};
-		};
-
-		sms4470_dtv_fm_sw_pin {
-			qcom,pins = <&gp 109>;
-			qcom,num-grp-pins = <1>;
-			label = "sms4470_dtv_fm_sw_pin";
-
-			sms4470_dtv_fm_sw_default: dtv_fm_sw_default {
 				drive-strength = <2>;
 				bias-pull-up;
 			};
@@ -126,18 +73,6 @@
 			ltr553_sleep: ltr553_sleep {
 				drive-strength = <2>;
 				bias-pull-down;
-			};
-		};
-
-		tmd27723_int_pin {
-			qcom,pins = <&gp 113>;
-			qcom,pin-func = <0>;
-			qcom,num-grp-pins = <1>;
-			label = "tmd27723-irq";
-
-			tmd27723_default: tmd27723_default {
-				drive-strength = <6>;
-				bias-pull-up;
 			};
 		};
 
