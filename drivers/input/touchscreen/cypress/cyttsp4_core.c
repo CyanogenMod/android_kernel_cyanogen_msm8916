@@ -952,6 +952,8 @@ static int cyttsp4_si_get_btn_data(struct cyttsp4_core_data *cd)
 		si->btn[btn].enabled = true;
 	}
 
+	si->btn_enabled = num_defined_keys ? true : false;
+
 	return rc;
 }
 
@@ -3928,6 +3930,35 @@ no_operation:
 	return size;
 }
 
+static ssize_t cyttsp4_btn_enabled_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct cyttsp4_core_data *cd = dev_get_drvdata(dev);
+	struct cyttsp4_sysinfo *si = &cd->sysinfo;
+	bool enable;
+
+	enable = si->btn_enabled;
+
+	return snprintf(buf, 4, "%s\n", enable ? "1" : "0");
+}
+
+static ssize_t cyttsp4_btn_enabled_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct cyttsp4_core_data *cd = dev_get_drvdata(dev);
+	struct cyttsp4_sysinfo *si = &cd->sysinfo;
+	int rc;
+	unsigned long val;
+
+	rc = kstrtoul(buf, 10, &val);
+	if (rc != 0)
+		return rc;
+
+	si->btn_enabled = val ? true : false;
+
+	return size;
+}
+
 static struct device_attribute attributes[] = {
 	__ATTR(mt_num_max_touches, S_IRUGO, cyttsp4_mt_num_max_touches_show,
 				NULL),
@@ -3947,6 +3978,8 @@ static struct device_attribute attributes[] = {
 	__ATTR(ts_info, S_IRUGO, cyttsp4_ts_info_show, NULL),
 	__ATTR(enable, S_IRUSR | S_IWUSR,
 		cyttsp4_enable_show, cyttsp4_enable_store),
+	__ATTR(btn_enabled, S_IRUSR | S_IWUSR,
+		cyttsp4_btn_enabled_show, cyttsp4_btn_enabled_store),
 };
 
 static ssize_t class_cyttsp4_ts_info_show(struct class *class,
