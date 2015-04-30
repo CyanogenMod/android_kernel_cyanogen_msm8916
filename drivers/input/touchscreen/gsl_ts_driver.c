@@ -39,7 +39,7 @@
 #include <linux/proc_fs.h>
 #include <linux/regulator/consumer.h> 
 #include <linux/of_gpio.h>
-
+#include <linux/time.h>
 #include "gsl_ts_driver.h"
 
 #ifdef GSL_REPORT_POINT_SLOT
@@ -82,6 +82,7 @@ typedef enum{
 static GE_T gsl_gesture_status = GE_DISABLE;
 static volatile unsigned int gsl_gesture_flag = 0;
 static char gsl_gesture_c = 0;
+struct timeval startup;
 #endif
 
 static volatile int gsl_halt_flag = 0;
@@ -189,22 +190,19 @@ static struct gsl_ts_data *ddata = NULL;
 
 static int gsl_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 num)
 {
-
 	int err = 0;
 	u8 temp = reg;
 	mutex_lock(&gsl_i2c_lock);
 	if(temp < 0x80)
 	{
-		temp = (temp+8)&0x5c;
-			i2c_master_send(client,&temp,1);	
-			err = i2c_master_recv(client,&buf[0],4);
-			
-			temp = reg;
-			i2c_master_send(client,&temp,1);	
-			err = i2c_master_recv(client,&buf[0],4);
+		i2c_master_send(client,&temp,1);
+		err = i2c_master_recv(client,&buf[0],num);
 	}
-	i2c_master_send(client,&reg,1);
-	err = i2c_master_recv(client,&buf[0],num);
+	else
+	{
+		i2c_master_send(client,&temp,1);
+		err = i2c_master_recv(client,&buf[0],num);
+	}
 	mutex_unlock(&gsl_i2c_lock);
 	return (err == num)?1:-1;
 }
@@ -337,73 +335,51 @@ static int gsl_ts_read(struct i2c_client *client, u8 addr, u8 *pdata,
 static unsigned int gsl_read_oneframe_data(unsigned int *data,
 				unsigned int addr,unsigned int len)
 {
-	u8 buf[4];
-	int i;
+	int i = 0;
+	u8 reg_a[4]={0x0a,0x00,0x00,0x00};
+	u8 buf_a5[4]={0x00,0x00,0x00,0xa5};
+	u8 buf_zero[4]={0x00,0x00,0x00,0x00};
+	u32 buf32;
+	struct timeval start;
+	struct timeval end;
+
 	printk("tp-gsl-gesture %s\n",__func__);
 	printk("gsl_read_oneframe_data:::addr=%x,len=%x\n",addr,len);
 
-	for(i = 0; i < len; i ++)
+	while(1)
 	{
-		buf[0] = ((addr+i*4)/0x80)&0xff;
-		buf[1] = (((addr+i*4)/0x80)>>8)&0xff;
-		buf[2] = (((addr+i*4)/0x80)>>16)&0xff;
-		buf[3] = (((addr+i*4)/0x80)>>24)&0xff;
-		gsl_ts_write(ddata->client,0xf0,buf,4);
-		if(gsl_ts_read(ddata->client,(addr+i*4)%0x80,(char *)&data[i],4) < 0){
-			//printk("the first i2c read failed and need read again!\n");	
-			gsl_ts_read(ddata->client,(addr+i*4)%0x80,(char *)&data[i],4);
+		gsl_ts_write(ddata->client,0xf0,&reg_a[0], 4);
+		buf_a5[2] = i;
+		gsl_ts_write(ddata->client,0x08,&buf_a5[0], 4);
+		do_gettimeofday(&start);
+		while(1)
+		{
+			gsl_ts_read(ddata->client,0xbc,(u8 *)&buf32,4);
+			if((buf32 & 0xffff) == 0xa500+i)
+			{
+				int k;
+				for(k=0;k<15;k++)
+				{
+					gsl_ts_read(ddata->client,0x80+k*4,(u8 *)&buf32,4);
+					data[i] = buf32;
+					if(++i >= len)
+					{
+						gsl_ts_write(ddata->client,0xf0,&reg_a[0], 4);
+						gsl_ts_write(ddata->client,0x08,&buf_zero[0], 4);
+						return 1;
+					}
+				}
+				break;
+			}
+			do_gettimeofday(&end);
+			if(((end.tv_sec-start.tv_sec)*1000+(end.tv_usec-start.tv_usec)/1000) < 100)
+				continue;
+			gsl_ts_write(ddata->client,0xf0,&reg_a[0], 4);
+			gsl_ts_write(ddata->client,0x08,&buf_zero[0], 4);
+			return 0;
 		}
 	}
-	#if 0
-	for(i=0;i<len/2;i++){
-		buf[0] = ((addr+i*8)/0x80)&0xff;
-		buf[1] = (((addr+i*8)/0x80)>>8)&0xff;
-		buf[2] = (((addr+i*8)/0x80)>>16)&0xff;
-		buf[3] = (((addr+i*8)/0x80)>>24)&0xff;
-		gsl_ts_write(ddata->client,0xf0,buf,4);
-		gsl_ts_read(ddata->client,(addr+i*8)%0x80,(u8 *)&data[i*2],8);
-	}
-	if(len%2){
-		buf[0] = ((addr+len*4 - 4)/0x80)&0xff;
-		buf[1] = (((addr+len*4 - 4)/0x80)>>8)&0xff;
-		buf[2] = (((addr+len*4 - 4)/0x80)>>16)&0xff;
-		buf[3] = (((addr+len*4 - 4)/0x80)>>24)&0xff;
-		gsl_ts_write(ddata->client,0xf0,buf,4);
-		gsl_ts_read(ddata->client,(addr+len*4 - 4)%0x80,(u8 *)&data[len-1],4);
-	}
-	#endif
-
-	#if 0
-    i = 0;
-    while(i < len)
-    {
-        buf[0] = ((addr + i*4)/0x80)&0xff;
-        buf[1] = (((addr + i*4)/0x80)>>8)&0xff;
-        buf[2] = (((addr + i*4)/0x80)>>16)&0xff;
-        buf[3] = (((addr + i*4)/0x80)>>24)&0xff;
-        gsl_write_interface(ddata->client, 0xf0, buf, 4);
-        if(len - i > READ_LEN){
-	printk("why===========gesture==============read begin:READ_LEN*4 == :%d\n",READ_LEN*4);
-            gsl_read_interface(ddata->client, (addr+i*4)%0x80, (char *)&data[i], READ_LEN*4);
-	printk("why===========gesture==============read end : READ_LEN*4 == :%d\n",READ_LEN*4);
-		}
-        else{
-	printk("why===========gesture2=============rade begin:(len - i)*4 == :%d\n",(len - i)*4);
-            gsl_read_interface(ddata->client, (addr+i*4)%0x80, (char *)&data[i], (len - i)*4);
-	printk("why===========gesture2=============read end\n");
-        i += READ_LEN;
-    }
-	}
-	#endif
-
-	#if 0
-	for(i=0;i<len;i++){
-	printk("gsl_read_oneframe_data =%x\n",data[i]);	
-	printk("gsl_read_oneframe_data =%x\n",data[len-1]);
-	}
-	#endif
-	
-	return len;
+	return 1;
 }
 #endif
 
@@ -460,14 +436,16 @@ static void gsl_start_core(struct i2c_client *client)
 	gsl_DataInit(gsl_cfg_table[gsl_cfg_index].data_id);
 	}
 #endif	
+	do_gettimeofday(&startup);
 }
 
 static void gsl_reset_core(struct i2c_client *client)
 {
 	u8 buf[4] = {0x00};
 	
-	buf[0] = 0x88;
-	gsl_write_interface(client,0xe0,buf,4);
+	gpio_set_value(GSL_RST_GPIO_NUM,0);
+	mdelay(2);
+	gpio_set_value(GSL_RST_GPIO_NUM,1);
 	mdelay(2);
 
 	buf[0] = 0x04;
@@ -485,8 +463,10 @@ static void gsl_reset_core_without_vddio(struct i2c_client *client)
 {
 	u8 buf[4] = {0x00};
 	
-	buf[0] = 0x88;
-	gsl_write_interface(client,0xe0,buf,4);
+	gpio_set_value(GSL_RST_GPIO_NUM,0);
+	mdelay(2);
+	gpio_set_value(GSL_RST_GPIO_NUM,1);
+
 	mdelay(2);
 
 	buf[0] = 0x04;
@@ -500,9 +480,11 @@ static void gsl_reset_core_without_vddio(struct i2c_client *client)
 static void gsl_clear_reg(struct i2c_client *client)
 {
 	u8 buf[4]={0};
-	//clear reg
-	buf[0]=0x88;
-	gsl_write_interface(client,0xe0,buf,4);
+
+	gpio_set_value(GSL_RST_GPIO_NUM,0);
+	mdelay(2);
+	gpio_set_value(GSL_RST_GPIO_NUM,1);
+
 	mdelay(10);
 	buf[0]=0x3;
 	gsl_write_interface(client,0x80,buf,4);
@@ -1630,13 +1612,21 @@ static void gsl_report_work(struct work_struct *work)
 		//print_info("GSL:::0x80=%02x%02x%02x%02x[%d]\n",buf[3],buf[2],buf[1],buf[0],test_count++);
 		//print_info("GSL:::0x84=%02x%02x%02x%02x\n",buf[7],buf[6],buf[5],buf[4]);
 		//print_info("GSL:::0x88=%02x%02x%02x%02x\n",buf[11],buf[10],buf[9],buf[8]);
+		{
+			struct timeval now;
+			do_gettimeofday(&now);
+			if(((now.tv_sec-startup.tv_sec)*1000+(now.tv_usec-startup.tv_usec)/1000) <= 100)
+			{
+				printk("gsl_report_work: delta time <= 100.\n");
+				goto schedule;
+			}
+		}
 	#endif
 	
 	/* read data from DATA_REG */
 	rc = gsl_read_interface(client, 0x80, buf, 44);
 	if (rc < 0) 
 	{
-		dev_err(&client->dev, "[gsl] I2C read failed\n");
 		goto schedule;
 	}
 
