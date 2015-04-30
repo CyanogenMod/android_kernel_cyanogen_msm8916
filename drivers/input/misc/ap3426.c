@@ -1251,13 +1251,13 @@ static int ap3426_init_client(struct i2c_client *client)
 
     i2c_smbus_write_byte_data(client, 0x1C, 0xFF);
     i2c_smbus_write_byte_data(client, 0x1D, 0XFF);
-		/*psensor high low thread*/
-	//low
-    i2c_smbus_write_byte_data(client, 0x2A, 0x50);
+    /*psensor high low thread*/
+    //low
+    i2c_smbus_write_byte_data(client, 0x2A, 0xa0);
     i2c_smbus_write_byte_data(client, 0x2B, 0x00);
-	//hight
-    i2c_smbus_write_byte_data(client, 0x2C, 0xA0);
-    i2c_smbus_write_byte_data(client, 0x2D, 0x00);
+    //hight
+    i2c_smbus_write_byte_data(client, 0x2C, 0x30);
+    i2c_smbus_write_byte_data(client, 0x2D, 0x01);
 #if 0
     /* read all the registers once to fill the cache.
      * if one of the reads fails, we consider the init failed */
