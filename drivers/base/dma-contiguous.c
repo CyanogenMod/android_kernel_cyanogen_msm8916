@@ -363,7 +363,11 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
 	}
 
 	if (sel_size) {
+#ifdef CONFIG_MACH_T86519A1
+		phys_addr_t base = 0x00000000b4c00000;
+#else
 		phys_addr_t base = 0;
+#endif
 		pr_debug("%s: reserving %ld MiB for global area\n", __func__,
 			 (unsigned long)sel_size / SZ_1M);
 
