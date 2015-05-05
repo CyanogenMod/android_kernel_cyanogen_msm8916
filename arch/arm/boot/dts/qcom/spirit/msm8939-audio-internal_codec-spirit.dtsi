@@ -23,5 +23,6 @@
 			"AMIC1", "MIC BIAS Internal1",
 			"AMIC2", "MIC BIAS Internal2",
 			"AMIC3", "MIC BIAS Internal3";
+		/delete-property/ qcom,cdc-us-euro-gpios;
 	};
 };
