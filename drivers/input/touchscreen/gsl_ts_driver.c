@@ -207,6 +207,28 @@ static int gsl_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 nu
 	return (err == num)?1:-1;
 }
 
+static int gsl_ito_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 num)
+{
+	int err = 0;
+	u8 temp = reg;
+	mutex_lock(&gsl_i2c_lock);
+	if(temp < 0x80)
+	{
+		temp = (temp+8)&0x5c;
+			i2c_master_send(client,&temp,1);	
+			err = i2c_master_recv(client,&buf[0],4);
+			
+			temp = reg;
+			i2c_master_send(client,&temp,1);	
+			err = i2c_master_recv(client,&buf[0],4);
+	}
+	i2c_master_send(client,&reg,1);
+	err = i2c_master_recv(client,&buf[0],num);
+	mutex_unlock(&gsl_i2c_lock);
+	return (err == num)?1:-1;
+
+}
+
 static int gsl_write_interface(struct i2c_client *client, const u8 reg, u8 *buf, u32 num)
 {
 	struct i2c_msg xfer_msg[1];
@@ -512,7 +534,7 @@ void gsl_I2C_ROnePage(unsigned int addr, char *buf)
 	gsl_ts_read(ddata->client,0,buf,128);
 	#else
 	gsl_write_interface(ddata->client,0xf0,tmp_buf,4);
-	gsl_read_interface(ddata->client,0,buf,128);
+	gsl_ito_read_interface(ddata->client,0,buf,128);
 	#endif
 }
 EXPORT_SYMBOL(gsl_I2C_ROnePage);
@@ -528,7 +550,7 @@ void gsl_I2C_RTotal_Address(unsigned int addr,unsigned int *data)
 	gsl_ts_read(ddata->client,addr%0x80,tmp_buf,4);
 	#else
 	gsl_write_interface(ddata->client,0xf0,tmp_buf,4);
-	gsl_read_interface(ddata->client,addr%0x80,tmp_buf,4);
+	gsl_ito_read_interface(ddata->client,addr%0x80,tmp_buf,4);
 	#endif
 	*data = tmp_buf[0]|(tmp_buf[1]<<8)|(tmp_buf[2]<<16)|(tmp_buf[3]<<24);
 }
@@ -550,7 +572,7 @@ static void gsl_read_MorePage(struct i2c_client *client,u32 addr,u8 *buf,u32 num
 		tmp_buf[3]=(char)(((addr+i*8)/0x80)>>24);
 		gsl_write_interface(client,0xf0,tmp_buf,4);
 		tmp_addr = (char)((addr+i*8)%0x80);
-		gsl_read_interface(client,tmp_addr,(buf+i*8),8);
+		gsl_ito_read_interface(client,tmp_addr,(buf+i*8),8);
 	}
 	if(i*8<num){
 		tmp_buf[0]=(char)((addr+i*8)/0x80);
@@ -559,7 +581,7 @@ static void gsl_read_MorePage(struct i2c_client *client,u32 addr,u8 *buf,u32 num
 		tmp_buf[3]=(char)(((addr+i*8)/0x80)>>24);
 		gsl_write_interface(client,0xf0,tmp_buf,4);
 		tmp_addr = (char)((addr+i*8)%0x80);
-		gsl_read_interface(client,tmp_addr,(buf+i*8),4);
+		gsl_ito_read_interface(client,tmp_addr,(buf+i*8),4);
 	}
 }
 #endif
@@ -2147,13 +2169,13 @@ static ssize_t gsl_openshort_proc_read(struct file *file, char __user *buf,size_
 	{
 		printk("tp test pass\n");
 		//sprintf(ptr, "result=%d\n", 1);
-		ptr += sprintf(ptr, "%d\n", 1);
+		ptr += sprintf(ptr, "%d", 1);
 	}
 	else
 	{
 		printk("tp test failure\n");
 		//sprintf(ptr, "result=%d\n", 0);
-		ptr += sprintf(ptr, "%d\n", 0);
+		ptr += sprintf(ptr, "%d", 0);
 	}
 	return test_result;
 }
