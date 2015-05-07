@@ -565,8 +565,7 @@ static int st480_set_enable(struct st480_data *st480, bool on)
 
 static int st480_set_poll_delay(struct st480_data *st480, unsigned int msecs)
 {
-	if (msecs <= 40)
-		msecs = ST480_DEFAULT_DELAY;
+	msecs = ST480_DEFAULT_DELAY;
 
 	write_lock(&st480->lock);
 	st480->poll_interval = msecs;
