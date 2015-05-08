@@ -54,5 +54,17 @@
 				bias-disable;		  /* No PULL */
 			};
 		};
+
+		ovp-id-pin {
+			qcom,pins = <&gp 110>;
+			qcom,num-grp-pins = <1>;
+			qcom,pin-func = <0>;
+			label = "ovp-id-pin";
+			ovp_default: ovp-irq {
+				drive-strength = <8>;
+				bias-pull-up;
+			};
+		};
+
 	};
 };
