@@ -755,6 +755,17 @@ config SENSORS_LTR553
 	  To compile this driver as a module, choose M here: the
 	  module will be called ltr553.
 
+config SENSORS_LTR559
+	tristate "LTR559 light and proximity device driver"
+	depends on I2C
+	default n
+	help
+	  Say Y here you want to enable for the liteon ltr559
+	  light and proximity sensors driver.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ltr559.
+
 config SENSORS_MMC3416X
 	tristate "MMC3416xPJ 3-axis magnetic sensor driver"
 	depends on I2C
@@ -837,6 +848,26 @@ config SENSORS_BMA2X2_HRT
 	help
 	 If you say yes here, you use high resolution timer to trigger
 	 sensor data report.
+
+config SENSORS_BMM050
+	tristate "BMM050 Magnetic Sensor Driver"
+	depends on I2C
+	help
+	  If you say yes here, you get support for Bosch Sensortec's
+	  sensor BMM050 Magnetic Sensor
+
+config SENSORS_BMG
+	tristate "Bosch Gyroscope Sensor Driver"
+	depends on I2C
+	help
+	  If you say yes here, you get support for Bosch Sensortec's
+	  gyroscope sensor drivers of BMG160/BMI055/BMI058 e.t.c.
+
+config SENSORS_BMG_FIFO
+	bool "Bosch Gyroscope FIFO Support"
+	depends on SENSORS_BMG
+	help
+	  If you say yes here, you get support for Gyroscope sensor FIFO operations.
 
 config SIG_MOTION
 	tristate "support significant motion sensor function"

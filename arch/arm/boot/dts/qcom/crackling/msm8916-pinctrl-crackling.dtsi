@@ -66,5 +66,21 @@
 			};
 		};
 
+		ltr559_int_pin {
+			qcom,pins = <&gp 115>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <1>;
+			label = "ltr559-irq";
+			ltr_default: ltr_default {
+			drive-strength = <6>;
+			bias-pull-up;
+			};
+			ltr_sleep: ltr_sleep {
+				drive-strength = <2>;
+				bias-pull-down;
+			};
+		};
+
+
 	};
 };
