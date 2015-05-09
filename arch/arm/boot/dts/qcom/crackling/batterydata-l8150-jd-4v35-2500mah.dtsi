@@ -7,7 +7,7 @@ qcom,l8150-jd-4v35-2500mah-data {
 	qcom,v-cutoff-uv = <3400000>;
 	qcom,chg-term-ua = <100000>;
 	qcom,batt-id-kohm = <470>;
-	qcom,battery-type = "qrd_4v35_2500mah";
+	qcom,battery-type = "jd_4v35_2500mah";
 
 	qcom,fcc-temp-lut {
 		qcom,lut-col-legend = <(-20) 0 25 40 60>;

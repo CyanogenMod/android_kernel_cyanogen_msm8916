@@ -17,7 +17,7 @@
 #include "crackling/msm8916-crackling.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. MSM 8916 QRD SKUI";
+	model = "Qualcomm Technologies, Inc. MSM 8916 L8152";
 	compatible = "qcom,msm8916-qrd-skui", "qcom,msm8916-qrd", "qcom,msm8916", "qcom,qrd";
 	qcom,board-id = <0x1000b 9> , <0x1010b 9> , <0x3010b 9>;
 };
@@ -156,7 +156,7 @@
 	qcom,vinmin-mv = <4470>;
 	qcom,bms-controlled-charging;
 	qcom,disable-vbatdet-based-recharge;
-	qcom,ibatsafe-ma = <950>;
+	qcom,cfg-current-limited = <900>;
 
 	qcom,usbin-ovp-irq = <&msm_gpio 110 0>;
 	pinctrl-names = "ovp-irq";
@@ -165,7 +165,7 @@
 };
 
 / {
-	mtp_batterydata: qcom,battery-data {
+	l8152_batterydata: qcom,battery-data {
 		qcom,rpull-up-kohm = <100>;
 		qcom,vref-batt-therm = <1800000>;
 
@@ -178,5 +178,13 @@
 	qcom,resume-soc = <95>;
 	qcom,use-reported-soc;
 	qcom,force-bms-active-on-charger;
-	qcom,battery-data = <&mtp_batterydata>;
+	qcom,battery-data = <&l8152_batterydata>;
 };
+
+&pm8916_vadc {
+	chan@30 {
+		// SCALE_QRD_BATT_THERM @ include/linux/qpnp/qpnp-adc.h
+		qcom,scale-function = <6>;
+	};
+};
+
