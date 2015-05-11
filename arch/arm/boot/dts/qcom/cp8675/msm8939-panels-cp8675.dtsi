@@ -13,3 +13,5 @@
 #include "dsi-panel-hx8394a-lide-lg-hd-550-video.dtsi"
 #include "dsi-panel-otm1283a-boyi-lg-hd-550-video.dtsi"
 #include "dsi-panel-otm1283a-lide-cpt-hd-550-video.dtsi"
+#include "dsi-panel-nt35596-yashi-otp-id22-auo-fhd-550-video.dtsi"
+#include "dsi-panel-r63315-tianma-tm-fhd-550-video.dtsi"
