@@ -1186,6 +1186,7 @@ try_onemore:
 			f2fs_msg(sb, KERN_WARNING,
 					"mounting with \"discard\" option, but "
 					"the device does not support discard");
+		clear_opt(sbi, DISCARD);
 	}
 
 	sbi->s_kobj.kset = f2fs_kset;
