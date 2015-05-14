@@ -622,7 +622,7 @@ static int gsl_config_read_proc(struct seq_file *m,void *v)
 		else 
 		{
 			gsl_write_interface(ddata->client,0xf0,&gsl_data_proc[4],4);
-			gsl_read_interface(ddata->client,gsl_data_proc[0],temp_data,4);
+			gsl_ito_read_interface(ddata->client,gsl_data_proc[0],temp_data,4);
 			seq_printf(m,"offset : {0x%02x,0x",gsl_data_proc[0]);
 			seq_printf(m,"%02x",temp_data[3]);
 			seq_printf(m,"%02x",temp_data[2]);
@@ -1377,7 +1377,7 @@ static DEVICE_ATTR(proximity_sensor_status, 0777, show_proximity_sensor_status,N
 
 
 #ifdef GSL_GESTURE
-static void gsl_enter_doze(struct gsl_ts_data *ts)
+static void gsl_enter_doze(struct gsl_ts_data *ts, bool bCharacterGesture)
 {
 	u8 buf[4] = {0};
 #if 0
@@ -1396,8 +1396,12 @@ static void gsl_enter_doze(struct gsl_ts_data *ts)
 	gsl_write_interface(ts->client,0xf0,buf,4);
 	buf[0] = 0;
 	buf[1] = 0;
-	buf[2] = 0x1;
+	buf[2] = 0x3;
 	buf[3] = 0x5a;
+	if(bCharacterGesture == true)
+	{
+		buf[2] = 0x1;	
+	}
 	gsl_write_interface(ts->client,0x8,buf,4);
 	//gsl_gesture_status = GE_NOWORK;
 	msleep(10);
@@ -1456,6 +1460,10 @@ static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 		disable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '1'){
 		gsl_gesture_flag = 1;
+		enable_irq_wake(gsl_client->irq);
+	}else if(buf[0] == '2'){
+	//enable character gesture
+		gsl_gesture_flag = 2;
 		enable_irq_wake(gsl_client->irq);
 	}
 #endif
@@ -1711,7 +1719,7 @@ static void gsl_report_work(struct work_struct *work)
 /* Gesture Resume */
 #ifdef GSL_GESTURE
 	
-		if(GE_ENABLE == gsl_gesture_status && gsl_gesture_flag == 1){
+		if(GE_ENABLE == gsl_gesture_status && ((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2))){
 			int tmp_c;
 			u8 key_data = 0;
 			tmp_c = gsl_obtain_gesture();
@@ -1917,7 +1925,12 @@ static void gsl_ts_suspend(void)
 /*Guesture Resume*/
 #ifdef GSL_GESTURE
 		if(gsl_gesture_flag == 1){
-			gsl_enter_doze(ddata);
+			gsl_enter_doze(ddata, false);
+			return;
+		}
+		else if(gsl_gesture_flag == 2)
+		{
+			gsl_enter_doze(ddata, true);
 			return;
 		}
 		else
@@ -1965,7 +1978,7 @@ static void gsl_ts_resume(void)
 
 	/*Gesture Resume*/
 	#ifdef GSL_GESTURE
-		if(gsl_gesture_flag == 1){
+		if((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2)){
 			gsl_quit_doze(ddata);
 			{
 			int err = 0;
