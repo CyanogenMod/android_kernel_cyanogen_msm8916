@@ -40,7 +40,7 @@
 #include <linux/ktime.h>
 #include <linux/sensors.h>
 #include <linux/version.h>
-
+#include <linux/delay.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_device.h>
@@ -418,7 +418,7 @@ struct lsm6dx0_status {
 	uint32_t sensitivity_gyr;
 
 	int32_t accel_cali[3];
-
+	int32_t gyr_cali[3];
 	int32_t irq1;
 	struct work_struct irq1_work;
 	struct workqueue_struct *irq1_work_queue;
@@ -616,7 +616,7 @@ static struct status_registers {
 		{.address = INT_GEN_DUR_G,	.default_val = DEF_ZERO,},
 };
 /*****************************************************************************/
-
+static int32_t lsm6dx0_gyr_get_data(struct lsm6dx0_status *stat, int32_t *xyz);
 static int32_t lsm6dx0_acc_get_data(struct lsm6dx0_status *stat, int32_t *xyz);
 
 static int32_t lsm6dx0_i2c_write(struct lsm6dx0_status *stat, uint8_t *buf,
@@ -1590,6 +1590,66 @@ static int lsm6d_acc_cdev_calibrate(struct sensors_classdev *sensors_cdev,
 	return 0;
 }
 
+static int lsm6d_gyr_cdev_calibrate(struct sensors_classdev *sensors_cdev,int axis,int apply_now)
+{
+	int32_t ret,gyr_data[3] = {0,0,0};
+	 long int sum_x,sum_y,sum_z;
+	int32_t i = 0;
+	struct lsm6dx0_status *stat = container_of(sensors_cdev,struct lsm6dx0_status,gyr_cdev);
+
+	sum_x = 0;
+	sum_y = 0;
+	sum_z = 0;
+
+	for(i=0; i<100; i++)
+	{
+		msleep(1);
+		ret = lsm6dx0_gyr_get_data(stat,gyr_data);
+		if(ret < 0){
+			dev_err(&stat->client->dev,"get gyr data error!\n");
+			return ret;
+		}
+		sum_x += gyr_data[0];
+		sum_y += gyr_data[1];
+		sum_z += gyr_data[2];
+	}
+	gyr_data[0] = sum_x/100;
+	gyr_data[1] = sum_y/100;
+	gyr_data[2] = sum_z/100;
+	
+	stat->gyr_cali[0] = -gyr_data[0];
+	stat->gyr_cali[1] = -gyr_data[1];
+	stat->gyr_cali[2] = -gyr_data[2];
+	if (sensors_cdev->params == NULL) {
+		sensors_cdev->params = devm_kzalloc(&stat->client->dev, 64, GFP_KERNEL);
+		if (sensors_cdev->params == NULL) {
+			dev_err(&stat->client->dev, "acc sensor_cdev allocate memory error!\n");
+			return -EBUSY;
+		}
+	}
+	snprintf(sensors_cdev->params,64,"%d,%d,%d",stat->gyr_cali[0],stat->gyr_cali[1],stat->gyr_cali[2]);
+	dev_dbg(&stat->client->dev,"sensor calibration offset:%s\n",sensors_cdev->params);
+
+	return 0;
+}
+static int lsm6d_gyr_cdev_write_cal_params(struct sensors_classdev *sensors_cdev,struct cal_result_t *cal_result)
+{
+    struct lsm6dx0_status *stat = container_of(sensors_cdev,struct lsm6dx0_status,gyr_cdev);
+
+	if (sensors_cdev->params == NULL) {
+		sensors_cdev->params = devm_kzalloc(&stat->client->dev, 128, GFP_KERNEL);
+		if (sensors_cdev->params == NULL) {
+			dev_err(&stat->client->dev, "acc sensor_cdev allocate memory error!\n");
+			return -EBUSY;
+		}
+	}
+	stat->gyr_cali[0] = cal_result->offset[0];
+	stat->gyr_cali[1] = cal_result->offset[1];
+	stat->gyr_cali[2] = cal_result->offset[2];
+
+	snprintf(sensors_cdev->params, 64, "%d,%d,%d",stat->gyr_cali[0],stat->gyr_cali[1],stat->gyr_cali[2]);
+	return 0;
+}
 static int	lsm6d_acc_cdev_write_cal_params(struct sensors_classdev
 		*sensors_cdev, struct cal_result_t *cal_result)
 {
@@ -1786,9 +1846,9 @@ static void lsm6dx0_acc_report_values(struct lsm6dx0_status *stat,
 static void lsm6dx0_gyr_report_values(struct lsm6dx0_status *stat,
 								int32_t *xyz)
 {
-	input_report_abs(stat->input_dev_gyr, ABS_RX, xyz[0]);
-	input_report_abs(stat->input_dev_gyr, ABS_RY, xyz[1]);
-	input_report_abs(stat->input_dev_gyr, ABS_RZ, xyz[2]);
+	input_report_abs(stat->input_dev_gyr, ABS_RX, xyz[0] + stat->gyr_cali[0]);
+	input_report_abs(stat->input_dev_gyr, ABS_RY, xyz[1] + stat->gyr_cali[1]);
+	input_report_abs(stat->input_dev_gyr, ABS_RZ, xyz[2] + stat->gyr_cali[2]);
 	input_sync(stat->input_dev_gyr);
 }
 
@@ -2862,6 +2922,8 @@ static int32_t lsm6dx0_acc_gyr_probe(struct i2c_client *client,
 	stat->gyr_cdev = sensors_gyro_cdev;
 	stat->gyr_cdev.sensors_enable = lsm6d_gyr_cdev_set_enable;
 	stat->gyr_cdev.sensors_poll_delay = lsm6d_gyr_cdev_set_poll_delay;
+	stat->gyr_cdev.sensors_calibrate = lsm6d_gyr_cdev_calibrate;
+	stat->gyr_cdev.sensors_write_cal_params = lsm6d_gyr_cdev_write_cal_params;
 	stat->ktime_gyr = ktime_set(0, MS_TO_NS(sensors_gyro_cdev.delay_msec));
 	err = sensors_classdev_register(&client->dev, &stat->gyr_cdev);
 	if (err < 0) {
