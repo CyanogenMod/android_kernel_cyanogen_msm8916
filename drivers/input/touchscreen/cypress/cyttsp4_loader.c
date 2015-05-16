@@ -785,6 +785,7 @@ static int _cyttsp4_load_app(struct cyttsp4_device *ttsp, const u8 *fw,
 				row_image->row_num, retval);
 			goto _cyttsp4_load_app_exit;
 		}
+		mdelay(1);
 
 		/* verify row */
 		retval = _cyttsp4_ldr_verify_row(ttsp, row_image);
@@ -816,6 +817,7 @@ static int _cyttsp4_load_app(struct cyttsp4_device *ttsp, const u8 *fw,
 
 	/* exit loader */
 bl_exit:
+	mdelay(1);
 	dev_info(dev,
 			"%s: Send BL Loader Terminate\n", __func__);
 	ret = _cyttsp4_ldr_exit(ttsp);

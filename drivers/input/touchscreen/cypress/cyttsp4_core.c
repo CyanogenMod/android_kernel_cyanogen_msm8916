@@ -3152,6 +3152,7 @@ reset:
 			__func__, cd->core->adap->id, rc);
 		RETRY_OR_EXIT(retry--, reset, exit);
 	}
+	mdelay(1);
 
 	rc = cyttsp4_wait_sysinfo_mode(cd);
 	if (rc < 0) {
@@ -4247,7 +4248,10 @@ static int cyttsp4_core_probe(struct cyttsp4_core *core)
 		goto err_debug_dir;
 	}
 
-	snprintf(cd->ts_info, CY_INFO_MAX_LEN,
+	if(true == cd->invalid_touch_app) {
+		snprintf(ts_info, CY_INFO_MAX_LEN, "no sys info\n");
+	} else {
+		snprintf(cd->ts_info, CY_INFO_MAX_LEN,
 			"controller\t\t= cypress\n"
 			"name\t\t\t= TMA463\n"
 			"num_max_touches\t\t= %d\n"
@@ -4259,9 +4263,10 @@ static int cyttsp4_core_probe(struct cyttsp4_core *core)
 			cd->sysinfo.si_ptrs.cydata->fw_ver_major,
 			cd->sysinfo.si_ptrs.cydata->fw_ver_minor);
 
-	snprintf(ts_info, CY_INFO_MAX_LEN,
+		snprintf(ts_info, CY_INFO_MAX_LEN,
 			"cypress_TMA463,ttconfig_ver:%d\n",
 			cd->sysinfo.ttconfig.version);
+	}
 
 	device_init_wakeup(dev, 1);
 	cd->suspended = false;
