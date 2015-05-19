@@ -298,7 +298,7 @@
 		qcom,rpull-up-kohm = <68>;
 		qcom,vref-batt-therm = <1800000>;
 
-		#include "g36c1h/batterydata-qrd-mp-4v2-2000mah.dtsi"
+		#include "batterydata-qrd-mp-4v2-2000mah.dtsi"
 	};
 };
 
