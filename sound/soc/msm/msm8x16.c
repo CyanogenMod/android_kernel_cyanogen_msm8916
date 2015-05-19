@@ -2357,8 +2357,8 @@ static struct snd_soc_dai_link msm8x16_dai[] = {
 		.cpu_dai_name = "msm-dai-q6-mi2s.3",
 		.platform_name = "msm-pcm-routing",
 #ifdef CONFIG_MACH_T86519A1
-		.codec_name = "wm8998-codec",
-		.codec_dai_name = "wm8998-aif1",
+		.codec_name = "vegas-codec",
+		.codec_dai_name = "vegas-aif1",
 		.init = &wm8998_init,
 		.dai_fmt = SND_SOC_DAIFMT_I2S
 			| SND_SOC_DAIFMT_NB_NF
