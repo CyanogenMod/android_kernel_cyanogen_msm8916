@@ -33,14 +33,14 @@
 #include "../codecs/msm8x16-wcd.h"
 #include "../codecs/wcd9306.h"
 #ifdef CONFIG_MACH_T86519A1
-#include "../codecs/wm8998.h"
+#include "../codecs/vegas.h"
 #endif
 #define DRV_NAME "msm8x16-asoc-wcd"
 
 #ifdef CONFIG_MACH_T86519A1
-#define MSM_WM8998_FLL_CLK_SOURCE ARIZONA_FLL_SRC_MCLK1
-#define MSM_WM8998_FLL_CLK_FREQ ( 48000 * 512 * 2 )
-#define MSM_WM8998_SYS_CLK_FREQ ( 48000 * 512 * 2 )
+#define MSM_VEGAS_FLL_CLK_SOURCE ARIZONA_FLL_SRC_MCLK1
+#define MSM_VEGAS_FLL_CLK_FREQ ( 48000 * 512 * 2 )
+#define MSM_VEGAS_SYS_CLK_FREQ ( 48000 * 512 * 2 )
 static struct snd_soc_codec *wm8998;
 static int previous_bias_level = SND_SOC_BIAS_OFF;
 #endif
@@ -1704,21 +1704,21 @@ static int wm8998_snd_startup_clk(void)
 		pr_err("failed to enable mclk\n");
 		return ret;
 	}
-	snd_soc_codec_set_pll(wm8998, WM8998_FLL1_REFCLK,
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1_REFCLK,
 					 ARIZONA_FLL_SRC_NONE,
 					 0, 0);
-	snd_soc_codec_set_pll(wm8998, WM8998_FLL1,
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1,
 				ARIZONA_FLL_SRC_NONE, 0, 0);
 
 	pr_debug("arizona  %s->%d\n", __FUNCTION__, __LINE__);
-	ret = snd_soc_codec_set_pll(wm8998, WM8998_FLL1,
-			MSM_WM8998_FLL_CLK_SOURCE,
-			19200000, MSM_WM8998_FLL_CLK_FREQ);
+	ret = snd_soc_codec_set_pll(wm8998, VEGAS_FLL1,
+			MSM_VEGAS_FLL_CLK_SOURCE,
+			19200000, MSM_VEGAS_FLL_CLK_FREQ);
 
 	pr_debug("arizona wm8998_snd_startup Start to set SYSCLK\n");
 	ret = snd_soc_codec_set_sysclk( wm8998, ARIZONA_CLK_SYSCLK,
 			ARIZONA_CLK_SRC_FLL1,
-			MSM_WM8998_SYS_CLK_FREQ,
+			MSM_VEGAS_SYS_CLK_FREQ,
 			SND_SOC_CLOCK_IN);
 
 	if (ret != 0) {
@@ -1726,8 +1726,8 @@ static int wm8998_snd_startup_clk(void)
 		return ret;
 	}
 	ret = snd_soc_codec_set_sysclk( wm8998, ARIZONA_CLK_OPCLK,
-					MSM_WM8998_FLL_CLK_SOURCE,
-					MSM_WM8998_SYS_CLK_FREQ,
+					MSM_VEGAS_FLL_CLK_SOURCE,
+					MSM_VEGAS_SYS_CLK_FREQ,
 					SND_SOC_CLOCK_OUT);
 	if (ret != 0) {
 		pr_err("arizona Failed to start OPCLK  %d\n", ret);
@@ -1741,10 +1741,10 @@ static int wm8998_snd_shutdown_clk(void)
 {
 	int ret = 0;
 
-	snd_soc_codec_set_pll(wm8998, WM8998_FLL1_REFCLK,
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1_REFCLK,
 		ARIZONA_FLL_SRC_NONE, 0, 0);
 
-	snd_soc_codec_set_pll(wm8998, WM8998_FLL1,
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1,
 		ARIZONA_FLL_SRC_NONE, 0, 0);
 
 	ret = msm8x16_enable_codec_ext_clk_wm8998(wm8998, 0, true);
@@ -1837,7 +1837,7 @@ static int wm8998_init(struct snd_soc_pcm_runtime *rtd)
 	 * If we set the fll_ref as none, the driver then tries to refer
 	 * to the fll_sync setting and use it for fll_ref
 	 */
-	snd_soc_codec_set_pll(wm8998, WM8998_FLL1_REFCLK,
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1_REFCLK,
 				ARIZONA_FLL_SRC_NONE,
 				0, 0);
 
