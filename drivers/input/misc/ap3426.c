@@ -1334,6 +1334,7 @@ static void ap3426_work_handler(struct work_struct *w)
     struct ap3426_data *data =
 	container_of(w, struct ap3426_data, ap3426_work);
     u8 int_stat;
+    int pxvalue;
     int distance;
     int_stat = ap3426_get_intstat(data->client);
 
