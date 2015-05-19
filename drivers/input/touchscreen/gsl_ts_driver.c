@@ -39,7 +39,7 @@
 #include <linux/proc_fs.h>
 #include <linux/regulator/consumer.h> 
 #include <linux/of_gpio.h>
-
+#include <linux/time.h>
 #include "gsl_ts_driver.h"
 
 #ifdef GSL_REPORT_POINT_SLOT
@@ -80,8 +80,9 @@ typedef enum{
 	GE_NOWORK =3,
 }GE_T;
 static GE_T gsl_gesture_status = GE_DISABLE;
-static volatile unsigned int gsl_gesture_flag = 1;
+static volatile unsigned int gsl_gesture_flag = 0;
 static char gsl_gesture_c = 0;
+struct timeval startup;
 #endif
 
 static volatile int gsl_halt_flag = 0;
@@ -131,6 +132,11 @@ static int fb_notifier_callback(struct notifier_block *self,unsigned long event,
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 static void gsl_early_suspend(struct early_suspend *handler);
 static void gsl_early_resume(struct early_suspend *handler);
+#endif
+
+#ifdef GSL_GESTURE
+#define NUM_GESTURES KEY_F4
+static DECLARE_BITMAP(gesture_bmp, NUM_GESTURES);
 #endif
 
 #ifdef TOUCH_VIRTUAL_KEYS
@@ -184,22 +190,19 @@ static struct gsl_ts_data *ddata = NULL;
 
 static int gsl_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 num)
 {
-
 	int err = 0;
 	u8 temp = reg;
 	mutex_lock(&gsl_i2c_lock);
 	if(temp < 0x80)
 	{
-		temp = (temp+8)&0x5c;
-			i2c_master_send(client,&temp,1);	
-			err = i2c_master_recv(client,&buf[0],4);
-			
-			temp = reg;
-			i2c_master_send(client,&temp,1);	
-			err = i2c_master_recv(client,&buf[0],4);
+		i2c_master_send(client,&temp,1);
+		err = i2c_master_recv(client,&buf[0],num);
 	}
-	i2c_master_send(client,&reg,1);
-	err = i2c_master_recv(client,&buf[0],num);
+	else
+	{
+		i2c_master_send(client,&temp,1);
+		err = i2c_master_recv(client,&buf[0],num);
+	}
 	mutex_unlock(&gsl_i2c_lock);
 	return (err == num)?1:-1;
 }
@@ -285,64 +288,98 @@ static int gsl_ts_read_version(void)
 
 #ifdef GSL_GESTURE
 #define READ_LEN 64
+static int gsl_ts_write(struct i2c_client *client, u8 addr, u8 *pdata,
+			int datalen)
+{
+	int ret = 0;
+	u8 tmp_buf[128];
+	unsigned int bytelen = 0;
+	if (datalen > 125) {
+		print_info( "%s too big datalen = %d!\n",
+							__func__, datalen);
+		return -EPERM;
+	}
+
+	tmp_buf[0] = addr;
+	bytelen++;
+
+	if (datalen != 0 && pdata != NULL) {
+		memcpy(&tmp_buf[bytelen], pdata, datalen);
+		bytelen += datalen;
+	}
+
+	ret = i2c_master_send(client, tmp_buf, bytelen);
+	return ret;
+}
+
+
+static int gsl_ts_read(struct i2c_client *client, u8 addr, u8 *pdata,
+		       unsigned int datalen)
+{
+	int ret = 0;
+
+	if (datalen > 126) {
+		print_info( "%s too big datalen = %d!\n",
+				__func__, datalen);
+		return -EPERM;
+	}
+
+	ret = gsl_ts_write(client, addr, NULL, 0);
+	if (ret < 0) {
+		print_info( "%s set data address fail!\n", __func__);
+		return ret;
+	}
+
+	return i2c_master_recv(client, pdata, datalen);
+}
 static unsigned int gsl_read_oneframe_data(unsigned int *data,
 				unsigned int addr,unsigned int len)
 {
-	u8 buf[4];
-	int i;
+	int i = 0;
+	u8 reg_a[4]={0x0a,0x00,0x00,0x00};
+	u8 buf_a5[4]={0x00,0x00,0x00,0xa5};
+	u8 buf_zero[4]={0x00,0x00,0x00,0x00};
+	u32 buf32;
+	struct timeval start;
+	struct timeval end;
+
 	printk("tp-gsl-gesture %s\n",__func__);
 	printk("gsl_read_oneframe_data:::addr=%x,len=%x\n",addr,len);
 
-	#if 1
-	for(i=0;i<len/2;i++){
-		buf[0] = ((addr+i*8)/0x80)&0xff;
-		buf[1] = (((addr+i*8)/0x80)>>8)&0xff;
-		buf[2] = (((addr+i*8)/0x80)>>16)&0xff;
-		buf[3] = (((addr+i*8)/0x80)>>24)&0xff;
-		gsl_write_interface(ddata->client,0xf0,buf,4);
-		gsl_read_interface(ddata->client,(addr+i*8)%0x80,(u8 *)&data[i*2],8);
-	}
-	if(len%2){
-		buf[0] = ((addr+len*4 - 4)/0x80)&0xff;
-		buf[1] = (((addr+len*4 - 4)/0x80)>>8)&0xff;
-		buf[2] = (((addr+len*4 - 4)/0x80)>>16)&0xff;
-		buf[3] = (((addr+len*4 - 4)/0x80)>>24)&0xff;
-		gsl_write_interface(ddata->client,0xf0,buf,4);
-		gsl_read_interface(ddata->client,(addr+len*4 - 4)%0x80,(u8 *)&data[len-1],4);
-	}
-	#endif
-
-	#if 0
-    i = 0;
-    while(i < len)
-    {
-        buf[0] = ((addr + i*4)/0x80)&0xff;
-        buf[1] = (((addr + i*4)/0x80)>>8)&0xff;
-        buf[2] = (((addr + i*4)/0x80)>>16)&0xff;
-        buf[3] = (((addr + i*4)/0x80)>>24)&0xff;
-        gsl_write_interface(ddata->client, 0xf0, buf, 4);
-        if(len - i > READ_LEN){
-	printk("why===========gesture==============read begin:READ_LEN*4 == :%d\n",READ_LEN*4);
-            gsl_read_interface(ddata->client, (addr+i*4)%0x80, (char *)&data[i], READ_LEN*4);
-	printk("why===========gesture==============read end : READ_LEN*4 == :%d\n",READ_LEN*4);
+	while(1)
+	{
+		gsl_ts_write(ddata->client,0xf0,&reg_a[0], 4);
+		buf_a5[2] = i;
+		gsl_ts_write(ddata->client,0x08,&buf_a5[0], 4);
+		do_gettimeofday(&start);
+		while(1)
+		{
+			gsl_ts_read(ddata->client,0xbc,(u8 *)&buf32,4);
+			if((buf32 & 0xffff) == 0xa500+i)
+			{
+				int k;
+				for(k=0;k<15;k++)
+				{
+					gsl_ts_read(ddata->client,0x80+k*4,(u8 *)&buf32,4);
+					data[i] = buf32;
+					if(++i >= len)
+					{
+						gsl_ts_write(ddata->client,0xf0,&reg_a[0], 4);
+						gsl_ts_write(ddata->client,0x08,&buf_zero[0], 4);
+						return 1;
+					}
+				}
+				break;
+			}
+			do_gettimeofday(&end);
+			if(((end.tv_sec-start.tv_sec)*1000+(end.tv_usec-start.tv_usec)/1000) < 100)
+				continue;
+			gsl_ts_write(ddata->client,0xf0,&reg_a[0], 4);
+			gsl_ts_write(ddata->client,0x08,&buf_zero[0], 4);
+			return 0;
 		}
-        else{
-	printk("why===========gesture2=============rade begin:(len - i)*4 == :%d\n",(len - i)*4);
-            gsl_read_interface(ddata->client, (addr+i*4)%0x80, (char *)&data[i], (len - i)*4);
-	printk("why===========gesture2=============read end\n");
-        i += READ_LEN;
-    }
 	}
-	#endif
-
-	#if 0
-	for(i=0;i<len;i++){
-	printk("gsl_read_oneframe_data =%x\n",data[i]);	
-	printk("gsl_read_oneframe_data =%x\n",data[len-1]);
-	}
-	#endif
-	
-	return len;
+	return 1;
 }
 #endif
 
@@ -371,7 +408,7 @@ static void gsl_io_control(struct i2c_client *client)
 #if GSL9XX_VDDIO_1800
 	u8 buf[4] = {0};
 	int i;
-	for(i=0;i<5;i++){
+	for(i=0;i<2;i++){
 		buf[0] = 0;
 		buf[1] = 0;
 		buf[2] = 0xfe;
@@ -382,9 +419,9 @@ static void gsl_io_control(struct i2c_client *client)
 		buf[2] = 0;
 		buf[3] = 0x80;
 		gsl_write_interface(client,0x78,buf,4);
-		msleep(5);
+		mdelay(5);
 	}
-	msleep(50);
+	//msleep(50);
 #endif
 }
 
@@ -399,43 +436,65 @@ static void gsl_start_core(struct i2c_client *client)
 	gsl_DataInit(gsl_cfg_table[gsl_cfg_index].data_id);
 	}
 #endif	
+	do_gettimeofday(&startup);
 }
 
 static void gsl_reset_core(struct i2c_client *client)
 {
 	u8 buf[4] = {0x00};
 	
-	buf[0] = 0x88;
-	gsl_write_interface(client,0xe0,buf,4);
-	msleep(5);
+	gpio_set_value(GSL_RST_GPIO_NUM,0);
+	mdelay(2);
+	gpio_set_value(GSL_RST_GPIO_NUM,1);
+	mdelay(2);
 
 	buf[0] = 0x04;
 	gsl_write_interface(client,0xe4,buf,4);
-	msleep(5);
+	mdelay(2);
 	
 	buf[0] = 0;
 	gsl_write_interface(client,0xbc,buf,4);
-	msleep(5);
+	mdelay(2);
 
 	gsl_io_control(client);
 }
 
+static void gsl_reset_core_without_vddio(struct i2c_client *client)
+{
+	u8 buf[4] = {0x00};
+	
+	gpio_set_value(GSL_RST_GPIO_NUM,0);
+	mdelay(2);
+	gpio_set_value(GSL_RST_GPIO_NUM,1);
+
+	mdelay(2);
+
+	buf[0] = 0x04;
+	gsl_write_interface(client,0xe4,buf,4);
+	mdelay(2);
+	
+	buf[0] = 0;
+	gsl_write_interface(client,0xbc,buf,4);
+	mdelay(2);
+}
 static void gsl_clear_reg(struct i2c_client *client)
 {
 	u8 buf[4]={0};
-	//clear reg
-	buf[0]=0x88;
-	gsl_write_interface(client,0xe0,buf,4);
-	msleep(20);
+
+	gpio_set_value(GSL_RST_GPIO_NUM,0);
+	mdelay(2);
+	gpio_set_value(GSL_RST_GPIO_NUM,1);
+
+	mdelay(10);
 	buf[0]=0x3;
 	gsl_write_interface(client,0x80,buf,4);
-	msleep(5);
+	mdelay(2);
 	buf[0]=0x4;
 	gsl_write_interface(client,0xe4,buf,4);
-	msleep(5);
+	mdelay(2);
 	buf[0]=0x0;
 	gsl_write_interface(client,0xe0,buf,4);
-	msleep(20);
+	mdelay(10);
 	//clear reg
 
 }
@@ -818,13 +877,7 @@ static int gsl_compatible_id(struct i2c_client *client)
 struct regulator *vcc_ana;
 struct regulator *vcc_dig;
 struct regulator *vcc_i2c;
-#if 0
-static int reg_set_optimum_mode_check(struct regulator *reg, int load_uA)
-{
-	return (regulator_count_voltages(reg) > 0) ?
-		regulator_set_optimum_mode(reg, load_uA) : 0;
-}
-#endif
+
 static int gsl_regulator_configure(struct i2c_client *client, bool on)
 {
 	int rc;
@@ -893,7 +946,7 @@ hw_shutdown:
 
 	return 0;
 }
-#if 0
+
 static int gsl_power_on(struct i2c_client *client, bool on)
 {
 	int rc;
@@ -901,27 +954,12 @@ static int gsl_power_on(struct i2c_client *client, bool on)
 	if (on == false)
 		goto power_off;
 
-	rc = reg_set_optimum_mode_check(vcc_ana, MXT_ACTIVE_LOAD_UA);
-	if (rc < 0) {
-		dev_err(&client->dev,
-			"Regulator vcc_ana set_opt failed rc=%d\n", rc);
-		return rc;
-	}
-
 	rc = regulator_enable(vcc_ana);
 	if (rc) {
 		dev_err(&client->dev,
 			"Regulator vcc_ana enable failed rc=%d\n", rc);
 		goto error_reg_en_vcc_ana;
 	}
-
-	
-		rc = reg_set_optimum_mode_check(vcc_i2c, MXT_I2C_LOAD_UA);
-		if (rc < 0) {
-			dev_err(&client->dev,
-				"Regulator vcc_i2c set_opt failed rc=%d\n", rc);
-			goto error_reg_opt_i2c;
-		}
 
 		rc = regulator_enable(vcc_i2c);
 		if (rc) {
@@ -936,31 +974,26 @@ static int gsl_power_on(struct i2c_client *client, bool on)
 	return 0;
 
 error_reg_en_vcc_i2c:
-	reg_set_optimum_mode_check(vcc_i2c, 0);
-error_reg_opt_i2c:
 
 	regulator_disable(vcc_ana);
 error_reg_en_vcc_ana:
-	reg_set_optimum_mode_check(vcc_ana, 0);
 	return rc;
 
 power_off:
-	reg_set_optimum_mode_check(vcc_ana, 0);
 	regulator_disable(vcc_ana);
-	reg_set_optimum_mode_check(vcc_i2c, 0);
 	regulator_disable(vcc_i2c);
 	
 	msleep(50);
 	return 0;
 }
-#endif
+
 static void gsl_hw_init(void)
 {
 	//add power
 	//GSL_POWER_ON();	
 	//
        gsl_regulator_configure(ddata->client, true);
-       //gsl_power_on(ddata->client, true);
+       gsl_power_on(ddata->client, true);
 
 	
 	gpio_request(GSL_IRQ_GPIO_NUM,GSL_IRQ_NAME);
@@ -984,9 +1017,9 @@ static void gsl_sw_init(struct i2c_client *client)
 	ddata->gsl_sw_flag = 1;
 	
 	gpio_set_value(GSL_RST_GPIO_NUM, 0);
-	msleep(20);
+	mdelay(10);
 	gpio_set_value(GSL_RST_GPIO_NUM, 1);
-	msleep(20);	
+	mdelay(10);	
 
 	gsl_clear_reg(client);
 	gsl_reset_core(client);
@@ -1001,9 +1034,9 @@ static void gsl_sw_init(struct i2c_client *client)
 
 static void check_mem_data(struct i2c_client *client)
 {
-
+#if 0
 	u8 read_buf[4]  = {0};
-	msleep(30);
+	mdelay(30);
 	gsl_read_interface(client,0xb0,read_buf,4);
 	if (read_buf[3] != 0x5a || read_buf[2] != 0x5a 
 		|| read_buf[1] != 0x5a || read_buf[0] != 0x5a)
@@ -1012,6 +1045,30 @@ static void check_mem_data(struct i2c_client *client)
 			read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
 		gsl_sw_init(client);
 	}
+#else
+	u8 i = 0;
+	u8 read_buf[4]  = {0};
+	for(; i<6; i++)
+	{
+		gsl_read_interface(client,0xb0,read_buf,4);
+			if (read_buf[3] != 0x5a || read_buf[2] != 0x5a 
+		|| read_buf[1] != 0x5a || read_buf[0] != 0x5a)
+		{
+			mdelay(5);
+		}
+		else
+		{
+			break;
+		}
+	}
+	if (read_buf[3] != 0x5a || read_buf[2] != 0x5a 
+		|| read_buf[1] != 0x5a || read_buf[0] != 0x5a)
+	{
+		print_info("0xb4 ={0x%02x%02x%02x%02x}\n",
+			read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
+		gsl_sw_init(client);
+	}
+#endif	
 }
 
 #define GSL_CHIP_NAME	"gslx68x"
@@ -1331,11 +1388,14 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	//u32 tmp;
 
 	gsl_gesture_status = GE_DISABLE;
+	free_irq(ts->client->irq,ddata);
 		
+	gpio_direction_output(GSL_IRQ_GPIO_NUM,0);
 	gpio_set_value(GSL_RST_GPIO_NUM,0);
-	msleep(20);
+	mdelay(5);
 	gpio_set_value(GSL_RST_GPIO_NUM,1);
-	msleep(20);
+	mdelay(20);
+	gpio_direction_input(GSL_IRQ_GPIO_NUM);
 	
 	buf[0] = 0xa;
 	buf[1] = 0;
@@ -1347,7 +1407,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	buf[2] = 0;
 	buf[3] = 0x5a;
 	gsl_write_interface(ts->client,0x8,buf,4);
-	msleep(10);
+	mdelay(5);
 
 #if 0
 	gsl_reset_core(ddata->client);
@@ -1361,19 +1421,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 static ssize_t gsl_sysfs_tpgesture_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	u32 count = 0;
-	count += scnprintf(buf,PAGE_SIZE,"tp gesture is on/off:\n");
-	if(gsl_gesture_flag == 1){
-		count += scnprintf(buf+count,PAGE_SIZE-count,
-				" on \n");
-	}else if(gsl_gesture_flag == 0){
-		count += scnprintf(buf+count,PAGE_SIZE-count,
-				" off \n");
-	}
-	count += scnprintf(buf+count,PAGE_SIZE-count,"tp gesture:");
-	count += scnprintf(buf+count,PAGE_SIZE-count,
-			"%c\n",gsl_gesture_c);
-    	return count;
+	return scnprintf(buf, PAGE_SIZE, "%d\n", gsl_gesture_flag);
 }
 static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
@@ -1391,7 +1439,7 @@ static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 #endif
 	return count;
 }
-static DEVICE_ATTR(gesture, 0666, gsl_sysfs_tpgesture_show, gsl_sysfs_tpgesturet_store);
+static DEVICE_ATTR(gesture, 0664, gsl_sysfs_tpgesture_show, gsl_sysfs_tpgesturet_store);
 #endif
 
 static struct attribute *gsl_attrs[] = {
@@ -1564,13 +1612,21 @@ static void gsl_report_work(struct work_struct *work)
 		//print_info("GSL:::0x80=%02x%02x%02x%02x[%d]\n",buf[3],buf[2],buf[1],buf[0],test_count++);
 		//print_info("GSL:::0x84=%02x%02x%02x%02x\n",buf[7],buf[6],buf[5],buf[4]);
 		//print_info("GSL:::0x88=%02x%02x%02x%02x\n",buf[11],buf[10],buf[9],buf[8]);
+		{
+			struct timeval now;
+			do_gettimeofday(&now);
+			if(((now.tv_sec-startup.tv_sec)*1000+(now.tv_usec-startup.tv_usec)/1000) <= 100)
+			{
+				printk("gsl_report_work: delta time <= 100.\n");
+				goto schedule;
+			}
+		}
 	#endif
 	
 	/* read data from DATA_REG */
 	rc = gsl_read_interface(client, 0x80, buf, 44);
 	if (rc < 0) 
 	{
-		dev_err(&client->dev, "[gsl] I2C read failed\n");
 		goto schedule;
 	}
 
@@ -1682,7 +1738,11 @@ static void gsl_report_work(struct work_struct *work)
 			
 			}
 	
-			if(key_data != 0){
+			if(!test_bit(key_data, gesture_bmp)){
+				gsl_reset_core_without_vddio(client);	
+				gsl_start_core(client);
+			}
+			else {
 				gsl_gesture_c = (char)(tmp_c & 0xff);
 				gsl_gesture_status = GE_WAKEUP;
 				print_info("gsl_obtain_gesture():tmp_c=%c\n",gsl_gesture_c);
@@ -1692,7 +1752,7 @@ static void gsl_report_work(struct work_struct *work)
 				//input_report_key(tpd->dev,key_data,0);
 				input_report_key(idev,KEY_POWER,0);
 				input_sync(idev);
-                            msleep(50);
+				mdelay(50);
 			}
 			goto schedule;
 		}
@@ -1842,12 +1902,14 @@ static void gsl_ts_suspend(void)
 		{
 			disable_irq_nosync(client->irq);
 			gpio_set_value(GSL_RST_GPIO_NUM, 0);		
+			gsl_power_on(client, false);
 		}
 #endif
 
 #ifndef GSL_GESTURE
 	disable_irq_nosync(client->irq);
 	gpio_set_value(GSL_RST_GPIO_NUM, 0);
+	gsl_power_on(client, false);
 #endif
 	
 	return;
@@ -1883,14 +1945,24 @@ static void gsl_ts_resume(void)
 	#ifdef GSL_GESTURE
 		if(gsl_gesture_flag == 1){
 			gsl_quit_doze(ddata);
+			{
+			int err = 0;
+			//msleep(10);
+			err = request_irq(client->irq, gsl_ts_interrupt, IRQF_TRIGGER_RISING, client->name, ddata);
+			if (err < 0) {
+				dev_err(&client->dev, " request irq failed\n");
+			}
+			}
 		}
 		else
 		{
+			gsl_power_on(client, true);
 			gpio_set_value(GSL_RST_GPIO_NUM, 1);
 			msleep(20);
 			enable_irq(client->irq);		
 		}
 	#else
+		gsl_power_on(client, true);
 		gpio_set_value(GSL_RST_GPIO_NUM, 1);
 		msleep(20);
 		enable_irq(client->irq);
@@ -2324,7 +2396,8 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	enable_irq(client->irq);
 
 #ifdef GSL_GESTURE
-	enable_irq_wake(client->irq);
+	if (gsl_gesture_flag)
+		enable_irq_wake(client->irq);
 #endif
 
 	//zhangpeng add for TW test.
@@ -2338,6 +2411,10 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	info += sprintf(info,"GSL915,");
 	info += sprintf(info,"%x",version);
 	//end
+
+#ifdef GSL_GESTURE
+	set_bit(KEY_POWER, gesture_bmp);
+#endif
 
 	//is_tp_driver_loaded = 1;
 	print_info("%s: ==probe over =\n",__func__);
