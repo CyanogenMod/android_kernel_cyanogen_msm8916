@@ -13,6 +13,7 @@
 &soc {
 	sound {
 		qcom,model = "msm8939-snd-card";
+		qcom,msm-mbhc-hphl-swh = <0x1>;
 		qcom,audio-routing =
 			"RX_BIAS", "MCLK",
 			"SPK_RX_BIAS", "MCLK",
