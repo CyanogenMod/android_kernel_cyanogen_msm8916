@@ -755,6 +755,16 @@ config SENSORS_AKM09911
 	  To compile this driver as a module, choose M here: the
 	  module will be called akm09911.
 
+config SENSORS_AKM09911_WT
+	tristate "AKM09911 3-axis electronic compass sensor driver (Wingtech)"
+	depends on I2C
+	help
+	  Say Y here if you want to enable the akm09911 ecompass sensor
+	  driver.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called akm09911_wt.
+
 config SENSORS_AKM8963
 	tristate "AKM8963 3-axis electronic compass sensor driver"
 	depends on I2C
