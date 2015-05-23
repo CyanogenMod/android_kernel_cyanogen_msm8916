@@ -5564,8 +5564,8 @@ static int himax852xes_probe(struct i2c_client *client, const struct i2c_device_
 
 #ifdef SUPPORT_READ_TP_VERSION
 	memset(tp_version, 0, sizeof(tp_version));
-	sprintf(tp_version, "Firmware version:0x%2.2X\n",private_ts->vendor_config_ver);
-	init_tp_fm_info(0,tp_version,"IC:HIMAX");
+	sprintf(tp_version, "[fw]0x%2.2X,[ic]HX8527",private_ts->vendor_config_ver);
+	init_tp_fm_info(0,tp_version,"DJN");
 #endif
 
 #ifdef HX_ESD_WORKAROUND
