@@ -6,14 +6,13 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
 
 &mdss_mdp {
 	dsi_nt35596_yashi_otp_id22_auo_fhd: qcom,mdss_dsi_nt35596_yashi_otp_id22_auo_fhd_video {
 		qcom,cont-splash-enabled;
-		//qcom,mdss-dsi-panel-name = "LCD_TYPE_NT35596_YASHI_OTP_ID22_AUO_FHD_550";
 		qcom,mdss-dsi-panel-name = "LCD_TYPE_1080P_3335505_2";
 		qcom,mdss-dsi-panel-controller = <&mdss_dsi0>;
 		qcom,mdss-dsi-panel-type = "dsi_video_mode";
@@ -38,7 +37,6 @@
 		qcom,mdss-dsi-underflow-color = <0xff>;
 		qcom,mdss-dsi-border-color = <0>;
 		qcom,mdss-dsi-pixel-packing = <0>;
-
 		qcom,mdss-dsi-on-command = [
 			39 01 00 00 00 00 02 FF EE
 			39 01 00 00 00 00 02 FB 01
@@ -221,7 +219,6 @@
 			39 01 00 00 00 00 02 5B 00
 			39 01 00 00 00 00 02 63 00
 			39 01 00 00 00 00 02 FF 00
-
 			39 01 00 00 00 00 02 FF 04
 			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 FF 00
@@ -233,9 +230,12 @@
 			05 01 00 00 78 00 02 11 00
 			05 01 00 00 14 00 02 29 00
 		];
-		qcom,mdss-dsi-off-command = [05 01 00 00 14 00 02 28 00
-				 05 01 00 00 78 00 02 10 00];
-		/*qcom,panel-ce-cmds = [
+		qcom,mdss-dsi-off-command = [
+			05 01 00 00 14 00 02 28 00
+			05 01 00 00 78 00 02 10 00
+		];
+		/*
+		qcom,panel-ce-cmds = [
 				29 01 00 00 00 00 02 81 81
 				];
 		qcom,panel-ce-off-cmds = [
@@ -261,8 +261,8 @@
 				];
 		qcom,panel-cabc-off-cmds = [
 				29 01 00 00 00 00 02 55 00
-				];*/
-
+				];
+		*/
 		qcom,panel-backlight-response-curve = [
 			00 01 02 03 04 04 04 04
 			04 04 04 04 05 05 06 06
@@ -297,21 +297,18 @@
 			E9 EA EC ED EE F0 F1 F3
 			F4 F6 F7 F9 FA FC FD FF
 		];
-
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_lp_mode";
-
-		//qcom,esd-check-enabled;//esd
-		/*qcom,panel-alive-reg-content = [
-				0A 01 9C
-				0B 01 00
-				0D 01 00
-				];*/
+		/*
+		qcom,panel-alive-reg-content = [
+			0A 01 9C
+			0B 01 00
+			0D 01 00
+		];
+		*/
 		qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 02 0A 08];
 		qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode";
-		qcom,mdss-dsi-panel-status-check-mode = "reg_read"; //esd
-
-		//qcom,mdss-dsi-h-sync-pulse = <1>;
+		qcom,mdss-dsi-panel-status-check-mode = "reg_read";
 		qcom,mdss-dsi-traffic-mode = "burst_mode";
 		qcom,mdss-dsi-bllp-eof-power-mode;
 		qcom,mdss-dsi-bllp-power-mode;
