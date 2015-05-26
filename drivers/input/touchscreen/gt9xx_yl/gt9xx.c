@@ -2575,12 +2575,12 @@ static int panel_xres = 0;
 
 static int __init goodix_parse_xres(char *str)
 {
-        if (!str)
-                return -EINVAL;
+	if (!str)
+		return -EINVAL;
 
-        panel_xres = simple_strtoul(str, NULL, 0);
+	panel_xres = simple_strtoul(str, NULL, 0);
 
-        return 0;
+	return 0;
 }
 
 early_param("panel.xres", goodix_parse_xres);
