@@ -27,18 +27,13 @@
 			/delete-property/ qcom,pins;
 		};
 
-		red_led_gpio20 {
+		red_led_gpio {
 			qcom,pins = <&gp 22>;
 			qcom,pin-func = <0>;
 			qcom,num-grp-pins = <1>;
 			label = "red_led_gpio";
 
-			redled_gpio20_active: redled_gpio20_active {
-				drive-strength = <6>;
-				bias-pull-up;
-			};
-
-			redled_gpio20_suspend: redled_gpio20_suspend {
+			red_led_gpio_default: default {
 				drive-strength = <6>;
 				bias-pull-up;
 			};
