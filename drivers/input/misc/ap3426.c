@@ -78,6 +78,11 @@
 #define LDBG(s,args...) {}
 #endif
 
+#define DI_AUTO_CAL
+#ifdef DI_AUTO_CAL
+       #define DI_PS_CAL_THR 300
+#endif
+
 static void pl_timer_callback(unsigned long pl_data);
 static int ap3426_power_ctl(struct ap3426_data *data, bool on);
 static int ap3426_power_init(struct ap3426_data*data, bool on);
@@ -413,6 +418,7 @@ static int ap3426_get_px_value(struct i2c_client *client)
 static int ap3426_ps_enable(struct ap3426_data *ps_data,int enable)
 {
     int32_t ret;
+	printk("!!!!!!%s!!!!!!enable=%d\n",__func__,enable);
     if(misc_ps_opened == enable)
                 return 0;
     misc_ps_opened = enable;
@@ -739,6 +745,62 @@ static int ap3426_als_poll_delay_set(struct sensors_classdev *sensors_cdev,
    return 0; 
 } 
 
+#ifdef DI_AUTO_CAL
+u8 Calibration_Flag = 0;
+
+static int AP3xx6_set_pcrosstalk(struct i2c_client *client, int val)
+{
+    int lsb, msb, err;
+
+	msb = val >> 8;
+	lsb = val & 0xFF;
+    err = __ap3426_write_reg(client, 0x28,
+            0xFF, 0x00, lsb);
+	     
+    err =__ap3426_write_reg(client, 0x29,
+            0xFF, 0x00, msb);
+          
+	return err;
+}
+
+int AP3xx6_Calibration(struct i2c_client *client)
+{
+      // int err;
+	int i = 0;
+	u16 ps_data = 0;
+       u16 data = 0;
+	if(Calibration_Flag == 0)
+	{
+		for(i=0; i<4; i++)
+		{
+			data = ap3426_get_px_value(client);
+
+			printk("AP3426 ps =%d \n",data);
+			if((data) > DI_PS_CAL_THR)
+			{
+				Calibration_Flag = 0;
+				goto err_out;
+			}
+			else
+			{
+				ps_data += data;
+			}
+			msleep(100);
+		}
+		Calibration_Flag =1;
+		printk("AP3426 ps_data1 =%d \n",ps_data);
+		ps_data = ps_data/4;
+		printk("AP3426 ps_data2 =%d \n",ps_data);
+		AP3xx6_set_pcrosstalk(client,ps_data); 
+	}
+	return 1;
+err_out:
+	printk("AP3xx6_read_ps fail\n");
+	return -1;	
+}
+#endif 
+
+
 static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 					   unsigned int enabled) 
 { 
@@ -748,6 +810,12 @@ static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 
    err = ap3426_ps_enable(ps_data,enabled);
 
+	#ifdef DI_AUTO_CAL
+	if(enabled ==1)
+	{
+        AP3xx6_Calibration(ps_data->client);
+	}
+	#endif
 
    if (err < 0) 
 	   return err; 
@@ -1559,6 +1627,18 @@ static int ap3426_probe(struct i2c_client *client,
 	goto err_power_on;                     //end
 	
     dev_info(&client->dev, "Driver version %s enabled\n", DRIVER_VERSION);
+
+	#ifdef DI_AUTO_CAL
+	 __ap3426_write_reg(data->client,
+        AP3426_REG_SYS_CONF, AP3426_REG_SYS_INT_PMASK, 1, 1);
+	 
+	msleep(100);	
+       AP3xx6_Calibration(data->client);
+	   
+	 __ap3426_write_reg(data->client,
+        AP3426_REG_SYS_CONF, AP3426_REG_SYS_INT_PMASK, 1, 0);
+	#endif   
+   
     return 0;
 err_create_wq_failed:
     if(&data->pl_timer != NULL)
