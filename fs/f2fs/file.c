@@ -409,6 +409,12 @@ static int f2fs_file_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct inode *inode = file_inode(file);
 
+	if (f2fs_encrypted_inode(inode)) {
+		int err = f2fs_get_encryption_info(inode);
+		if (err)
+			return 0;
+	}
+
 	/* we don't need to use inline_data strictly */
 	if (f2fs_has_inline_data(inode)) {
 		int err = f2fs_convert_inline_inode(inode);
@@ -419,6 +425,18 @@ static int f2fs_file_mmap(struct file *file, struct vm_area_struct *vma)
 	file_accessed(file);
 	vma->vm_ops = &f2fs_file_vm_ops;
 	return 0;
+}
+
+static int f2fs_file_open(struct inode *inode, struct file *filp)
+{
+	int ret = generic_file_open(inode, filp);
+
+	if (!ret && f2fs_encrypted_inode(inode)) {
+		ret = f2fs_get_encryption_info(inode);
+		if (ret)
+			ret = -EACCES;
+	}
+	return ret;
 }
 
 int truncate_data_blocks_range(struct dnode_of_data *dn, int count)
@@ -628,6 +646,10 @@ int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
 		return err;
 
 	if (attr->ia_valid & ATTR_SIZE) {
+		if (f2fs_encrypted_inode(inode) &&
+				f2fs_get_encryption_info(inode))
+			return -EACCES;
+
 		if (attr->ia_size != i_size_read(inode)) {
 			truncate_setsize(inode, attr->ia_size);
 			f2fs_truncate(inode);
@@ -1062,6 +1084,9 @@ static long f2fs_fallocate(struct file *file, int mode,
 	struct inode *inode = file_inode(file);
 	long ret = 0;
 
+	if (f2fs_encrypted_inode(inode) && (mode & FALLOC_FL_COLLAPSE_RANGE))
+		return -EOPNOTSUPP;
+
 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
 			FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
 		return -EOPNOTSUPP;
@@ -1469,6 +1494,18 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	}
 }
 
+static ssize_t f2fs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+{
+	struct inode *inode = file_inode(iocb->ki_filp);
+
+	if (f2fs_encrypted_inode(inode) &&
+				!f2fs_has_encryption_key(inode) &&
+				f2fs_get_encryption_info(inode))
+		return -EACCES;
+
+	return generic_file_write_iter(iocb, from);
+}
+
 #ifdef CONFIG_COMPAT
 long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -1491,8 +1528,8 @@ const struct file_operations f2fs_file_operations = {
 	.read		= new_sync_read,
 	.write		= new_sync_write,
 	.read_iter	= generic_file_read_iter,
-	.write_iter	= generic_file_write_iter,
-	.open		= generic_file_open,
+	.write_iter	= f2fs_file_write_iter,
+	.open		= f2fs_file_open,
 	.release	= f2fs_release_file,
 	.mmap		= f2fs_file_mmap,
 	.fsync		= f2fs_sync_file,
