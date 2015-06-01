@@ -32,7 +32,18 @@
 #include "qdsp6v2/msm-pcm-routing-v2.h"
 #include "../codecs/msm8x16-wcd.h"
 #include "../codecs/wcd9306.h"
+#ifdef CONFIG_MACH_T86519A1
+#include "../codecs/vegas.h"
+#endif
 #define DRV_NAME "msm8x16-asoc-wcd"
+
+#ifdef CONFIG_MACH_T86519A1
+#define MSM_VEGAS_FLL_CLK_SOURCE ARIZONA_FLL_SRC_MCLK1
+#define MSM_VEGAS_FLL_CLK_FREQ ( 48000 * 512 * 2 )
+#define MSM_VEGAS_SYS_CLK_FREQ ( 48000 * 512 * 2 )
+static struct snd_soc_codec *wm8998;
+static int previous_bias_level = SND_SOC_BIAS_OFF;
+#endif
 
 #define SAMPLING_RATE_48KHZ 48000
 #define SAMPLING_RATE_96KHZ 96000
@@ -284,6 +295,9 @@ static char const *rx_bit_format_text[] = {"S16_LE", "S24_LE"};
 static char const *mi2s_rx_sample_rate_text[] = {"KHZ_48", "KHZ_96", "KHZ_192"};
 static const char *const ter_mi2s_tx_ch_text[] = {"One", "Two"};
 static const char *const loopback_mclk_text[] = {"DISABLE", "ENABLE"};
+#ifdef CONFIG_MACH_T86519A1
+static const char *const quatmi2s_clk_text[] = {"DISABLE", "ENABLE"};
+#endif
 
 static int msm_auxpcm_be_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					struct snd_pcm_hw_params *params)
@@ -846,6 +860,66 @@ static int msm8x16_enable_codec_ext_clk(struct snd_soc_codec *codec,
 	return ret;
 }
 
+#ifdef CONFIG_MACH_T86519A1
+static struct snd_soc_codec *byt_get_codec(struct snd_soc_card *card)
+{
+	bool found = false;
+	struct snd_soc_codec *codec;
+
+	list_for_each_entry(codec, &card->codec_dev_list, card_list) {
+		if (!strstr(codec->name, MSM8X16_CODEC_NAME)) {
+			pr_debug("codec was %s", codec->name);
+			continue;
+		} else {
+			found = true;
+			break;
+		}
+	}
+	if (found == false) {
+		pr_err("%s: cant find codec", __func__);
+		return NULL;
+	}
+	return codec;
+}
+
+static int msm8x16_enable_codec_ext_clk_wm8998(struct snd_soc_codec *codec,
+					int enable, bool dapm)
+{
+	/*Provide MCLK for wm8998*/
+	int rc = 0;
+	static struct clk *wm_clk = NULL;
+	if (enable) {
+
+		/*Provide MCLK for wm8998*/
+		if (codec->card->dev) {
+			wm_clk = clk_get(codec->card->dev, "wm_mclk");
+			if (IS_ERR(wm_clk)) {
+				pr_err("Couldn't get wm_mclk clock\n");
+				return PTR_ERR(wm_clk);
+			}
+
+			rc = clk_prepare_enable(wm_clk);
+			if (rc) {
+				pr_err("clk enable failed\n");
+				goto fail;
+			}
+			pr_debug("enable wm_clk success");
+		}
+
+	} else {
+		if (wm_clk != NULL) {
+			clk_disable_unprepare(wm_clk);
+			clk_put(wm_clk);
+			wm_clk = NULL;
+		}
+	}
+	return rc;
+fail:
+	clk_put(wm_clk);
+	return rc;
+}
+#endif
+
 static int msm8x16_enable_extcodec_ext_clk(struct snd_soc_codec *codec,
 					int enable,	bool dapm)
 {
@@ -921,6 +995,9 @@ static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(2, ter_mi2s_tx_ch_text),
 	SOC_ENUM_SINGLE_EXT(2, loopback_mclk_text),
 	SOC_ENUM_SINGLE_EXT(2, mi2s_rx_sample_rate_text),
+#ifdef CONFIG_MACH_T86519A1
+	SOC_ENUM_SINGLE_EXT(2, quatmi2s_clk_text),
+#endif
 };
 
 static const char *const btsco_rate_text[] = {"8000", "16000"};
@@ -948,8 +1025,20 @@ static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 {
 	struct msm8916_asoc_mach_data *pdata = NULL;
 	int ret = 0;
+#ifdef CONFIG_MACH_T86519A1
+	struct snd_soc_dapm_context *dapm = w->dapm;
+	struct snd_soc_card *card = dapm->card;
+	struct snd_soc_codec *codec;
 
+	codec = byt_get_codec(card);
+	if (!codec) {
+		pr_err("Codec not found; Unable to set platform clock\n");
+		return -EIO;
+	}
+	pdata = snd_soc_card_get_drvdata(card);
+#else
 	pdata = snd_soc_card_get_drvdata(w->codec->card);
+#endif
 	pr_debug("%s: event = %d\n", __func__, event);
 	switch (event) {
 #ifdef CONFIG_MACH_CP8675
@@ -965,8 +1054,13 @@ static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 			if (atomic_read(&pdata->mclk_rsc_ref) == 0) {
 				pr_debug("%s: disabling MCLK\n", __func__);
 				/* disable the codec mclk config*/
+#ifdef CONFIG_MACH_T86519A1
+				msm8x16_wcd_mclk_enable(codec, 0, true);
+				msm8x16_enable_codec_ext_clk(codec, 0, true);
+#else
 				msm8x16_wcd_mclk_enable(w->codec, 0, true);
 				msm8x16_enable_codec_ext_clk(w->codec, 0, true);
+#endif
 				ret = pinctrl_select_state(pinctrl_info.pinctrl,
 						pinctrl_info.cdc_lines_sus);
 				if (ret < 0)
@@ -1600,6 +1694,168 @@ static struct snd_soc_ops msm_pri_auxpcm_be_ops = {
 	.shutdown = msm_prim_auxpcm_shutdown,
 };
 
+#ifdef CONFIG_MACH_T86519A1
+static int wm8998_snd_startup_clk(void)
+{
+	int ret = 0;
+
+	ret = msm8x16_enable_codec_ext_clk_wm8998(wm8998, 1, true);
+	if (ret < 0) {
+		pr_err("failed to enable mclk\n");
+		return ret;
+	}
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1_REFCLK,
+					 ARIZONA_FLL_SRC_NONE,
+					 0, 0);
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1,
+				ARIZONA_FLL_SRC_NONE, 0, 0);
+
+	pr_debug("arizona  %s->%d\n", __FUNCTION__, __LINE__);
+	ret = snd_soc_codec_set_pll(wm8998, VEGAS_FLL1,
+			MSM_VEGAS_FLL_CLK_SOURCE,
+			19200000, MSM_VEGAS_FLL_CLK_FREQ);
+
+	pr_debug("arizona wm8998_snd_startup Start to set SYSCLK\n");
+	ret = snd_soc_codec_set_sysclk( wm8998, ARIZONA_CLK_SYSCLK,
+			ARIZONA_CLK_SRC_FLL1,
+			MSM_VEGAS_SYS_CLK_FREQ,
+			SND_SOC_CLOCK_IN);
+
+	if (ret != 0) {
+		pr_err("arizona Failed to start SYSCLK: %d\n", ret);
+		return ret;
+	}
+	ret = snd_soc_codec_set_sysclk( wm8998, ARIZONA_CLK_OPCLK,
+					MSM_VEGAS_FLL_CLK_SOURCE,
+					MSM_VEGAS_SYS_CLK_FREQ,
+					SND_SOC_CLOCK_OUT);
+	if (ret != 0) {
+		pr_err("arizona Failed to start OPCLK  %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int wm8998_snd_shutdown_clk(void)
+{
+	int ret = 0;
+
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1_REFCLK,
+		ARIZONA_FLL_SRC_NONE, 0, 0);
+
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1,
+		ARIZONA_FLL_SRC_NONE, 0, 0);
+
+	ret = msm8x16_enable_codec_ext_clk_wm8998(wm8998, 0, true);
+	if (ret < 0) {
+		pr_err("failed to enable mclk\n");
+		return ret;
+	}
+
+	return ret;
+}
+static int msm_wm8998_set_bias_level(struct snd_soc_card *card,
+				struct snd_soc_dapm_context *dapm,
+				enum snd_soc_bias_level level)
+{
+
+	int ret;
+
+	if (!wm8998)
+		return 0;
+
+	if (dapm->dev != wm8998->dev)
+		return 0;
+
+	pr_debug("msm_wm8998_set_bias_level level is %d\n",level);
+
+	switch (level) {
+	case SND_SOC_BIAS_PREPARE:
+		if (previous_bias_level != SND_SOC_BIAS_STANDBY)
+			break;
+		ret= wm8998_snd_startup_clk();
+		if (ret < 0) {
+			pr_err("failed to wm8998_snd_startup_clk\n");
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int msm_wm8998_set_bias_level_post(struct snd_soc_card *card,
+				     struct snd_soc_dapm_context *dapm,
+				     enum snd_soc_bias_level level)
+{
+	int ret;
+
+	if (!wm8998)
+		return 0;
+
+	if (dapm->dev != wm8998->dev)
+		return 0;
+
+	pr_debug("%s level is %d previous_bias_level is %d\n",
+		__func__, level, previous_bias_level);
+
+	switch (level) {
+	case SND_SOC_BIAS_STANDBY:
+		if(previous_bias_level < SND_SOC_BIAS_PREPARE)
+			break;
+		ret= wm8998_snd_shutdown_clk();
+		if (ret < 0) {
+			pr_err("failed to wm8998_snd_shutdown_clk\n");
+		}
+		break;
+	default:
+		break;
+	}
+	previous_bias_level = level;
+	return 0;
+}
+
+static int wm8998_init(struct snd_soc_pcm_runtime *rtd)
+{
+	struct snd_soc_codec *codec = rtd->codec;
+	struct snd_soc_dapm_context *dapm = &codec->dapm;
+
+	WARN_ON(!rtd->codec);
+	WARN_ON(!rtd->codec_dai);
+
+	wm8998 = codec;
+
+	/* We will ensure the FLL is provided whenever the device is active */
+	snd_soc_codec_set_sysclk(codec, ARIZONA_CLK_SYSCLK, ARIZONA_CLK_SRC_FLL1,
+				 48000 * 1024, 0);
+
+	/*
+	 * Just to force the clock reference to as specified, not 32kHz.
+	 * If we set the fll_ref as none, the driver then tries to refer
+	 * to the fll_sync setting and use it for fll_ref
+	 */
+	snd_soc_codec_set_pll(wm8998, VEGAS_FLL1_REFCLK,
+				ARIZONA_FLL_SRC_NONE,
+				0, 0);
+
+	snd_soc_dapm_ignore_suspend(dapm, "HPOUTL");
+	snd_soc_dapm_ignore_suspend(dapm, "HPOUTR");
+	snd_soc_dapm_ignore_suspend(dapm, "SPKOUTLP");
+	snd_soc_dapm_ignore_suspend(dapm, "SPKOUTLN");
+	snd_soc_dapm_ignore_suspend(dapm, "SPKOUTRP");
+	snd_soc_dapm_ignore_suspend(dapm, "SPKOUTRN");
+	snd_soc_dapm_ignore_suspend(dapm, "AIF1 Playback");
+
+	snd_soc_dapm_sync(dapm);
+
+	return 0;
+}
+
+#endif
+
 static struct snd_soc_dai_link msm8x16_9306_dai[] = {
 	/* Backend DAI Links */
 	{
@@ -2100,8 +2356,17 @@ static struct snd_soc_dai_link msm8x16_dai[] = {
 		.stream_name = "Quaternary MI2S Playback",
 		.cpu_dai_name = "msm-dai-q6-mi2s.3",
 		.platform_name = "msm-pcm-routing",
+#ifdef CONFIG_MACH_T86519A1
+		.codec_name = "vegas-codec",
+		.codec_dai_name = "vegas-aif1",
+		.init = &wm8998_init,
+		.dai_fmt = SND_SOC_DAIFMT_I2S
+			| SND_SOC_DAIFMT_NB_NF
+			| SND_SOC_DAIFMT_CBS_CFS,
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
 		.be_hw_params_fixup = msm_be_hw_params_fixup,
@@ -2308,6 +2573,10 @@ static struct snd_soc_card bear_cards[MAX_SND_CARDS] = {
 		.name		= "msm8x16-snd-card",
 		.dai_link	= msm8x16_dai,
 		.num_links	= ARRAY_SIZE(msm8x16_dai),
+#ifdef CONFIG_MACH_T86519A1
+		.set_bias_level = msm_wm8998_set_bias_level,
+		.set_bias_level_post = msm_wm8998_set_bias_level_post,
+#endif
 	},
 	{
 		.name		= "msm8x16-tapan-snd-card",
