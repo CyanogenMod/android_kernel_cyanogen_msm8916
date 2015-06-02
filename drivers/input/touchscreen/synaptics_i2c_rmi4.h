@@ -229,6 +229,7 @@ struct synaptics_rmi4_data {
 	struct delayed_work det_work;
 	struct workqueue_struct *det_workqueue;
 	unsigned int firmware_config_id;
+	unsigned int fw_cfg_id;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
 #endif

@@ -2835,6 +2835,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 					return retval;
 				}
 				rmi4_data->firmware_config_id = (rmi->fw_config_id[0]<<24) | (rmi->fw_config_id[1]<<16) | (rmi->fw_config_id[2]<<8) | rmi->fw_config_id[3];  //liyong2 2014.1.9
+				rmi4_data->fw_cfg_id = (rmi->fw_config_id[0]<<24) | (rmi->fw_config_id[1]<<16) | (rmi->fw_config_id[2]<<8);
 				pr_info("%s:%d firmware config id=0x%08x\n",__func__,__LINE__,rmi4_data->firmware_config_id);
 
 				//baron start
@@ -3810,7 +3811,11 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
 	char tp_version[60] = {0};
 	sprintf(tp_version, "[fw]%08x,[ic]S2716",rmi4_data->firmware_config_id);
 	// printk("*%s:rmi4_data->f34_ctrl_base_addr =%0x \n",__func__,rmi4_data->f34_ctrl_base_addr);
-	init_tp_fm_info(0, tp_version, "boyi");
+	if (rmi4_data->fw_cfg_id == 0x80012000) {
+		init_tp_fm_info(0, tp_version, "boyi");
+	} else {
+		init_tp_fm_info(0, tp_version, "DJ");
+	}
 	strcpy(g_Id_save,tp_version); //baron modify
 }
 #endif
