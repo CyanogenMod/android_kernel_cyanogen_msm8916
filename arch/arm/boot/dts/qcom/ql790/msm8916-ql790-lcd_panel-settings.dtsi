@@ -1,0 +1,50 @@
+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/*
+ * As a general rule, only version-specific property overrides should be placed
+ * inside this file. However, device definitions should be placed inside the
+ * yep_product_ql1000_lcd_panel_settings.dtsi file.
+ */
+/*qcom,dsi-pref-prim-pan is used as default panel if any panel is detected from lk*/
+
+/*  Date             Author         	 		Why
+    2015-04-14        litao          		   creat
+    2015-04-24       lihuiqin          add dijing lcd for QL790
+	2015-04-24       lihuiqin          modify vsp/vsn gpio for QL790
+*/
+#include "dsi_panel_dijing_nt35521h_hsd4p7_hd_video.dtsi"
+
+&mdss_mdp {
+	qcom,mdss-pref-prim-intf = "dsi";
+	qcom,mdss-clk-factor = <150 100>;   /* 1.5 times */
+};
+
+&pmx_mdss {
+	qcom,num-grp-pins = <1>;
+	qcom,pins = <&gp 25>;
+};
+
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan = <&nt35521_dijing_4p7inch_hd_vid>;
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active>;
+	pinctrl-1 = <&mdss_dsi_suspend>;
+	qcom,platform-enable-gpio = <&msm_gpio 21 0>;
+	qcom,platform-bklight-en-gpio = <&msm_gpio 20 0>;
+	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
+};
+
+&nt35521_dijing_4p7inch_hd_vid{
+	qcom,cont-splash-enabled;
+};
+

@@ -1,0 +1,112 @@
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+#include "../msm8916-pinctrl.dtsi"
+
+&cdc_pdm_lines_sus {
+	/delete-property/ bias-disable;
+	bias-pull-down;
+};
+
+&tlmm_pinmux {
+	/delete-node/ tpiu_setb_5;
+	/delete-node/ tpiu_setb_8;
+	/delete-node/ tpiu_setb_9;
+	/delete-node/ tpiu_setb_10;
+	/delete-node/ tpiu_setb_11;
+	/delete-node/ tpiu_setb_12;
+
+	cam_sensor_rear {
+		/* RESET, STANDBY ID*/
+		qcom,pins =  <&gp 35>, <&gp 34>, <&gp 51>;
+		qcom,num-grp-pins = <3>;
+	};
+
+	cam_sensor_rear_sleep {
+		/* RESET, STANDBY ID*/
+		qcom,pins =  <&gp 35>, <&gp 34>, <&gp 51>;
+		qcom,num-grp-pins = <3>;
+	};
+
+	cam_sensor_front {
+		/* RESET, STANDBY ID*/
+		qcom,pins =  <&gp 28>, <&gp 33>, <&gp 50>;
+		qcom,num-grp-pins = <3>;
+	};
+
+	cam_sensor_front_sleep {
+		/* RESET, STANDBY ID*/
+		qcom,pins =  <&gp 28>, <&gp 33>, <&gp 50>;
+		qcom,num-grp-pins = <3>;
+	};
+
+	cam_sensor_flash {
+		/* FLASH_RESET,FLASH_EN,FLASH_NOW */
+		qcom,pins = <&gp 31>,<&gp 32> ;
+		qcom,num-grp-pins = <2>;
+	};
+
+	/delete-node/ apds99xx_int_pin;
+
+	ap3426_int_pin {
+		qcom,pins = <&gp 113>;
+		qcom,pin-func = <0>;
+		qcom,num-grp-pins = <1>;
+		label = "ap3426-irq";
+		ap3426_default: ap3426_default {
+			drive-strength = <6>;
+			bias-pull-up;
+		};
+		ap3426_sleep: ap3426_sleep {
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+	};
+
+	bma2x2_int1_pin {
+		qcom,pins = <&gp 112>;
+		qcom,num-grp-pins = <1>;
+		label = "bma2x2_int1_pin";
+		bma2x2_int1_default: int1_default {
+			  drive-strength = <6>;
+			  bias-pull-up;
+		};
+	};
+
+	bma2x2_int2_pin {
+		qcom,pins = <&gp 114>;
+		qcom,num-grp-pins = <1>;
+		label = "bma2x2_int2_pin";
+		bma2x2_int2_default: int2_default {
+			  drive-strength = <6>;
+			  bias-pull-up;
+		};
+	};
+
+	otg_5v_pin {
+		qcom,pins = <&gp 52>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "otg-gpio";
+
+		otg_5v_on: otg_on {
+			driver-strength = <10>;
+			bias-pull-up;
+			output-high;
+		};
+
+		otg_5v_off: otg_off {
+			driver-strength = <2>;
+			bias-disable;
+			output-low;
+		};
+	};
+};
