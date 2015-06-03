@@ -1642,6 +1642,7 @@ static void gsl_report_work(struct work_struct *work)
 		//print_info("GSL:::0x80=%02x%02x%02x%02x[%d]\n",buf[3],buf[2],buf[1],buf[0],test_count++);
 		//print_info("GSL:::0x84=%02x%02x%02x%02x\n",buf[7],buf[6],buf[5],buf[4]);
 		//print_info("GSL:::0x88=%02x%02x%02x%02x\n",buf[11],buf[10],buf[9],buf[8]);
+		if(GE_ENABLE == gsl_gesture_status && ((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2)))
 		{
 			struct timeval now;
 			do_gettimeofday(&now);
