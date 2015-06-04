@@ -80,7 +80,7 @@
 
 #define DI_AUTO_CAL
 #ifdef DI_AUTO_CAL
-       #define DI_PS_CAL_THR 300
+       #define DI_PS_CAL_THR 500
 #endif
 
 static void pl_timer_callback(unsigned long pl_data);
