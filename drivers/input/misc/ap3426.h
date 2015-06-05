@@ -38,7 +38,6 @@
 #define __AP3426_H__
 
 #include <linux/sensors.h>
-#include <linux/wakelock.h>
 
 
 #define AP3426_SUCCESS					0
@@ -136,7 +135,7 @@
 #define AP3426_REG_PS_THDL_L_MASK		0xFF
 
 #define AP3426_REG_PS_THDL_H       0x2B
-#define AP3426_REG_PS_THDL_H_SHIFT	(2)
+#define AP3426_REG_PS_THDL_H_SHIFT	(0)
 #define AP3426_REG_PS_THDL_H_MASK		0x03
 
 #define AP3426_REG_PS_THDH_L       0x2C
@@ -144,7 +143,7 @@
 #define AP3426_REG_PS_THDH_L_MASK		0xFF
 
 #define AP3426_REG_PS_THDH_H       0x2D
-#define AP3426_REG_PS_THDH_H_SHIFT	(2)
+#define AP3426_REG_PS_THDH_H_SHIFT	(0)
 #define AP3426_REG_PS_THDH_H_MASK		0x03
 
 #define AP3426_MAX_REG_NUM  (AP3426_REG_PS_THDH_H + 1)
@@ -232,7 +231,10 @@ struct ap3426_data {
     bool als_enabled;
     bool ps_enabled;
     bool rels_enable;
-    struct wake_lock ps_wake_lock;
+    struct wake_lock ps_wakelock;
+    uint16_t ps_thd_l;
+    uint16_t ps_thd_h;
+    uint16_t ps_calibration;
 };
 
 #endif
