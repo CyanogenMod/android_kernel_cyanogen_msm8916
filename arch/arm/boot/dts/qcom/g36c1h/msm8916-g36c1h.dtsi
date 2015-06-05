@@ -236,9 +236,12 @@
 		interrupts = <113 0x2002>;
 		vdd-supply = <&pm8916_l17>;
 		vio-supply = <&pm8916_l6>;
-		di,irq-gpio = <&msm_gpio 113 0x2002>;
-		di,ps-thdl = <450>;
-		di,ps-thdh = <550>;
+		ap3426,irq-gpio = <&msm_gpio 113 0x2002>;
+		ap3426,ps-thdl = <300>;
+		ap3426,ps-thdh = <450>;
+		ap3426,ps-calibration-min = <0>;
+		ap3426,ps-calibration-expected = <0>;
+		ap3426,ps-calibration-max = <500>;
 	};
 
 	kionix@e {
