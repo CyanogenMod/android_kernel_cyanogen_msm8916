@@ -82,6 +82,7 @@ typedef enum{
 static GE_T gsl_gesture_status = GE_DISABLE;
 static volatile unsigned int gsl_gesture_flag = 0;
 static char gsl_gesture_c = 0;
+static bool dozing = false;
 struct timeval startup;
 #endif
 
@@ -1406,6 +1407,7 @@ static void gsl_enter_doze(struct gsl_ts_data *ts, bool bCharacterGesture)
 	//gsl_gesture_status = GE_NOWORK;
 	msleep(10);
 	gsl_gesture_status = GE_ENABLE;
+	dozing = true;
 
 }
 static void gsl_quit_doze(struct gsl_ts_data *ts)
@@ -1413,6 +1415,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	u8 buf[4] = {0};
 	//u32 tmp;
 
+	dozing = false;
 	gsl_gesture_status = GE_DISABLE;
 	free_irq(ts->client->irq,ddata);
 		
@@ -1979,7 +1982,7 @@ static void gsl_ts_resume(void)
 
 	/*Gesture Resume*/
 	#ifdef GSL_GESTURE
-		if((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2)){
+		if((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2) || dozing){
 			gsl_quit_doze(ddata);
 			{
 			int err = 0;
