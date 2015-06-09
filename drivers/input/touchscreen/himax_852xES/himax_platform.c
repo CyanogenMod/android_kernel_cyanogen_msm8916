@@ -446,24 +446,33 @@ int himax_gpio_power_config(struct i2c_client *client,struct himax_i2c_platform_
 		error = gpio_request(pdata->gpio_3v3_en, "himax-3v3_en");
 		if (error < 0)
 			E("%s: request 3v3_en pin failed\n", __func__);
-		gpio_direction_output(pdata->gpio_3v3_en, 1);
-		I("3v3_en pin =%d\n", gpio_get_value(pdata->gpio_3v3_en));
+		error = gpio_direction_output(pdata->gpio_3v3_en, 1);
+		if (error) {
+			E("unable to set direction for gpio [%d]\n",
+				pdata->gpio_3v3_en);
+			goto free_power_gpio;
+		}
 	}
 
-		pdata->vcc_i2c = regulator_get(&client->dev, "vcc_i2c");
-		if (IS_ERR(pdata->vcc_i2c)) {
-			error = PTR_ERR(pdata->vcc_i2c);
-			E("Regulator get failed rc=%d\n",	error);
-			//goto error_get_vtg_i2c;
+	pdata->vcc_i2c = regulator_get(&client->dev, "vcc_i2c");
+	if (IS_ERR(pdata->vcc_i2c)) {
+		error = PTR_ERR(pdata->vcc_i2c);
+		E("Regulator get failed rc=%d\n", error);
+		goto free_power_gpio;
+	}
+	if (regulator_count_voltages(pdata->vcc_i2c) > 0) {
+		error = regulator_set_voltage(pdata->vcc_i2c,
+			1800000, 1800000);
+		if (error) {
+			E("regulator set_vtg failed rc=%d\n", error);
+			goto reg_vcc_i2c_put;
 		}
-		if (regulator_count_voltages(pdata->vcc_i2c) > 0) {
-			error = regulator_set_voltage(pdata->vcc_i2c,
-				1800000, 1800000);
-			if (error) {
-				E("regulator set_vtg failed rc=%d\n", error);
-				goto reg_vcc_i2c_put;
-			}
-		}
+	}
+	error = regulator_enable(pdata->vcc_i2c);
+	if (error) {
+		E("Regulator vcc_i2c enable failed rc=%d\n", error);
+		goto reg_vcc_i2c_put;
+	}
 
 	if (gpio_is_valid(pdata->gpio_reset)) {
 		/* configure touchscreen reset out gpio */
@@ -471,14 +480,12 @@ int himax_gpio_power_config(struct i2c_client *client,struct himax_i2c_platform_
 		if (error) {
 			E("unable to request gpio [%d]\n",
 						pdata->gpio_reset);
-			goto free_power_gpio;
+			goto reg_vcc_i2c_disable;
 		}
 
 		error = gpio_direction_output(pdata->gpio_reset, 1);
 		if (error) {
 			E("unable to set direction for gpio [%d]\n",
-				pdata->gpio_reset);
-			printk("dengchoa unable to set direction for gpio [%d]\n",
 				pdata->gpio_reset);
 			goto free_reset_gpio;
 		}
@@ -490,13 +497,15 @@ int himax_gpio_power_config(struct i2c_client *client,struct himax_i2c_platform_
 		
 	}
 	msleep(20);
-	
-return error;
+//	pr_info("error = %d\n", error);
+	return error;
 
-reg_vcc_i2c_put:
-	regulator_put(pdata->vcc_i2c);
 free_reset_gpio:
 	gpio_free(pdata->gpio_reset);
+reg_vcc_i2c_disable:
+	regulator_disable(pdata->vcc_i2c);
+reg_vcc_i2c_put:
+	regulator_put(pdata->vcc_i2c);
 free_power_gpio:
 	gpio_free(pdata->gpio_3v3_en);
 
