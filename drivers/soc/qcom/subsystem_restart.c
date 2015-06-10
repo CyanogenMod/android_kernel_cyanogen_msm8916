@@ -226,6 +226,38 @@ static ssize_t restart_level_store(struct device *dev,
 	return -EPERM;
 }
 
+static ssize_t system_debug_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct subsys_device *subsys = to_subsys(dev);
+	char p[6] = "set";
+
+	if (!subsys->desc->system_debug)
+		strlcpy(p, "reset", sizeof(p));
+
+	return snprintf(buf, PAGE_SIZE, "%s\n", p);
+}
+
+static ssize_t system_debug_store(struct device *dev,
+				struct device_attribute *attr, const char *buf,
+				size_t count)
+{
+	struct subsys_device *subsys = to_subsys(dev);
+	const char *p;
+
+	p = memchr(buf, '\n', count);
+	if (p)
+		count = p - buf;
+
+	if (!strncasecmp(buf, "set", count))
+		subsys->desc->system_debug = true;
+	else if (!strncasecmp(buf, "reset", count))
+		subsys->desc->system_debug = false;
+	else
+		return -EPERM;
+	return count;
+}
+
 int subsys_get_restart_level(struct subsys_device *dev)
 {
 	return dev->restart_level;
@@ -266,6 +298,7 @@ static struct device_attribute subsys_attrs[] = {
 	__ATTR_RO(state),
 	__ATTR_RO(crash_count),
 	__ATTR(restart_level, 0644, restart_level_show, restart_level_store),
+	__ATTR(system_debug, 0644, system_debug_show, system_debug_store),
 	__ATTR_NULL,
 };
 
@@ -1272,15 +1305,15 @@ static int __get_gpio(struct subsys_desc *desc, const char *prop,
 }
 
 static int __get_irq(struct subsys_desc *desc, const char *prop,
-		unsigned int *irq)
+		unsigned int *irq, int *gpio)
 {
-	int ret, gpio, irql;
+	int ret, gpiol, irql;
 
-	ret = __get_gpio(desc, prop, &gpio);
+	ret = __get_gpio(desc, prop, &gpiol);
 	if (ret)
 		return ret;
 
-	irql = gpio_to_irq(gpio);
+	irql = gpio_to_irq(gpiol);
 
 	if (irql == -ENOENT)
 		irql = -ENXIO;
@@ -1290,6 +1323,8 @@ static int __get_irq(struct subsys_desc *desc, const char *prop,
 				prop);
 		return irql;
 	} else {
+		if (gpio)
+			*gpio = gpiol;
 		*irq = irql;
 	}
 
@@ -1304,15 +1339,17 @@ static int subsys_parse_devicetree(struct subsys_desc *desc)
 	struct platform_device *pdev = container_of(desc->dev,
 					struct platform_device, dev);
 
-	ret = __get_irq(desc, "qcom,gpio-err-fatal", &desc->err_fatal_irq);
+	ret = __get_irq(desc, "qcom,gpio-err-fatal", &desc->err_fatal_irq,
+							&desc->err_fatal_gpio);
 	if (ret && ret != -ENOENT)
 		return ret;
 
-	ret = __get_irq(desc, "qcom,gpio-err-ready", &desc->err_ready_irq);
+	ret = __get_irq(desc, "qcom,gpio-err-ready", &desc->err_ready_irq,
+							NULL);
 	if (ret && ret != -ENOENT)
 		return ret;
 
-	ret = __get_irq(desc, "qcom,gpio-stop-ack", &desc->stop_ack_irq);
+	ret = __get_irq(desc, "qcom,gpio-stop-ack", &desc->stop_ack_irq, NULL);
 	if (ret && ret != -ENOENT)
 		return ret;
 

@@ -45,6 +45,8 @@ struct module;
  * @ssctl_instance_id: Instance id used to connect with SSCTL service
  * @sysmon_pid:	pdev id that sysmon is probed with for the subsystem
  * @sysmon_shutdown_ret: Return value for the call to sysmon_send_shutdown
+ * @system_debug: If "set", triggers a device restart when the
+ * subsystem's wdog bite handler is invoked.
  */
 struct subsys_desc {
 	const char *name;
@@ -60,6 +62,7 @@ struct subsys_desc {
 	irqreturn_t (*stop_ack_handler) (int irq, void *dev_id);
 	irqreturn_t (*wdog_bite_handler) (int irq, void *dev_id);
 	int is_not_loadable;
+	int err_fatal_gpio;
 	unsigned int err_fatal_irq;
 	unsigned int err_ready_irq;
 	unsigned int stop_ack_irq;
@@ -71,6 +74,7 @@ struct subsys_desc {
 	int ssctl_instance_id;
 	u32 sysmon_pid;
 	int sysmon_shutdown_ret;
+	bool system_debug;
 };
 
 /**
