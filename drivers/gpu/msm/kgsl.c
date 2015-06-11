@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -421,7 +421,6 @@ kgsl_mem_entry_attach_process(struct kgsl_mem_entry *entry,
 
 	entry->id = id;
 	entry->priv = process;
-	entry->dev_priv = dev_priv;
 
 	spin_lock(&process->mem_lock);
 	ret = kgsl_mem_entry_track_gpuaddr(process, entry);
@@ -503,6 +502,25 @@ void kgsl_context_dump(struct kgsl_context *context)
 }
 EXPORT_SYMBOL(kgsl_context_dump);
 
+/* Allocate a new context ID */
+int _kgsl_get_context_id(struct kgsl_device *device,
+		struct kgsl_context *context)
+{
+	int id;
+
+	idr_preload(GFP_KERNEL);
+	write_lock(&device->context_lock);
+	id = idr_alloc(&device->context_idr, context, 1,
+		KGSL_MEMSTORE_MAX, GFP_NOWAIT);
+	write_unlock(&device->context_lock);
+	idr_preload_end();
+
+	if (id > 0)
+		context->id = id;
+
+	return id;
+}
+
 /**
  * kgsl_context_init() - helper to initialize kgsl_context members
  * @dev_priv: the owner of the context
@@ -519,28 +537,31 @@ EXPORT_SYMBOL(kgsl_context_dump);
 int kgsl_context_init(struct kgsl_device_private *dev_priv,
 			struct kgsl_context *context)
 {
-	int ret = 0, id;
 	struct kgsl_device *device = dev_priv->device;
 	char name[64];
+	int ret = 0, id;
 
-	idr_preload(GFP_KERNEL);
-	write_lock(&device->context_lock);
-	id = idr_alloc(&device->context_idr, context, 1, 0, GFP_NOWAIT);
-	context->id = id;
-	write_unlock(&device->context_lock);
-	idr_preload_end();
-	if (id < 0) {
-		ret = id;
-		goto fail;
+	id = _kgsl_get_context_id(device, context);
+	if (id == -ENOSPC) {
+		/*
+		 * Before declaring that there are no contexts left try
+		 * flushing the event workqueue just in case there are
+		 * detached contexts waiting to finish
+		 */
+
+		mutex_unlock(&device->mutex);
+		flush_workqueue(device->events_wq);
+		mutex_lock(&device->mutex);
+		id = _kgsl_get_context_id(device, context);
 	}
 
-	/* MAX - 1, there is one memdesc in memstore for device info */
-	if (id >= KGSL_MEMSTORE_MAX) {
-		KGSL_DRV_INFO(device, "cannot have more than %zu "
-				"ctxts due to memstore limitation\n",
+	if (id < 0) {
+		if (id == -ENOSPC)
+			KGSL_DRV_INFO(device,
+				"cannot have more than %zu contexts due to memstore limitation\n",
 				KGSL_MEMSTORE_MAX);
-		ret = -ENOSPC;
-		goto fail_free_id;
+
+		return id;
 	}
 
 	kref_init(&context->refcount);
@@ -551,7 +572,7 @@ int kgsl_context_init(struct kgsl_device_private *dev_priv,
 	 */
 	if (!kgsl_process_private_get(dev_priv->process_priv)) {
 		ret = -EBADF;
-		goto fail_free_id;
+		goto out;
 	}
 	context->device = dev_priv->device;
 	context->dev_priv = dev_priv;
@@ -560,18 +581,19 @@ int kgsl_context_init(struct kgsl_device_private *dev_priv,
 
 	ret = kgsl_sync_timeline_create(context);
 	if (ret)
-		goto fail_free_id;
+		goto out;
 
 	snprintf(name, sizeof(name), "context-%d", id);
 	kgsl_add_event_group(&context->events, context, name,
 		kgsl_readtimestamp, context);
 
-	return 0;
-fail_free_id:
-	write_lock(&device->context_lock);
-	idr_remove(&dev_priv->device->context_idr, id);
-	write_unlock(&device->context_lock);
-fail:
+out:
+	if (ret) {
+		write_lock(&device->context_lock);
+		idr_remove(&dev_priv->device->context_idr, id);
+		write_unlock(&device->context_lock);
+	}
+
 	return ret;
 }
 EXPORT_SYMBOL(kgsl_context_init);
@@ -907,8 +929,7 @@ static struct kgsl_process_private *kgsl_process_private_new(
 	return private;
 }
 
-static void process_release_memory(struct kgsl_device_private *dev_priv,
-		struct kgsl_process_private *private)
+static void process_release_memory(struct kgsl_process_private *private)
 {
 	struct kgsl_mem_entry *entry;
 	int next = 0;
@@ -926,7 +947,7 @@ static void process_release_memory(struct kgsl_device_private *dev_priv,
 		 * free a reference to this entry, other references are from
 		 * within kgsl so they will be freed eventually by kgsl
 		 */
-		if (entry->dev_priv == dev_priv && !entry->pending_free) {
+		if (!entry->pending_free) {
 			entry->pending_free = 1;
 			spin_unlock(&private->mem_lock);
 			kgsl_mem_entry_put(entry);
@@ -960,24 +981,36 @@ static void kgsl_process_private_close(struct kgsl_device_private *dev_priv,
 {
 	mutex_lock(&kgsl_driver.process_mutex);
 
+	if (--private->fd_count > 0) {
+		mutex_unlock(&kgsl_driver.process_mutex);
+		kgsl_process_private_put(private);
+		return;
+	}
+
 	/*
 	 * If this is the last file on the process take down the debug
 	 * directories and garbage collect any outstanding resources
 	 */
 
-	if (--private->fd_count == 0) {
-		kgsl_process_uninit_sysfs(private);
-		debugfs_remove_recursive(private->debug_root);
+	kgsl_process_uninit_sysfs(private);
+	debugfs_remove_recursive(private->debug_root);
 
-		process_release_memory(dev_priv, private);
-		process_release_sync_sources(private);
+	process_release_sync_sources(private);
 
-		/* Remove the process struct from the master list */
-		list_del(&private->list);
-	}
+	kgsl_mmu_detach_pagetable(private->pagetable);
+
+	/* Remove the process struct from the master list */
+	list_del(&private->list);
+
+	/*
+	 * Unlock the mutex before releasing the memory - this prevents a
+	 * deadlock with the IOMMU mutex if a page fault occurs
+	 */
+	mutex_unlock(&kgsl_driver.process_mutex);
+
+	process_release_memory(private);
 
 	kgsl_process_private_put(private);
-	mutex_unlock(&kgsl_driver.process_mutex);
 }
 
 
@@ -1547,10 +1580,10 @@ void kgsl_dump_syncpoints(struct kgsl_device *device,
 			break;
 		}
 		case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
-			if (event->handle && event->handle->fence)
+			if (event->handle)
 				dev_err(device->dev, "  fence: [%p] %s\n",
 					event->handle->fence,
-					event->handle->fence->name);
+					event->handle->name);
 			else
 				dev_err(device->dev, "  fence: invalid\n");
 			break;
@@ -1563,11 +1596,16 @@ static void _kgsl_cmdbatch_timer(unsigned long data)
 	struct kgsl_device *device;
 	struct kgsl_cmdbatch *cmdbatch = (struct kgsl_cmdbatch *) data;
 	struct kgsl_cmdbatch_sync_event *event;
+	struct adreno_context *drawctxt;
 
 	if (cmdbatch == NULL || cmdbatch->context == NULL)
 		return;
 
+	drawctxt = ADRENO_CONTEXT(cmdbatch->context);
 	/* We are in timer context, this can be non-bh */
+	spin_lock(&drawctxt->lock);
+	set_bit(ADRENO_CONTEXT_CMDBATCH_FLAG_FENCE_LOG,
+		&drawctxt->flags);
 	spin_lock(&cmdbatch->lock);
 	if (list_empty(&cmdbatch->synclist))
 		goto done;
@@ -1598,7 +1636,7 @@ static void _kgsl_cmdbatch_timer(unsigned long data)
 			if (event->handle && event->handle->fence) {
 				set_bit(CMDBATCH_FLAG_FENCE_LOG,
 					&cmdbatch->priv);
-				sync_fence_log(event->handle->fence);
+				kgsl_sync_fence_log(event->handle->fence);
 				clear_bit(CMDBATCH_FLAG_FENCE_LOG,
 					&cmdbatch->priv);
 			} else
@@ -1609,6 +1647,9 @@ static void _kgsl_cmdbatch_timer(unsigned long data)
 
 done:
 	spin_unlock(&cmdbatch->lock);
+	clear_bit(ADRENO_CONTEXT_CMDBATCH_FLAG_FENCE_LOG,
+		&drawctxt->flags);
+	spin_unlock(&drawctxt->lock);
 }
 
 /**
@@ -1821,12 +1862,9 @@ EXPORT_SYMBOL(kgsl_cmdbatch_destroy);
 static void kgsl_cmdbatch_sync_fence_func(void *priv)
 {
 	struct kgsl_cmdbatch_sync_event *event = priv;
-	char *name = "unknown";
 
-	if (event->handle && event->handle->fence)
-		name = event->handle->fence->name;
-
-	trace_syncpoint_fence_expire(event->cmdbatch, name);
+	trace_syncpoint_fence_expire(event->cmdbatch,
+		event->handle ? event->handle->name : "unknown");
 
 	kgsl_cmdbatch_sync_expire(event->device, event);
 	/* Put events that have signaled */
@@ -1888,9 +1926,10 @@ static int kgsl_cmdbatch_add_sync_fence(struct kgsl_device *device,
 	event->handle = kgsl_sync_fence_async_wait(sync->fd,
 		kgsl_cmdbatch_sync_fence_func, event);
 
-
 	if (IS_ERR_OR_NULL(event->handle)) {
 		int ret = PTR_ERR(event->handle);
+
+		event->handle = NULL;
 
 		/* Failed to add the event to the async callback */
 		kgsl_cmdbatch_sync_event_put(event);
@@ -1914,7 +1953,7 @@ static int kgsl_cmdbatch_add_sync_fence(struct kgsl_device *device,
 		return ret;
 	}
 
-	trace_syncpoint_fence(cmdbatch, event->handle->fence->name);
+	trace_syncpoint_fence(cmdbatch, event->handle->name);
 
 	/*
 	 * Event was successfully added to the synclist, the async

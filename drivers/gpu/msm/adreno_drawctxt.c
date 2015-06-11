@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -62,12 +62,17 @@ void adreno_drawctxt_dump(struct kgsl_device *device,
 	struct adreno_context *drawctxt = ADRENO_CONTEXT(context);
 	int index, pos;
 	char buf[120];
+	int locked = 0;
 
 	kgsl_readtimestamp(device, context, KGSL_TIMESTAMP_QUEUED, &queue);
 	kgsl_readtimestamp(device, context, KGSL_TIMESTAMP_CONSUMED, &start);
 	kgsl_readtimestamp(device, context, KGSL_TIMESTAMP_RETIRED, &retire);
 
-	spin_lock(&drawctxt->lock);
+	if (!test_bit(ADRENO_CONTEXT_CMDBATCH_FLAG_FENCE_LOG,
+			&drawctxt->flags)) {
+		locked = 1;
+		spin_lock(&drawctxt->lock);
+	}
 	dev_err(device->dev,
 		"  context[%d]: queue=%d, submit=%d, start=%d, retire=%d\n",
 		context->id, queue, drawctxt->submitted_timestamp,
@@ -121,7 +126,8 @@ stats:
 	dev_err(device->dev, "  context[%d]: submit times: %s\n",
 		context->id, buf);
 
-	spin_unlock(&drawctxt->lock);
+	if (locked)
+		spin_unlock(&drawctxt->lock);
 }
 
 /**
@@ -277,8 +283,8 @@ void adreno_drawctxt_invalidate(struct kgsl_device *device,
 
 	spin_unlock(&drawctxt->lock);
 
-	/* Make sure all "retired" events are processed */
-	kgsl_process_event_group(device, &context->events);
+	/* Make sure all pending events are processed or cancelled */
+	kgsl_flush_event_group(device, &context->events);
 
 	/* Give the bad news to everybody waiting around */
 	wake_up_all(&drawctxt->waiting);

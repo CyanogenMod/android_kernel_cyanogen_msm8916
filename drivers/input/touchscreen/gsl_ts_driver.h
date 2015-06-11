@@ -174,7 +174,11 @@ struct fw_data
     u32 val;
 };
 
+#if 1
+#include "gsl_ts_8074_doubleclick.h"//new version with character gesture and double click.
+#else
 #include "gsl_ts_8074.h"
+#endif
 
 static u8 gsl_cfg_index = 0;
 struct fw_config_type

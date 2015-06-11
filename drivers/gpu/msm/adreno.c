@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -82,7 +82,6 @@ static struct adreno_device device_3d0 = {
 	.pfp_fw = NULL,
 	.pm4_fw = NULL,
 	.wait_timeout = 0, /* in milliseconds, 0 means disabled */
-	.ib_check_level = 0,
 	.ft_policy = KGSL_FT_DEFAULT_POLICY,
 	.ft_pf_policy = KGSL_FT_PAGEFAULT_DEFAULT_POLICY,
 	.fast_hang_detect = 1,
@@ -356,7 +355,7 @@ static int adreno_soft_reset(struct kgsl_device *device);
  */
 void _soft_reset(struct adreno_device *adreno_dev)
 {
-	struct kgsl_device *device = &adreno_dev->dev;
+	struct adreno_gpudev *gpudev  = ADRENO_GPU_DEVICE(adreno_dev);
 	unsigned int reg;
 
 	adreno_writereg(adreno_dev, ADRENO_REG_RBBM_SW_RESET_CMD, 1);
@@ -368,8 +367,9 @@ void _soft_reset(struct adreno_device *adreno_dev)
 	adreno_writereg(adreno_dev, ADRENO_REG_RBBM_SW_RESET_CMD, 0);
 
 	/* The SP/TP regulator gets turned off after a soft reset */
-	if (device->ftbl->regulator_enable)
-		device->ftbl->regulator_enable(device);
+
+	if (gpudev->regulator_enable)
+		gpudev->regulator_enable(adreno_dev);
 }
 
 
@@ -510,6 +510,8 @@ adreno_identify_gpu(struct adreno_device *adreno_dev)
 		if (reg_offsets->offset_0 != i && !reg_offsets->offsets[i])
 			reg_offsets->offsets[i] = ADRENO_REG_UNUSED;
 	}
+	if (gpudev->gpudev_init)
+		gpudev->gpudev_init(adreno_dev);
 }
 
 static const struct platform_device_id adreno_id_table[] = {
@@ -963,6 +965,20 @@ static int adreno_init(struct kgsl_device *device)
 	int i;
 	int ret;
 
+	/*
+	 * If the microcode read fails then either the usermodehelper wasn't
+	 * available or there was a corruption problem - in either case fail the
+	 * open and force the user to try again
+	 */
+
+	ret = adreno_ringbuffer_read_pm4_ucode(device);
+	if (ret)
+		return ret;
+
+	ret = adreno_ringbuffer_read_pfp_ucode(device);
+	if (ret)
+		return ret;
+
 	kgsl_pwrctrl_change_state(device, KGSL_STATE_INIT);
 	/*
 	 * initialization only needs to be done once initially until
@@ -978,9 +994,6 @@ static int adreno_init(struct kgsl_device *device)
 
 	/* Initialize coresight for the target */
 	adreno_coresight_init(adreno_dev);
-
-	adreno_ringbuffer_read_pm4_ucode(device);
-	adreno_ringbuffer_read_pfp_ucode(device);
 
 	kgsl_pwrctrl_change_state(device, KGSL_STATE_INIT);
 	/*
@@ -1093,6 +1106,9 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 	unsigned int pmqos_wakeup_vote = device->pwrctrl.pm_qos_wakeup_latency;
 	unsigned int pmqos_active_vote = device->pwrctrl.pm_qos_active_latency;
 
+	/* make sure ADRENO_DEVICE_STARTED is not set here */
+	BUG_ON(test_bit(ADRENO_DEVICE_STARTED, &adreno_dev->priv));
+
 	pm_qos_update_request(&device->pwrctrl.pm_qos_req_dma,
 			pmqos_wakeup_vote);
 
@@ -1165,7 +1181,10 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_ON);
 	adreno_irqctrl(adreno_dev, 1);
 
-	adreno_perfcounter_start(adreno_dev);
+	status = adreno_perfcounter_start(adreno_dev);
+
+	if (status)
+		goto error_irq_off;
 
 	status = adreno_ringbuffer_cold_start(adreno_dev);
 
@@ -1238,6 +1257,35 @@ static int adreno_start(struct kgsl_device *device, int priority)
 	return ret;
 }
 
+/**
+ * adreno_vbif_clear_pending_transactions() - Clear transactions in VBIF pipe
+ * @device: Pointer to the device whose VBIF pipe is to be cleared
+ */
+static void adreno_vbif_clear_pending_transactions(struct kgsl_device *device)
+{
+	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
+	struct adreno_gpudev *gpudev = ADRENO_GPU_DEVICE(adreno_dev);
+	unsigned int mask = gpudev->vbif_xin_halt_ctrl0_mask;
+	unsigned int val;
+	unsigned long wait_for_vbif;
+
+	adreno_writereg(adreno_dev, ADRENO_REG_VBIF_XIN_HALT_CTRL0, mask);
+	/* wait for the transactions to clear */
+	wait_for_vbif = jiffies + msecs_to_jiffies(100);
+	while (1) {
+		adreno_readreg(adreno_dev,
+			ADRENO_REG_VBIF_XIN_HALT_CTRL1, &val);
+		if ((val & mask) == mask)
+			break;
+		if (time_after(jiffies, wait_for_vbif)) {
+			KGSL_DRV_ERR(device,
+				"Wait limit reached for VBIF XIN Halt\n");
+			break;
+		}
+	}
+	adreno_writereg(adreno_dev, ADRENO_REG_VBIF_XIN_HALT_CTRL0, 0);
+}
+
 static int adreno_stop(struct kgsl_device *device)
 {
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
@@ -1291,8 +1339,15 @@ int adreno_reset(struct kgsl_device *device)
 	struct kgsl_mmu *mmu = &device->mmu;
 	int i = 0;
 
-	/* Try soft reset first, for non mmu fault case only */
-	if (!atomic_read(&mmu->fault)) {
+	/* clear pending vbif transactions before reset */
+	adreno_vbif_clear_pending_transactions(device);
+
+	/*
+	 * Try soft reset first, for non mmu fault case only.
+	 * Skip soft reset and use hard reset for A304 GPU, As
+	 * A304 is not able to do SMMU programming after soft reset.
+	 */
+	if (!atomic_read(&mmu->fault) && !adreno_is_a304(adreno_dev)) {
 		ret = adreno_soft_reset(device);
 		if (ret)
 			KGSL_DEV_ERR_ONCE(device, "Device soft reset failed\n");
@@ -1437,8 +1492,7 @@ static ssize_t _ft_pagefault_policy_store(struct device *dev,
 			KGSL_FT_PAGEFAULT_GPUHALT_ENABLE |
 			KGSL_FT_PAGEFAULT_LOG_ONE_PER_PAGE |
 			KGSL_FT_PAGEFAULT_LOG_ONE_PER_INT);
-	ret = kgsl_mmu_set_pagefault_policy(&(adreno_dev->dev.mmu),
-			adreno_dev->ft_pf_policy);
+	ret = kgsl_mmu_set_pagefault_policy(&(adreno_dev->dev.mmu), policy);
 	if (!ret)
 		adreno_dev->ft_pf_policy = policy;
 
@@ -1498,7 +1552,7 @@ static ssize_t _ft_fast_hang_detect_store(struct device *dev,
 
 	if (tmp != adreno_dev->fast_hang_detect) {
 		if (adreno_dev->fast_hang_detect) {
-			if (kgsl_active_count_get(&adreno_dev->dev)) {
+			if (!kgsl_active_count_get(&adreno_dev->dev)) {
 				adreno_fault_detect_start(adreno_dev);
 				kgsl_active_count_put(&adreno_dev->dev);
 			}
@@ -2696,6 +2750,13 @@ static inline s64 adreno_ticks_to_us(u32 ticks, u32 freq)
 	return ticks / freq;
 }
 
+/**
+ * adreno_power_stats() - Reads the counters needed for freq decisions
+ * @device: Pointer to device whose counters are read
+ * @stats: Pointer to stats set that needs updating
+ * Power: The caller is expected to be in a clock enabled state as this
+ * function does reg reads
+ */
 static void adreno_power_stats(struct kgsl_device *device,
 				struct kgsl_power_stats *stats)
 {
@@ -2705,14 +2766,6 @@ static void adreno_power_stats(struct kgsl_device *device,
 	struct adreno_busy_data busy_data;
 
 	memset(stats, 0, sizeof(*stats));
-
-	/*
-	 * If we're not currently active, there shouldn't have been
-	 * any cycles since the last time this function was called.
-	 */
-
-	if (device->state != KGSL_STATE_ACTIVE)
-		return;
 
 	/* Get the busy cycles counted since the counter was last reset */
 	gpudev->busy_cycles(adreno_dev, &busy_data);
@@ -2759,6 +2812,15 @@ static bool adreno_is_hw_collapsible(struct kgsl_device *device)
 {
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	struct adreno_gpudev *gpudev  = ADRENO_GPU_DEVICE(adreno_dev);
+
+	/*
+	 * Skip power collapse for A304, if power ctrl flag is set to
+	 * non zero. As A304 soft_reset will not work, power collapse
+	 * needs to disable to avoid soft_reset.
+	 */
+	if (adreno_is_a304(adreno_dev) &&
+			device->pwrctrl.ctrl_flags)
+		return false;
 
 	return adreno_isidle(device) && (gpudev->is_sptp_idle ?
 				gpudev->is_sptp_idle(adreno_dev) : true);
@@ -2852,6 +2914,9 @@ static int kgsl_busmon_probe(struct platform_device *pdev)
 	struct kgsl_device *device;
 	const struct of_device_id *pdid =
 			of_match_device(busmon_match_table, &pdev->dev);
+
+	if (pdid == NULL)
+		return -ENXIO;
 
 	device = (struct kgsl_device *)pdid->data;
 	device->busmondev = &pdev->dev;

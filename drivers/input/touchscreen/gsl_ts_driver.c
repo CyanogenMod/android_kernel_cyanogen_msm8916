@@ -207,6 +207,28 @@ static int gsl_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 nu
 	return (err == num)?1:-1;
 }
 
+static int gsl_ito_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 num)
+{
+	int err = 0;
+	u8 temp = reg;
+	mutex_lock(&gsl_i2c_lock);
+	if(temp < 0x80)
+	{
+		temp = (temp+8)&0x5c;
+			i2c_master_send(client,&temp,1);	
+			err = i2c_master_recv(client,&buf[0],4);
+			
+			temp = reg;
+			i2c_master_send(client,&temp,1);	
+			err = i2c_master_recv(client,&buf[0],4);
+	}
+	i2c_master_send(client,&reg,1);
+	err = i2c_master_recv(client,&buf[0],num);
+	mutex_unlock(&gsl_i2c_lock);
+	return (err == num)?1:-1;
+
+}
+
 static int gsl_write_interface(struct i2c_client *client, const u8 reg, u8 *buf, u32 num)
 {
 	struct i2c_msg xfer_msg[1];
@@ -512,7 +534,7 @@ void gsl_I2C_ROnePage(unsigned int addr, char *buf)
 	gsl_ts_read(ddata->client,0,buf,128);
 	#else
 	gsl_write_interface(ddata->client,0xf0,tmp_buf,4);
-	gsl_read_interface(ddata->client,0,buf,128);
+	gsl_ito_read_interface(ddata->client,0,buf,128);
 	#endif
 }
 EXPORT_SYMBOL(gsl_I2C_ROnePage);
@@ -528,7 +550,7 @@ void gsl_I2C_RTotal_Address(unsigned int addr,unsigned int *data)
 	gsl_ts_read(ddata->client,addr%0x80,tmp_buf,4);
 	#else
 	gsl_write_interface(ddata->client,0xf0,tmp_buf,4);
-	gsl_read_interface(ddata->client,addr%0x80,tmp_buf,4);
+	gsl_ito_read_interface(ddata->client,addr%0x80,tmp_buf,4);
 	#endif
 	*data = tmp_buf[0]|(tmp_buf[1]<<8)|(tmp_buf[2]<<16)|(tmp_buf[3]<<24);
 }
@@ -550,7 +572,7 @@ static void gsl_read_MorePage(struct i2c_client *client,u32 addr,u8 *buf,u32 num
 		tmp_buf[3]=(char)(((addr+i*8)/0x80)>>24);
 		gsl_write_interface(client,0xf0,tmp_buf,4);
 		tmp_addr = (char)((addr+i*8)%0x80);
-		gsl_read_interface(client,tmp_addr,(buf+i*8),8);
+		gsl_ito_read_interface(client,tmp_addr,(buf+i*8),8);
 	}
 	if(i*8<num){
 		tmp_buf[0]=(char)((addr+i*8)/0x80);
@@ -559,7 +581,7 @@ static void gsl_read_MorePage(struct i2c_client *client,u32 addr,u8 *buf,u32 num
 		tmp_buf[3]=(char)(((addr+i*8)/0x80)>>24);
 		gsl_write_interface(client,0xf0,tmp_buf,4);
 		tmp_addr = (char)((addr+i*8)%0x80);
-		gsl_read_interface(client,tmp_addr,(buf+i*8),4);
+		gsl_ito_read_interface(client,tmp_addr,(buf+i*8),4);
 	}
 }
 #endif
@@ -600,7 +622,7 @@ static int gsl_config_read_proc(struct seq_file *m,void *v)
 		else 
 		{
 			gsl_write_interface(ddata->client,0xf0,&gsl_data_proc[4],4);
-			gsl_read_interface(ddata->client,gsl_data_proc[0],temp_data,4);
+			gsl_ito_read_interface(ddata->client,gsl_data_proc[0],temp_data,4);
 			seq_printf(m,"offset : {0x%02x,0x",gsl_data_proc[0]);
 			seq_printf(m,"%02x",temp_data[3]);
 			seq_printf(m,"%02x",temp_data[2]);
@@ -1355,7 +1377,7 @@ static DEVICE_ATTR(proximity_sensor_status, 0777, show_proximity_sensor_status,N
 
 
 #ifdef GSL_GESTURE
-static void gsl_enter_doze(struct gsl_ts_data *ts)
+static void gsl_enter_doze(struct gsl_ts_data *ts, bool bCharacterGesture)
 {
 	u8 buf[4] = {0};
 #if 0
@@ -1374,8 +1396,12 @@ static void gsl_enter_doze(struct gsl_ts_data *ts)
 	gsl_write_interface(ts->client,0xf0,buf,4);
 	buf[0] = 0;
 	buf[1] = 0;
-	buf[2] = 0x1;
+	buf[2] = 0x3;
 	buf[3] = 0x5a;
+	if(bCharacterGesture == true)
+	{
+		buf[2] = 0x1;	
+	}
 	gsl_write_interface(ts->client,0x8,buf,4);
 	//gsl_gesture_status = GE_NOWORK;
 	msleep(10);
@@ -1434,6 +1460,10 @@ static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 		disable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '1'){
 		gsl_gesture_flag = 1;
+		enable_irq_wake(gsl_client->irq);
+	}else if(buf[0] == '2'){
+	//enable character gesture
+		gsl_gesture_flag = 2;
 		enable_irq_wake(gsl_client->irq);
 	}
 #endif
@@ -1612,6 +1642,7 @@ static void gsl_report_work(struct work_struct *work)
 		//print_info("GSL:::0x80=%02x%02x%02x%02x[%d]\n",buf[3],buf[2],buf[1],buf[0],test_count++);
 		//print_info("GSL:::0x84=%02x%02x%02x%02x\n",buf[7],buf[6],buf[5],buf[4]);
 		//print_info("GSL:::0x88=%02x%02x%02x%02x\n",buf[11],buf[10],buf[9],buf[8]);
+		if(GE_ENABLE == gsl_gesture_status && ((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2)))
 		{
 			struct timeval now;
 			do_gettimeofday(&now);
@@ -1689,7 +1720,7 @@ static void gsl_report_work(struct work_struct *work)
 /* Gesture Resume */
 #ifdef GSL_GESTURE
 	
-		if(GE_ENABLE == gsl_gesture_status && gsl_gesture_flag == 1){
+		if(GE_ENABLE == gsl_gesture_status && ((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2))){
 			int tmp_c;
 			u8 key_data = 0;
 			tmp_c = gsl_obtain_gesture();
@@ -1895,7 +1926,12 @@ static void gsl_ts_suspend(void)
 /*Guesture Resume*/
 #ifdef GSL_GESTURE
 		if(gsl_gesture_flag == 1){
-			gsl_enter_doze(ddata);
+			gsl_enter_doze(ddata, false);
+			return;
+		}
+		else if(gsl_gesture_flag == 2)
+		{
+			gsl_enter_doze(ddata, true);
 			return;
 		}
 		else
@@ -1943,7 +1979,7 @@ static void gsl_ts_resume(void)
 
 	/*Gesture Resume*/
 	#ifdef GSL_GESTURE
-		if(gsl_gesture_flag == 1){
+		if((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2)){
 			gsl_quit_doze(ddata);
 			{
 			int err = 0;
@@ -2147,13 +2183,13 @@ static ssize_t gsl_openshort_proc_read(struct file *file, char __user *buf,size_
 	{
 		printk("tp test pass\n");
 		//sprintf(ptr, "result=%d\n", 1);
-		ptr += sprintf(ptr, "%d\n", 1);
+		ptr += sprintf(ptr, "%d", 1);
 	}
 	else
 	{
 		printk("tp test failure\n");
 		//sprintf(ptr, "result=%d\n", 0);
-		ptr += sprintf(ptr, "%d\n", 0);
+		ptr += sprintf(ptr, "%d", 0);
 	}
 	return test_result;
 }

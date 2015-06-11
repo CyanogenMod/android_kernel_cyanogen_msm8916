@@ -3236,8 +3236,10 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"MIC BIAS External2", NULL, "INT_LDO_H"},
 	{"MIC BIAS Internal1", NULL, "MICBIAS_REGULATOR"},
 	{"MIC BIAS Internal2", NULL, "MICBIAS_REGULATOR"},
+	{"MIC BIAS Internal3", NULL, "MICBIAS_REGULATOR"}, //legen
 	{"MIC BIAS External", NULL, "MICBIAS_REGULATOR"},
 	{"MIC BIAS External2", NULL, "MICBIAS_REGULATOR"},
+	{"MIC BIAS External3", NULL, "MICBIAS_REGULATOR"}, //legen
 };
 
 static int msm8x16_wcd_startup(struct snd_pcm_substream *substream,

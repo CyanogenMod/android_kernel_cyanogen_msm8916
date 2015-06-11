@@ -361,6 +361,7 @@ struct smb1360_chip {
 	bool				batt_warm;
 	bool				batt_cool;
 	bool				batt_full;
+	bool				power_ok;
 	bool				resume_completed;
 	bool				irq_waiting;
 	bool				empty_soc;
@@ -901,7 +902,7 @@ static int smb1360_get_prop_batt_status(struct smb1360_chip *chip)
 	int rc;
 	u8 reg = 0, chg_type;
 
-	if (chip->batt_full)
+	if (chip->batt_full && chip->usb_present)
 		return POWER_SUPPLY_STATUS_FULL;
 
 	rc = smb1360_read(chip, STATUS_3_REG, &reg);
@@ -911,6 +912,9 @@ static int smb1360_get_prop_batt_status(struct smb1360_chip *chip)
 	}
 
 	pr_debug("STATUS_3_REG = %x\n", reg);
+		
+	if(!chip->power_ok)
+		return POWER_SUPPLY_STATUS_DISCHARGING;
 
 	if (reg & CHG_HOLD_OFF_BIT)
 		return POWER_SUPPLY_STATUS_NOT_CHARGING;
@@ -2166,6 +2170,14 @@ static int otg_oc_handler(struct smb1360_chip *chip, u8 rt_stat)
 	return 0;
 }
 
+static int power_ok_handler(struct smb1360_chip *chip, u8 rt_stat)
+{
+	pr_debug("xxx::usb in::rt_stat = 0x%02x\n", rt_stat);
+	chip->power_ok = rt_stat;	
+	return 0;
+}
+
+
 struct smb_irq_info {
 	const char		*name;
 	int			(*smb_irq)(struct smb1360_chip *chip,
@@ -2279,6 +2291,7 @@ static struct irq_handler_info handlers[] = {
 		{
 			{
 				.name		= "power_ok",
+				.smb_irq	= power_ok_handler,				
 			},
 			{
 				.name		= "unused",
@@ -4668,10 +4681,6 @@ static int smb1360_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct smb1360_chip *chip = i2c_get_clientdata(client);
 
-#ifdef CONFIG_MACH_T86519A1
-	power_supply_changed(&chip->batt_psy);
-#endif
-
 	/* Restore the IRQ config */
 	for (i = 0; i < 3; i++) {
 		rc = smb1360_write(chip, IRQ_CFG_REG + i,
@@ -4689,7 +4698,7 @@ static int smb1360_resume(struct device *dev)
 	} else {
 		mutex_unlock(&chip->irq_complete);
 	}
-
+	power_supply_changed(&chip->batt_psy);
 	return 0;
 }
 
