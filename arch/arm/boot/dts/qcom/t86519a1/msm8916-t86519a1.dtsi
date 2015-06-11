@@ -379,6 +379,11 @@
 		vdd-supply = <&pm8916_l17>;
 		vio-supply = <&pm8916_l6>;
 		ap3426,irq-gpio= <&msm_gpio 113 0x2002>;
+		ap3426,ps-thdl = <100>;
+		ap3426,ps-thdh = <200>;
+		ap3426,ps-calibration-min = <0>;
+		ap3426,ps-calibration-expected = <120>;
+		ap3426,ps-calibration-max = <500>;
 	};
 
 	tps65132@3e {
