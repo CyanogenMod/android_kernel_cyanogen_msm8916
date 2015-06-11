@@ -234,7 +234,9 @@ struct ap3426_data {
     struct wake_lock ps_wakelock;
     uint16_t ps_thd_l;
     uint16_t ps_thd_h;
-    uint16_t ps_calibration;
+    uint16_t ps_calibration_min;
+    uint16_t ps_calibration_expected;
+    uint16_t ps_calibration_max;
 };
 
 #endif
