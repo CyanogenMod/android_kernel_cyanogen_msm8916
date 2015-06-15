@@ -214,6 +214,9 @@ struct msm8916_asoc_mach_data {
 	int codec_type;
 	int ext_pa;
 	int us_euro_gpio;
+#ifdef CONFIG_MACH_JALEBI
+	int ext_spk_amp_gpio;
+#endif
 	int spk_ext_pa_gpio;
 	int mclk_freq;
 	int lb_mode;
@@ -285,6 +288,9 @@ struct msm8x16_wcd_priv {
 	bool clock_active;
 	bool config_mode_active;
 	u16 boost_option;
+#ifdef CONFIG_MACH_JALEBI
+	u16 ext_spk_mode;
+#endif
 	bool spk_boost_set;
 	bool ear_pa_boost_set;
 	bool ext_spk_boost_set;
