@@ -496,6 +496,16 @@ config BATTERY_GOLDFISH
 	  Say Y to enable support for the battery and AC power in the
 	  Goldfish emulator.
 
+config QPNP_HQ_VM_BMS
+	tristate "QPNP Voltage-Mode Battery Monitoring System (Huaqin variant) driver"
+	depends on SPMI
+	depends on MSM_QPNP_INT
+	help
+	  Say Y here to enable support for QPNP chip vm-bms device.
+	  The voltage-mode (vm) BMS driver uses periodic VBATT
+	  readings from the battery to calculate the State of
+	  Charge.
+
 config QPNP_VM_BMS
 	tristate "QPNP Voltage-Mode Battery Monitoring System driver"
 	depends on SPMI
@@ -514,6 +524,17 @@ config QPNP_BMS
 	  Say Y here to enable support for QPNP chip bms device.
 	  It registers a fuelgauge bms power supply to report
 	  State of Charge.
+
+config QPNP_HQ_LINEAR_CHARGER
+	tristate "QPNP Linear Charger (Huaqin variant) driver"
+	depends on SPMI
+	depends on OF_SPMI
+	depends on MSM_QPNP_INT
+	depends on THERMAL_QPNP_ADC_TM
+	help
+	  Say Y here to enable the Linear battery charger which supports USB
+	  detection and charging. The driver also offers relevant information
+	  to userspace via the power supply framework.
 
 config QPNP_LINEAR_CHARGER
 	tristate "QPNP Linear Charger driver"
