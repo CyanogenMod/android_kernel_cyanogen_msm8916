@@ -1438,43 +1438,60 @@ static void lsensor_work_handler(struct work_struct *w)
     input_sync(data->lsensor_input_dev);
 }
 
-static irqreturn_t ap3426_thread_handler(int irq, void * client_data)
+/*
+ * The Interrupt Clear Manner (CLR_MNR) has been set to 0 (Automatic) so
+ * this ISR must read the ALS and PS sensor values to clear the interripts
+ * even if PS or ALS aren't currently open.
+ */
+static irqreturn_t ap3426_threaded_isr(int irq, void *client_data)
 {
 
-    struct ap3426_data *data = (struct ap3426_data *) client_data;
-    u8 int_stat;
-    int pxvalue;
-    int distance;
-    int value;
-    int_stat = ap3426_get_intstat(data->client);
+	struct ap3426_data *data = (struct ap3426_data *) client_data;
+	int got_ps_value = 0;
+	u8 int_stat;
+	int ps_value;
+	int distance;
+	int als_value;
 
-    if((1 == misc_ps_opened) && (int_stat & AP3426_REG_SYS_INT_PMASK))
-    {
-        distance = ap3426_get_object(data->client);
-        input_report_abs(data->psensor_input_dev, ABS_DISTANCE, distance);
-        input_sync(data->psensor_input_dev);
-        wake_lock_timeout(&data->ps_wakelock, 2*HZ);
-        // Note. reading sensor values is absolutely mandatory to clear out interrupt status
-        // in manual mode (CLR_MNR)
-        pxvalue = ap3426_get_px_value(data->client);
-        LDBG("pxvalue=%d distance=%d\n", pxvalue, distance);
-     }
+	LDBG("Entry\n");
+
+	int_stat = ap3426_get_intstat(data->client);
+
+	if (int_stat & AP3426_REG_SYS_INT_PMASK) {
+		/* We have a PS Interrupt */
+		if (misc_ps_opened) {
+			distance = ap3426_get_object(data->client);
+			input_report_abs(data->psensor_input_dev, ABS_DISTANCE, distance);
+			input_sync(data->psensor_input_dev);
+			wake_lock_timeout(&data->ps_wakelock, 2*HZ);
+		}
+		ps_value = ap3426_get_px_value(data->client);	/* Clear Interrupt */
+		got_ps_value = 1;
+	}
+
 #ifdef CONFIG_AP3426_HEARTBEAT_SENSOR
-    if(1 == misc_ht_opened)
-    {
-        pxvalue = ap3426_get_px_value(data->client);
-        input_report_abs(data->hsensor_input_dev, ABS_WHEEL, pxvalue);
-        input_sync(data->hsensor_input_dev);
-    }
+	if (misc_ht_opened) {
+		if (!got_ps_value) {
+			ps_value = ap3426_get_px_value(data->client);
+		}
+		input_report_abs(data->hsensor_input_dev, ABS_WHEEL, ps_value);
+		input_sync(data->hsensor_input_dev);
+	}
 #endif
-    if((1 == misc_ls_opened) && (int_stat & AP3426_REG_SYS_INT_AMASK))
-    {
-        value = ap3426_get_adc_value(data->client);
-        input_report_abs(data->lsensor_input_dev, ABS_MISC, value);
-        input_sync(data->lsensor_input_dev);
-    }
 
-    return IRQ_HANDLED;
+	if (int_stat & AP3426_REG_SYS_INT_AMASK) {
+		/* We have an ALS Interrupt */
+		if (misc_ls_opened) {
+			als_value = ap3426_get_adc_value(data->client);
+			input_report_abs(data->lsensor_input_dev, ABS_MISC, als_value);
+			input_sync(data->lsensor_input_dev);
+		} else {
+			 /* Need to Clear Interrupt - read regs */
+			als_value = ap3426_get_adc_value(data->client);
+		}
+	}
+	LDBG("return;\n")
+	return IRQ_HANDLED;
 }
 
 
@@ -1655,7 +1672,7 @@ static int ap3426_probe(struct i2c_client *client,
         goto exit_free_gpio_int;
     }
 
-    err = request_threaded_irq(gpio_to_irq(data->int_pin), ap3426_irq, ap3426_thread_handler,
+    err = request_threaded_irq(gpio_to_irq(data->int_pin), ap3426_irq, ap3426_threaded_isr,
         IRQF_TRIGGER_LOW  | IRQF_ONESHOT,"ap3426", data);
     if (err)
     {
