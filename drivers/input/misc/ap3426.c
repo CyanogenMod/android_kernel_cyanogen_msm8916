@@ -79,9 +79,11 @@
 
 //#define LSC_DBG
 #ifdef LSC_DBG
-#define LDBG(s,args...)	{printk("LDBG: func [%s], line [%d], ",__func__,__LINE__); printk(s,## args);}
+#define LDBG(fmt,args...)   { printk("%s: ", __func__); printk(fmt,## args); }
+#define PS_DBG(fmt,args...) { printk("%s: ", __func__); printk(fmt,## args); }
 #else
 #define LDBG(s,args...) {}
+#define PS_DBG(s,args...) {}
 #endif
 
 #define DI_AUTO_CAL
@@ -414,13 +416,13 @@ static int ap3426_get_px_value(struct i2c_client *client)
     if (lsb < 0)
 	return lsb;
 
-    LDBG("%s, IR = %d\n", __func__, (u32)(lsb));
+    LDBG("IR = %d\n", (u32)(lsb));
     msb = i2c_smbus_read_byte_data(client, AP3426_REG_PS_DATA_HIGH);
 
     if (msb < 0)
 	return msb;
 
-    LDBG("%s, IR = %d\n", __func__, (u32)(msb));
+    LDBG("IR = %d\n", (u32)(msb));
     return (u32)(((msb & AL3426_REG_PS_DATA_HIGH_MASK) << 8) | (lsb & AL3426_REG_PS_DATA_LOW_MASK));
 }
 
@@ -869,61 +871,128 @@ static int ap3426_als_poll_delay_set(struct sensors_classdev *sensors_cdev,
 #ifdef DI_AUTO_CAL
 static u8 ps_calibrated = 0;
 
-static int AP3xx6_set_pcrosstalk(struct i2c_client *client, int val)
+static inline void swap_at(u16 *x, u16 *y)
 {
-    int lsb, msb, err;
+	u8 temp = *x;
+
+	*x = *y;
+	*y = temp;
+}
+
+static inline void ap3426_sort(u16 *sample_data, int size)
+{
+	int i, j;
+
+	for (i = 0; i < size - 1; i++) {
+		for (j = i + 1; j < size; j++) {
+			if (sample_data[i] > sample_data[j]) {
+				 swap_at(&sample_data[i], &sample_data[j]);
+			}
+		}
+	}
+	printk("%s: Sorted sample_data[ ", __func__);
+	for (i = 0; i < size; i++) {
+		printk("%d ", sample_data[i]);
+	}
+	printk("]\n");
+}
+
+
+static int ap3426_set_ps_crosstalk_calibration(struct i2c_client *client, int val)
+{
+	int lsb, msb, err;
 
 	msb = val >> 8;
 	lsb = val & 0xFF;
-    err = __ap3426_write_reg(client, 0x28,
-            0xFF, 0x00, lsb);
+	err = __ap3426_write_reg(client, 0x28, 0xFF, 0x00, lsb);
 	     
-    err =__ap3426_write_reg(client, 0x29,
-            0xFF, 0x00, msb);
+	err =__ap3426_write_reg(client, 0x29, 0xFF, 0x00, msb);
+
+	printk("%s: Calibration Register = %d.\n", __func__, val);
           
 	return err;
 }
 
+#define CAL_SAMPLES 9
+
+/*
+ * Try to get 5 samples to set the calibration register.
+ * Discard the 1st sample to two (as done on Tomato).
+ * Discard any samples that are not in the expected range.
+ * Samples taken just after changing the calibration
+ * register haven't changed yet.
+ */
 int ap3426_ps_calibration(struct i2c_client *client)
 {
 	struct ap3426_data *pdata = i2c_get_clientdata(client);
 	int i = 0;
-	u16 ps_data = 0;
-	u16 data = 0;
-	if (!ps_calibrated) {
-		AP3xx6_set_pcrosstalk(client, ps_data);
-		for(i=0; i<8; i++) {
-			data = ap3426_get_px_value(client);
+	int rv = 0;
+	u16 ave;
+	u16 sample;
+	u16 sample_data[CAL_SAMPLES];
+	int samples = 0;
 
-			printk("AP3426 ps =%d \n",data);
-			if((data) > pdata->ps_calibration_max) {
-				ps_calibrated = 0;
-				goto err_out;
-			}
-			if((data) < pdata->ps_calibration_min) {
-				ps_calibrated = 0;
-				goto err_out;
-			}
-			else {
-				ps_data += data;
-			}
-			msleep(50);
+	if (!ps_calibrated) {
+		ap3426_set_ps_crosstalk_calibration(client, 0);		/* Baseline */
+
+		for (i = 0; i < CAL_SAMPLES; i++) {
+			msleep(40);
+
+			sample = sample_data[samples] = ap3426_get_px_value(client);
+
+			PS_DBG("sample_data[samples:%d] = %d\n",
+				            samples, sample);
+
+			if (sample > pdata->ps_calibration_max) continue;
+			if (sample < pdata->ps_calibration_min) continue;
+
+			samples++;
 		}
-		ps_calibrated = 1;
-		printk("AP3426 ps_data1 =%d \n",ps_data);
-		ps_data = ps_data/8;
-		printk("AP3426 ps_data2 =%d \n",ps_data);
-		AP3xx6_set_pcrosstalk(client,ps_data);
+		if (samples >= CAL_SAMPLES/2) {
+			u16 total = 0;
+			int mid_point = (samples/2);
+			int start_point = mid_point - (samples/4);
+			int end_point = mid_point + (samples/4);
+
+			ap3426_sort(sample_data, samples);
+
+			/* Use median values of sorted data */
+			samples = 0;
+			for (i = start_point; i < end_point; i++) {
+				PS_DBG("total:%d += sample_data[i:%d]:%d;\n",
+					total,   i, sample_data[i]);
+
+				total += sample_data[i];
+				samples++;
+			}
+			ave = total/samples;
+			PS_DBG("ave = %d\n", ave);
+			ap3426_set_ps_crosstalk_calibration(client, ave);
+			msleep(50);
+			sample = ap3426_get_px_value(client);
+			PS_DBG("sample = %d\n", sample);
+			msleep(50);
+			sample = ap3426_get_px_value(client);
+			PS_DBG("sample = %d\n", sample);
+			ps_calibrated = 1;
+			rv = 1;
+		} else {
+			ave = pdata->ps_calibration_expected;
+			printk("%s: Failed to compute a good calibration;\n", __func__);
+
+			printk("%s: Using device's expected calibration value: %d for now.\n",
+				__func__,                                     ave);
+
+			ap3426_set_ps_crosstalk_calibration(client, ave);
+			msleep(50);
+			sample = ap3426_get_px_value(client);
+			PS_DBG("sample = %d\n", sample);
+			rv = -1;
+		}
 	}
-	return 1;
-err_out:
-	ps_data = pdata->ps_calibration_expected;
-	printk("%s: Failed to compute a good calibration;\n", __func__);
-	printk("%s: Using device's expected calibration value: %d for now.\n", __func__, ps_data);
-	AP3xx6_set_pcrosstalk(client, ps_data);
-	return -1;	
+	return rv;
 }
-#endif 
+#endif  /* DI_AUTO_CAL */
 
 static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 					   unsigned int enabled) 
