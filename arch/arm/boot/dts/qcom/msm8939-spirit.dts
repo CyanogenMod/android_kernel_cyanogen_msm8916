@@ -39,6 +39,9 @@
 		qcom,fg-voltage-min-mv = <3200>;
 		qcom,fg-voltage-empty-mv = <3200>;
 		qcom,fg-cutoff-voltage-mv = <3450>;
+		qcom,ibatt-standby-ma = <200>;
+		qcom,fg-soc-max = <90>;
+		qcom,fg-soc-min = <15>;
 		/delete-property/ qcom,fg-auto-recharge-soc;
 		qcom,fg-delta-soc = <1>;
 		qcom,thermistor-c1-coeff = <0x86C2>;
@@ -55,7 +58,7 @@
 		qcom,batt-id-disabled;
 		qcom,shdn-after-pwroff;
 		qcom,config-hard-thresholds;
-		qcom,hot-bat-decidegc = <590>;
+		qcom,hot-bat-decidegc = <600>;
 		qcom,cold-bat-decidegc = <(-200)>;
 		qcom,hot-bat-mv = <4100>;
 	};
