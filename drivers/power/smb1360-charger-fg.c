@@ -256,10 +256,12 @@
 
 #define CHG_TEMP_MIN			0
 #define CHG_TEMP_MID			100
-#define CHG_TEMP_MAX			500
+#define CHG_TEMP_MAX			450
+#define CHG_TEMP_OVER			600
 
-#define CURRENT_AC_BETWEEN_00_10	600
-#define CURRENT_AC_BETWEEN_10_50	1050
+#define CURRENT_AC_BETWEEN_00_10	700
+#define CURRENT_AC_BETWEEN_10_45	1500
+#define CURRENT_AC_BETWEEN_45_60	1050
 #define CURRENT_AC_CPU_TEMP_OVER	600
 #endif
 
@@ -1374,27 +1376,6 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 
 	current_ma = min(therm_ma, path_current);
 
-#ifdef CONFIG_MACH_SPIRIT
-	temperature = smb1360_get_prop_batt_temp(chip);
-	if (temperature <= CHG_TEMP_MIN ||
-			temperature > CHG_TEMP_MAX) {
-		rc = smb1360_charging_disable(chip, USER, 1);
-		if (rc) {
-			pr_err("%s:%d: Failed to disable charging\n",
-					__func__, __LINE__);
-			return rc;
-		}
-	} else {
-		if (chip->charging_disabled_status) {
-			rc = smb1360_charging_disable(chip, USER, 0);
-			if (rc) {
-				pr_err("%s:%d: Failed to enable charging\n",
-						__func__, __LINE__);
-			}
-		}
-	}
-#endif
-
 	if (chip->workaround_flags & WRKRND_HARD_JEITA) {
 		if (chip->batt_warm)
 			current_ma = min(current_ma, chip->warm_bat_ma);
@@ -1490,6 +1471,20 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 			pr_err("Couldn't configure for USB500 rc=%d\n", rc);
 		pr_debug("Setting USB 500\n");
 	} else {
+#ifdef CONFIG_MACH_SPIRIT
+		temperature = smb1360_get_prop_batt_temp(chip);
+
+		if (temperature > CHG_TEMP_MIN &&
+				temperature <= CHG_TEMP_MID) {
+			current_ma = CURRENT_AC_BETWEEN_00_10;
+		} else if (temperature > CHG_TEMP_MID &&
+				temperature <= CHG_TEMP_MAX) {
+			current_ma = CURRENT_AC_BETWEEN_10_45;
+		} else if (temperature > CHG_TEMP_MAX &&
+				temperature < CHG_TEMP_OVER) {
+			current_ma = CURRENT_AC_BETWEEN_45_60;
+		}
+#endif
 		/* USB AC */
 		if (chip->rsense_10mohm)
 			current_ma /= 2;
@@ -1738,7 +1733,7 @@ static void smb1360_external_power_changed(struct power_supply *psy)
 
 	temperature = smb1360_get_prop_batt_temp(chip);
 	if (temperature <= CHG_TEMP_MIN ||
-			temperature >= CHG_TEMP_MAX) {
+			temperature >= CHG_TEMP_OVER) {
 		temp_warning = true;
 	} else {
 		temp_warning = false;
@@ -4526,7 +4521,7 @@ static void charger_abnormal_detect_work(struct work_struct *work)
 	if (val.intval) {
 		temperature = smb1360_get_prop_batt_temp(chip);
 		if (temperature <= CHG_TEMP_MIN ||
-				temperature >= CHG_TEMP_MAX) {
+				temperature >= CHG_TEMP_OVER) {
 			chip->usb_psy_ma = 0;
 			smb1360_set_appropriate_usb_current(chip);
 			power_supply_changed(batt_psy);
@@ -4537,8 +4532,11 @@ static void charger_abnormal_detect_work(struct work_struct *work)
 						temperature <= CHG_TEMP_MID) {
 					chip->usb_psy_ma = CURRENT_AC_BETWEEN_00_10;
 				} else if (temperature > CHG_TEMP_MID &&
-						temperature < CHG_TEMP_MAX) {
-					chip->usb_psy_ma = CURRENT_AC_BETWEEN_10_50;
+						temperature <= CHG_TEMP_MAX) {
+					chip->usb_psy_ma = CURRENT_AC_BETWEEN_10_45;
+				} else if (temperature > CHG_TEMP_MAX &&
+						temperature < CHG_TEMP_OVER) {
+					chip->usb_psy_ma = CURRENT_AC_BETWEEN_45_60;
 				}
 			} else if (charger_type == POWER_SUPPLY_TYPE_USB) {
 				chip->usb_psy_ma = CURRENT_500_MA;
