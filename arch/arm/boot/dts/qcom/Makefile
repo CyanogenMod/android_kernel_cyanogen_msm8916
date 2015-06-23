@@ -41,6 +41,8 @@ dtb-$(CONFIG_ARCH_MSM8909) += msm8909-sim.dtb \
 	msm8909-1gb-mtp.dtb
 ifeq ($(CONFIG_MACH_YULONG_MSM8939),y)
 dtb-$(CONFIG_ARCH_MSM8916) += msm8939-cp8675-i01-p0.dtb
+else ifeq ($(CONFIG_MACH_HAIER_MSM8916),y)
+dtb-$(CONFIG_ARCH_MSM8916) += msm8916-g36c1h.dtb
 else ifeq ($(CONFIG_MACH_WINGTECH_MSM8916),y)
 dtb-$(CONFIG_ARCH_MSM8916) += msm8916-t86519a1.dtb
 else
