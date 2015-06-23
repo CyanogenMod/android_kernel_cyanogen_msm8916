@@ -4054,12 +4054,23 @@ static int msm8x16_wcd_hphr_dac_event(struct snd_soc_dapm_widget *w,
 static int enable_ext_spk(struct snd_soc_dapm_widget *w, bool enable)
 {
 	struct snd_soc_codec *codec = w->codec;
+	struct msm8x16_wcd_priv *msm8x16_wcd = snd_soc_codec_get_drvdata(codec);
 	struct msm8916_asoc_mach_data *pdata = snd_soc_card_get_drvdata(codec->card);
 
 	if (!gpio_is_valid(pdata->ext_spk_amp_gpio))
 		return -EINVAL;
 
-	gpio_direction_output(pdata->ext_spk_amp_gpio, enable);
+	if (enable) {
+		int i;
+		for (i = 0; i < msm8x16_wcd->ext_spk_mode; i++) {
+			gpio_direction_output(pdata->ext_spk_amp_gpio, 0);
+			udelay(1);
+			gpio_direction_output(pdata->ext_spk_amp_gpio, 1);
+			udelay(1);
+		}
+	} else {
+		gpio_direction_output(pdata->ext_spk_amp_gpio, 0);
+	}
 
 	return 0;
 }
