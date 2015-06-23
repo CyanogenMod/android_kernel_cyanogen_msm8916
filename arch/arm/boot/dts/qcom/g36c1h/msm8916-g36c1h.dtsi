@@ -279,9 +279,9 @@
 };
 
 &pm8916_chg {
-	qcom,vddmax-mv = <4210>;
-	qcom,vddsafe-mv = <4230>;
-	qcom,vinmin-mv = <4300>;
+	qcom,vddmax-mv = <4360>;
+	qcom,vddsafe-mv = <4380>;
+	qcom,vinmin-mv = <4470>;
 	qcom,batt-hot-percentage = <25>;
 	qcom,batt-cold-percentage = <80>;
 	qcom,tchg-mins = <150>;
@@ -301,7 +301,7 @@
 		qcom,rpull-up-kohm = <68>;
 		qcom,vref-batt-therm = <1800000>;
 
-		#include "batterydata-qrd-mp-4v2-2000mah.dtsi"
+		#include "batterydata-qrd-wk-4v35-2000mah.dtsi"
 	};
 };
 
