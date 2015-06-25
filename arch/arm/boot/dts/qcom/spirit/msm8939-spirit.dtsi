@@ -224,7 +224,7 @@
 			cy,rst_gpio = <&msm_gpio 12 0x00>;
 			cy,flags = <1>;
 			cy,easy_wakeup_gesture = <3>;
-			cy,btn_keys = <139 172 158>;
+			cy,btn_keys = <158 172 580>;
 			cy,btn_keys-tag = <0>;
 
 			cy,mt {
