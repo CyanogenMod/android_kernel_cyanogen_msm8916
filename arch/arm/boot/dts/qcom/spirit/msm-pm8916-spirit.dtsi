@@ -12,6 +12,10 @@
 
 &spmi_bus {
 	qcom,pm8916@0 {
+		pm8916_rtc: qcom,pm8916_rtc {
+			qcom,qpnp-rtc-alarm-pwrup = <1>;
+		};
+
 		pm8916_chg: qcom,charger {
 			qcom,vddmax-mv = <4350>;
 			qcom,vddsafe-mv = <4350>;
