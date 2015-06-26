@@ -1171,7 +1171,7 @@ static void pa12200001_work_func_light(struct work_struct *work)
     int Aval;
 
     Aval = pa12200001_get_lux_value(data->client);
-    APS_LOG("ALS lux value: %d\n", Aval);
+    APS_DBG("ALS lux value: %d\n", Aval);
 
     input_event(data->light_input_dev, EV_MSC, MSC_SCAN, Aval);
     input_sync(data->light_input_dev);

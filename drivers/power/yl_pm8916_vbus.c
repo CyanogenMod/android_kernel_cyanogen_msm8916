@@ -260,7 +260,7 @@ int get_yl_pm8916_batt_mvol(void)
 		return BATT_MVOLT_DEFAULT;
 	}
 	
-	pr_err("read vbat= %lld \n", results.physical);
+	pr_debug("read vbat= %lld \n", results.physical);
 	return (int)results.physical/1000;	
 
 }

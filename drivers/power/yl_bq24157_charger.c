@@ -927,7 +927,7 @@ static void bq24157_update_heartbeat_work(struct work_struct *work)
 	queue_delayed_work(chip->bq24157_wq, &chip->update_heartbeat_work,
 		msecs_to_jiffies(update_period));
 
-	pr_info(" %s: charge_stat = %d, vbus_present = %d, batt_volt = %d, batt_capa =%d, batt_temp =%d\n", __func__, 
+	pr_debug(" %s: charge_stat = %d, vbus_present = %d, batt_volt = %d, batt_capa =%d, batt_temp =%d\n", __func__,
 			chip->charge_stat, chip->vbus_present, chip->batt_volt, chip->batt_capa, chip->batt_temp);
 	return;
 }
