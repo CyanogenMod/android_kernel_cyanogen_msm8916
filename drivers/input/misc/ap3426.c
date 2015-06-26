@@ -943,6 +943,15 @@ static int ap3426_als_enable(struct ap3426_data *ps_data, int enable)
 
 	msleep(50);
 	if (misc_als_opened) {
+		// Report a different value here so that it can get to userspace, because
+		// the input driver sends EV_ABS events only when if value changed
+		// from the last report.
+		int als_value = ap3426_get_adc_value(ps_data->client);
+
+		input_report_abs(ps_data->lsensor_input_dev, ABS_MISC, als_value + 1);
+		input_sync(ps_data->lsensor_input_dev);
+		input_report_abs(ps_data->lsensor_input_dev, ABS_MISC, als_value);
+		input_sync(ps_data->lsensor_input_dev);
 		ALS_DBG("Starting Polling Timer.\n");
 		ret = mod_timer(&ps_data->pl_timer, jiffies + msecs_to_jiffies(ps_data->als_msec_poll_delay));
 	} else {
