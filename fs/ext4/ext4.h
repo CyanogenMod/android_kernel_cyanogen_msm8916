@@ -1383,6 +1383,13 @@ static inline struct xcomp_inode_info *ext4_inode_xcomp_info(struct inode *inode
 #endif
 }
 
+static inline int ext4_inode_is_compressed(struct inode *inode)
+{
+	if (!xcomp_enabled())
+		return 0;
+	return (S_ISREG(inode->i_mode) && (EXT4_I(inode)->i_flags & EXT4_COMPR_FL));
+}
+
 /*
  * Inode dynamic state flags
  */

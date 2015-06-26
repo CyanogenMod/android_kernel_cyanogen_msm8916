@@ -49,13 +49,6 @@
 
 #define MPAGE_DA_EXTENT_TAIL 0x01
 
-static int ext4_inode_is_compressed(struct inode *inode)
-{
-	if (!xcomp_enabled())
-		return 0;
-	return (S_ISREG(inode->i_mode) && (EXT4_I(inode)->i_flags & EXT4_COMPR_FL));
-}
-
 static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
 			      struct ext4_inode_info *ei)
 {
@@ -259,10 +252,6 @@ void ext4_evict_inode(struct inode *inode)
 
 	if (IS_SYNC(inode))
 		ext4_handle_sync(handle);
-
-	if (ext4_inode_is_compressed(inode)) {
-		xcomp_inode_info_free(ext4_inode_xcomp_info(inode));
-	}
 
 	inode->i_size = 0;
 	err = ext4_mark_inode_dirty(handle, inode);
@@ -4385,11 +4374,12 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 	}
 	brelse(iloc.bh);
 	ext4_set_inode_flags(inode);
-	unlock_new_inode(inode);
 
 	if (ext4_inode_is_compressed(inode))
 		xcomp_inode_info_init(inode, ext4_inode_xcomp_info(inode),
 				      __ext4_readpage);
+
+	unlock_new_inode(inode);
 
 	return inode;
 

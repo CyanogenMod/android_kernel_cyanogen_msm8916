@@ -936,6 +936,8 @@ void ext4_clear_inode(struct inode *inode)
 {
 	invalidate_inode_buffers(inode);
 	clear_inode(inode);
+	if (ext4_inode_is_compressed(inode))
+		xcomp_inode_info_free(ext4_inode_xcomp_info(inode));
 	dquot_drop(inode);
 	ext4_discard_preallocations(inode);
 	ext4_es_remove_extent(inode, 0, EXT_MAX_BLOCKS);
