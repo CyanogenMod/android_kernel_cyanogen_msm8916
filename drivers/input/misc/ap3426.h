@@ -206,37 +206,40 @@
 /*============================================================================*/
 
 struct ap3426_data {
-    struct i2c_client *client;
-    u8 reg_cache[AP3426_NUM_CACHABLE_REGS];//TO-DO
-    u8 power_state_before_suspend;
-    uint32_t int_pin;
-    uint32_t irq_flags;
-    
-    struct sensors_classdev als_cdev;  //for msm8916  kevindang20141010
-    struct sensors_classdev ps_cdev; //for msm8916
-    
-    struct input_dev    *psensor_input_dev;
-    struct input_dev    *lsensor_input_dev;
-    struct input_dev    *hsensor_input_dev;
-    struct workqueue_struct *psensor_wq;
-    struct work_struct psensor_work;
-    struct workqueue_struct *lsensor_wq;
-    struct work_struct lsensor_work;
-    struct workqueue_struct *ap3426_wq;
-    struct work_struct ap3426_work;
-    struct timer_list pl_timer;
-    struct regulator *vdd;
-    struct regulator *vio;
-    bool power_enabled;
-    bool als_enabled;
-    bool ps_enabled;
-    bool rels_enable;
-    struct wake_lock ps_wakelock;
-    uint16_t ps_thd_l;
-    uint16_t ps_thd_h;
-    uint16_t ps_calibration_min;
-    uint16_t ps_calibration_expected;
-    uint16_t ps_calibration_max;
+	struct i2c_client	*client;
+	struct mutex		lock;
+	u8			reg_cache[AP3426_NUM_CACHABLE_REGS];//TO-DO
+	u8			power_state_before_suspend;
+	uint32_t		int_pin;
+	uint32_t		irq_flags;
+
+	struct sensors_classdev als_cdev; 	//for msm8916  kevindang20141010
+	struct sensors_classdev ps_cdev;	//for msm8916
+
+	struct input_dev   	*psensor_input_dev;
+	struct input_dev   	*lsensor_input_dev;
+	struct input_dev   	*hsensor_input_dev;
+	struct workqueue_struct	*psensor_wq;
+	struct work_struct	psensor_work;
+	struct workqueue_struct	*lsensor_wq;
+	struct work_struct	lsensor_work;
+	struct workqueue_struct	*ap3426_wq;
+	struct work_struct	ap3426_work;
+	struct timer_list	pl_timer;
+	struct regulator	*vdd;
+	struct regulator	*vio;
+	bool			power_enabled;
+	bool			als_enabled;
+	bool 			als_re_enable;
+	bool			ps_enabled;
+	bool			ps_re_enable;
+	bool 			suspended;
+	struct wake_lock	ps_wakelock;
+	uint16_t		ps_thd_l;
+	uint16_t		ps_thd_h;
+	uint16_t		ps_calibration_min;
+	uint16_t		ps_calibration_expected;
+	uint16_t		ps_calibration_max;
 };
 
 #endif
