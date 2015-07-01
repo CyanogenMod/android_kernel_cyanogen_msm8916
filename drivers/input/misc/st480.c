@@ -67,6 +67,8 @@ struct mag_3{
 };
 volatile static struct mag_3 mag;
 
+static int st480_power_ctrl(struct st480_data *st480, int on);
+
 //static struct kobject *st480_kobj;
 
 /*
@@ -556,10 +558,14 @@ static int st480_set_enable(struct st480_data *st480, bool on)
 	dev_info(&client->dev, "enable:%s\n", on ? "on" : "off");
 
 	if (on) {
+		st480_power_ctrl(st480, on);
 		schedule_delayed_work(&st480->work, msecs_to_jiffies(st480->poll_interval));
 	} else {
 		cancel_delayed_work(&st480->work);
+		st480_power_ctrl(st480, on);
 	}
+
+
 	return retval;
 }
 
@@ -762,6 +768,12 @@ static int st480_probe(struct i2c_client *client, const struct i2c_device_id *id
 
 	if (st480_setup(st480->client) != 0) {
 		dev_err(&client->dev, "st480 setup error!\n");
+		goto exit3;
+	}
+
+	err = st480_power_ctrl(st480, 0);
+	if (err) {
+		dev_err(&client->dev, "failed to set regulator!\n");
 		goto exit3;
 	}
 
