@@ -475,6 +475,12 @@ static int mdss_dsi_off(struct mdss_panel_data *pdata, int power_state)
 
 	panel_info = &ctrl_pdata->panel_data.panel_info;
 
+#if defined(CONFIG_MACH_CP8675)
+	/*add set reset low by liujianfeng3@yulong.com for yashi nt35596 lcd error display*/
+	gpio_set_value((ctrl_pdata->rst_gpio), 0);
+	usleep(100 * 1000);
+#endif
+
 	pr_debug("%s+: ctrl=%p ndx=%d power_state=%d\n",
 		__func__, ctrl_pdata, ctrl_pdata->ndx, power_state);
 
