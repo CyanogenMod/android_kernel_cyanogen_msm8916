@@ -266,6 +266,13 @@
 	qcom,cpr-up-threshold = <2>;
 };
 
+&mdss_dsi0 {
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active>;
+	pinctrl-1 = <&mdss_dsi_suspend>;
+	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
+};
+
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
 };
