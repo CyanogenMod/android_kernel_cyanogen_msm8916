@@ -114,7 +114,9 @@ static bool mhl_det_in_progress;
 static struct regulator *hsusb_3p3;
 static struct regulator *hsusb_1p8;
 static struct regulator *hsusb_vdd;
+#ifndef CONFIG_MACH_JALEBI
 static struct regulator *vbus_otg;
+#endif
 static struct regulator *mhl_usb_hs_switch;
 static struct power_supply *psy;
 
@@ -2109,6 +2111,72 @@ out:
 	return NOTIFY_OK;
 }
 
+
+#ifdef CONFIG_MACH_JALEBI
+#define OTG_PINCTRL_STATE_ACTIVE "active"
+#define OTG_PINCTRL_STATE_SLEEP "sleep"
+
+static int otg_dsi_pinctrl_set_state(struct msm_otg_platform_data *ctrl_pdata, bool active)
+{
+	struct pinctrl_state *pin_state;
+	int rc = -EFAULT;
+
+	if (IS_ERR_OR_NULL(ctrl_pdata->pin_res.pinctrl))
+		return PTR_ERR(ctrl_pdata->pin_res.pinctrl);
+
+	pin_state = active ? ctrl_pdata->pin_res.gpio_state_active :
+		ctrl_pdata->pin_res.gpio_state_suspend;
+	if (!IS_ERR_OR_NULL(pin_state)) {
+		rc = pinctrl_select_state(ctrl_pdata->pin_res.pinctrl, pin_state);
+		if (rc)
+		    pr_err("%s: can not set %s pins\n", __func__,
+		            active ? OTG_PINCTRL_STATE_ACTIVE : OTG_PINCTRL_STATE_SLEEP);
+	} else {
+		pr_err("%s: invalid '%s' pinstate\n", __func__,
+		        active ? OTG_PINCTRL_STATE_ACTIVE : OTG_PINCTRL_STATE_SLEEP);
+	}
+
+	return rc;
+}
+
+static int otg_pinctrl_init(struct platform_device *pdev)
+{
+	struct msm_otg *motg;
+	struct msm_otg_platform_data *ctrl_pdata;
+
+	motg = platform_get_drvdata(pdev);
+	ctrl_pdata = motg->pdata;
+
+	ctrl_pdata->pin_res.pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR_OR_NULL(ctrl_pdata->pin_res.pinctrl)) {
+		pr_err("%s: failed to get pinctrl\n", __func__);
+		return PTR_ERR(ctrl_pdata->pin_res.pinctrl);
+	}
+
+	ctrl_pdata->pin_res.gpio_state_active = pinctrl_lookup_state(ctrl_pdata->pin_res.pinctrl,
+		OTG_PINCTRL_STATE_ACTIVE);
+	if (IS_ERR_OR_NULL(ctrl_pdata->pin_res.gpio_state_active))
+		pr_warn("%s: can not get default pinstate\n", __func__);
+
+	ctrl_pdata->pin_res.gpio_state_suspend = pinctrl_lookup_state(ctrl_pdata->pin_res.pinctrl,
+		OTG_PINCTRL_STATE_SLEEP);
+	if (IS_ERR_OR_NULL(ctrl_pdata->pin_res.gpio_state_suspend))
+		pr_warn("%s: can not get sleep pinstate\n", __func__);
+
+	return 0;
+}
+
+static int otg_enable(struct msm_otg_platform_data *pdata, bool enable)
+{
+	int ret = 0;
+
+	ret = otg_dsi_pinctrl_set_state(pdata, enable);
+	gpio_direction_output(pdata->otg5v_en_gpio, enable);
+
+	return ret;
+}
+#endif
+
 static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 {
 	int ret;
@@ -2125,10 +2193,12 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 		return;
 	}
 
+#ifndef CONFIG_MACH_JALEBI
 	if (!vbus_otg) {
 		pr_err("vbus_otg is NULL.");
 		return;
 	}
+#endif
 
 	/*
 	 * if entering host mode tell the charger to not draw any current
@@ -2138,14 +2208,22 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 	 */
 	if (on) {
 		msm_otg_notify_host_mode(motg, on);
+#ifdef CONFIG_MACH_JALEBI
+		ret = otg_enable(motg->pdata, true);
+#else
 		ret = regulator_enable(vbus_otg);
+#endif
 		if (ret) {
 			pr_err("unable to enable vbus_otg\n");
 			return;
 		}
 		vbus_is_on = true;
 	} else {
+#ifdef CONFIG_MACH_JALEBI
+		ret = otg_enable(motg->pdata, false);
+#else
 		ret = regulator_disable(vbus_otg);
+#endif
 		if (ret) {
 			pr_err("unable to disable vbus_otg\n");
 			return;
@@ -2169,6 +2247,7 @@ static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
 		return -ENODEV;
 	}
 
+#ifndef CONFIG_MACH_JALEBI
 	if (!motg->pdata->vbus_power && host) {
 		vbus_otg = devm_regulator_get(motg->phy.dev, "vbus_otg");
 		if (IS_ERR(vbus_otg)) {
@@ -2179,6 +2258,7 @@ static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
 			return PTR_ERR(vbus_otg);
 		}
 	}
+#endif
 
 	if (!host) {
 		if (otg->phy->state == OTG_STATE_A_HOST) {
@@ -5272,6 +5352,13 @@ struct msm_otg_platform_data *msm_otg_dt_to_pdata(struct platform_device *pdev)
 	if (pdata->usb_id_gpio < 0)
 		pr_debug("usb_id_gpio is not available\n");
 
+#ifdef CONFIG_MACH_JALEBI
+	pdata->otg5v_en_gpio = of_get_named_gpio(node, "qcom,otg5v_en-gpio", 0);
+	if (pdata->otg5v_en_gpio < 0)
+		pr_debug("otg5v_en_gpio is not available\n");
+	dev_info(&pdev->dev, "get otg5v_en_gpio = %d\n", pdata->otg5v_en_gpio);
+#endif
+
 	pdata->l1_supported = of_property_read_bool(node,
 				"qcom,hsusb-l1-supported");
 	pdata->enable_ahb2ahb_bypass = of_property_read_bool(node,
@@ -5848,11 +5935,32 @@ static int msm_otg_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "ID IRQ doesn't exist\n");
 			goto remove_phy;
 		}
+
+#ifdef CONFIG_MACH_JALEBI
+		if (gpio_is_valid(motg->pdata->otg5v_en_gpio)) {
+			/* otg5v_en_gpio request */
+			ret = gpio_request(motg->pdata->otg5v_en_gpio, "OTG5V_EN_GPIO");
+			if (ret < 0) {
+				dev_err(&pdev->dev, "otg5v_en_gpio request failed for id\n");
+				motg->pdata->otg5v_en_gpio = 0;
+				goto remove_phy;
+			} else {
+				dev_info(&pdev->dev, "otg5v_en_gpio request success for id\n");
+			}
+		}
+#endif
 	}
 
 	msm_hsusb_mhl_switch_enable(motg, 1);
 
 	platform_set_drvdata(pdev, motg);
+
+#ifdef CONFIG_MACH_JALEBI
+	ret = otg_pinctrl_init(pdev);
+	if (ret)
+		pr_warn("%s: failed to get pin resources\n", __func__);
+#endif
+
 	device_init_wakeup(&pdev->dev, 1);
 	motg->mA_port = IUNIT;
 
