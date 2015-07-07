@@ -260,3 +260,13 @@
 		};
 	};
 };
+
+&usb_otg {
+	qcom,hsusb-otg-mode = <3>;
+	qcom,usbid-gpio = <&msm_gpio 110 0>;
+	qcom,otg5v_en-gpio = <&msm_gpio 52 0>;
+	pinctrl-names = "default", "active", "sleep";
+	pinctrl-0 = <&usbid_default>;
+	pinctrl-1 = <&otg_5v_on>;
+	pinctrl-2 = <&otg_5v_off>;
+};

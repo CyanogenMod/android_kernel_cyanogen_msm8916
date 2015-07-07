@@ -90,4 +90,23 @@
 			  bias-pull-up;
 		};
 	};
+
+	otg_5v_pin {
+		qcom,pins = <&gp 52>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "otg-gpio";
+
+		otg_5v_on: otg_on {
+			driver-strength = <10>;
+			bias-pull-up;
+			output-high;
+		};
+
+		otg_5v_off: otg_off {
+			driver-strength = <2>;
+			bias-disable;
+			output-low;
+		};
+	};
 };
