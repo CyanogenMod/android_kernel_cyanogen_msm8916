@@ -943,18 +943,20 @@ static int ap3426_als_enable(struct ap3426_data *ps_data, int enable)
 
 	msleep(50);
 	if (misc_als_opened) {
-		// Report a different value here so that it can get to userspace, because
-		// the input driver sends EV_ABS events only when if value changed
-		// from the last report.
-		int als_value = ap3426_get_adc_value(ps_data->client);
+		// We will need to Report a an extra value in the polling timer...
+		// ... so that we are sure the 1st event gets to userspace.
+		ALS_DBG("ps_data->als_polling_just_enabled:%d = 1; Starting Polling Timer.\n", \
+                         ps_data->als_polling_just_enabled);
 
-		input_report_abs(ps_data->lsensor_input_dev, ABS_MISC, als_value + 1);
-		input_sync(ps_data->lsensor_input_dev);
-		input_report_abs(ps_data->lsensor_input_dev, ABS_MISC, als_value);
-		input_sync(ps_data->lsensor_input_dev);
-		ALS_DBG("Starting Polling Timer.\n");
+		ps_data->als_polling_just_enabled = 1;
+
 		ret = mod_timer(&ps_data->pl_timer, jiffies + msecs_to_jiffies(ps_data->als_msec_poll_delay));
 	} else {
+		ALS_DBG("ps_data->als_polling_just_enabled:%d = 0;\n", \
+			 ps_data->als_polling_just_enabled);
+
+		ps_data->als_polling_just_enabled = 0;
+
 #ifndef PS_POLLING_DEBUG
 		ALS_DBG("Disable Polling Timer.\n");
 		ret = del_timer_sync(&ps_data->pl_timer);
@@ -2442,7 +2444,7 @@ done:
 }
 
 /*
- * Seems to be a stub function that wasn't implemented.
+ * Seems to be a probe stub function that wasn't implemented.
  */
 static int ap3426_check_id(struct ap3426_data *data)
 {
@@ -2526,10 +2528,24 @@ static void lsensor_work_handler(struct work_struct *w)
 
 	value = ap3426_get_adc_value(data->client);
 	value = value * als_calibration / 100;
+
+	if (data->als_polling_just_enabled) {
+		/*
+		 * Report a different value here so that it can get to userspace, because
+		 * the input driver sends EV_ABS events only when if value changed
+		 * from the last report. Done here to give user space time to prepare.
+		 */
+		input_report_abs(data->lsensor_input_dev, ABS_MISC, value + 1);
+		input_sync(data->lsensor_input_dev);
+		ALS_DBG("data->als_polling_just_enabled:%d = 0; Reported an EXTRA ABS_MISC value:%d to input device.\n",
+		         data->als_polling_just_enabled,                                   value);
+
+		data->als_polling_just_enabled = 0;
+	}
 	input_report_abs(data->lsensor_input_dev, ABS_MISC, value);
 	input_sync(data->lsensor_input_dev);
 
-	ALS_DBG("Reported ABS_MISC:%d to input device.\n", value);
+	ALS_DBG("Reported ABS_MISC value:%d to input device.\n", value);
 
 	ap3426_unlock_mutex(data);
 
@@ -2747,6 +2763,8 @@ static int ap3426_probe(struct i2c_client *client,
 				                  DEFAULT_ALS_POLL_DELAY_MS);
 
 	data->als_msec_poll_delay = DEFAULT_ALS_POLL_DELAY_MS;
+
+	data->als_polling_just_enabled = 0;
 
 	i2c_set_clientdata(client, data);
 

@@ -232,6 +232,7 @@ struct ap3426_data {
 	bool			als_enabled;
 	bool 			als_re_enable;
 	int			als_msec_poll_delay;
+	bool			als_polling_just_enabled;
 	bool			ps_enabled;
 	bool			ps_re_enable;
 	bool 			suspended;
