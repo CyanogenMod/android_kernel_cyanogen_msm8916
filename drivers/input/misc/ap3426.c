@@ -3065,11 +3065,11 @@ static int ap3426_suspend(struct device *dev)
 	ap3426_lock_mutex(ps_data);
 
 	if (misc_als_opened == 1) {
-		ap3426_als_enable(ps_data, false);
+		ap3426_als_enable(ps_data, 0);
 		ps_data->als_re_enable = 1;
 	}
 	if (misc_ps_opened == 1) {
-		ap3426_ps_enable(ps_data, false);
+		ap3426_ps_enable(ps_data, 0);
 		ps_data->ps_re_enable = 1;
 	}
 
@@ -3092,6 +3092,7 @@ static int ap3426_resume(struct device *dev)
 
 	ap3426_lock_mutex(ps_data);
 
+	ps_data->suspended = 0;
 
 	// power_int() currently disabled it because
 	// it may prevent system from wakeing up.
@@ -3103,14 +3104,13 @@ static int ap3426_resume(struct device *dev)
 	ap3426_init_client(ps_data->client);
 
 	if (ps_data->ps_re_enable ) {
-		ap3426_ps_enable(ps_data, misc_ps_opened);
+		ap3426_ps_enable(ps_data, 1);
 		ps_data->ps_re_enable = 0;
 	}
 	if (ps_data->als_re_enable ) {
-		ap3426_als_enable(ps_data, misc_als_opened);
+		ap3426_als_enable(ps_data, 1);
 		ps_data->als_re_enable = 0;
 	}
-	ps_data->suspended = 0;
 
 	ap3426_unlock_mutex(ps_data);
 
