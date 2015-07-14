@@ -385,6 +385,7 @@
 		ap3426,ps-calibration-min = <0>;
 		ap3426,ps-calibration-expected = <120>;
 		ap3426,ps-calibration-max = <500>;
+		ap3426,ps-integrated-time = <0x0>;
 	};
 
 	tps65132@3e {
