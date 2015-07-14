@@ -874,9 +874,11 @@ static int ap3426_ps_enable(struct ap3426_data *ps_data, int enable)
 	}
 	if (enable) {
 		ret = ap3426_power_on_ps(client);
+		msleep(50);
 		ap3426_enable_ps_interrupts(client);
 	} else {
 		ap3426_disable_ps_interrupts(client);
+		msleep(50);
 		ret = ap3426_power_off_ps(client);
 	}
 	if (ret < 0) {
@@ -1434,7 +1436,7 @@ static u8 ps_calibrated = 0;
 
 static inline void swap_at(u16 *x, u16 *y)
 {
-	u8 temp = *x;
+	u16 temp = *x;
 
 	*x = *y;
 	*y = temp;
@@ -1579,8 +1581,6 @@ static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 
 	ap3426_lock_mutex(ps_data);
 
-	err = ap3426_ps_enable(ps_data, enabled);
-
 #ifdef DI_AUTO_CAL
 	if (enabled == 1 && !ps_calibrated) {
 		struct i2c_client *client = ps_data->client;
@@ -1600,6 +1600,7 @@ static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 		ap3426_enable_ps_interrupts(client);
 	}
 #endif
+	err = ap3426_ps_enable(ps_data, enabled);
 
 	if (err < 0)
 		rv = err;
@@ -2433,10 +2434,11 @@ static int ap3426_init_client(struct i2c_client *client)
 
     ap3426_disable_ps_and_als_interrupts(client);
 
-    //ps/IR integrated time as 9T,for sensitivity
-    // PS mean time default = 0x00 (1 converseion time = 5ms)
-    // 5 + 0x08 x 0.0627 = 5.5 ms (ADC photodiode sample period)
-    i2c_smbus_write_byte_data(client, 0x25, 0x08);
+	// PS mean time default = 0x00 (1 converseion time = 5ms)
+	// 5 + N x 0.0627 (ADC photodiode sample period, where N is the integrated time)
+	if (data->ps_integrated_time > 0) {
+	    i2c_smbus_write_byte_data(client, 0x25, data->ps_integrated_time);
+	}
 
 done:
     RETURN("rv:%d", rv);
@@ -2671,6 +2673,15 @@ static int ap3426_parse_dt(struct device *dev, struct ap3426_data *pdata)
 		dev_err(dev, "Unable to read 'ap3426,ps-thdh', using default %d\n",
 		                              pdata->ps_thd_h);
 	}
+	rc = of_property_read_u32(dt, "ap3426,ps-integrated-time", &temp_val);
+	if (!rc) {
+		pdata->ps_integrated_time = (u16) temp_val;
+		PS_DBG("ps-integrated-time = %d\n", pdata->ps_integrated_time);
+	} else {
+		pdata->ps_integrated_time = 0;
+		dev_err(dev, "Unable to read 'ap3426,ps-integrated-time', using default %d\n",
+			pdata->ps_integrated_time);
+	}
 
 #ifdef DI_AUTO_CAL
 	rc = of_property_read_u32(dt, "ap3426,ps-calibration-min", &temp_val);
@@ -2749,6 +2760,7 @@ static int ap3426_probe(struct i2c_client *client,
 	// No dtsi values for ps thresholds, use defaults
 	data->ps_thd_l = PX_LOW_THRESHOLD;
 	data->ps_thd_h = PX_HIGH_THRESHOLD;
+	data->ps_integrated_time = 0;
 #endif
 
 	data->client = client;
