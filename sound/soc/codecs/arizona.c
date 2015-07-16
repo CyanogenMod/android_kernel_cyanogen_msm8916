@@ -3057,6 +3057,19 @@ static int arizona_startup(struct snd_pcm_substream *substream,
 	else
 		constraint = &arizona_48k_constraint;
 
+#ifdef CONFIG_MACH_T86519A1
+	/*
+	 * This works around a crash when enabling mp3/aac offload on Lettuce
+	 *
+	 * In the case that substream->runtime is not set, we assume that we
+	 * shouldn't setup constraints and just return.
+	 */
+	if (!substream->runtime) {
+		dev_info(codec->dev, "runtime null, assuming dsp offload\n");
+		return 0;
+	}
+#endif
+
 	return snd_pcm_hw_constraint_list(substream->runtime, 0,
 					  SNDRV_PCM_HW_PARAM_RATE,
 					  constraint);
