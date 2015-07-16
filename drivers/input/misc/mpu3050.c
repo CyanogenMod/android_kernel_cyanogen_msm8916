@@ -45,6 +45,7 @@
 #include <linux/input/mpu3050.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
+#include <mach/gpiomux.h>
 
 #define	MPU3050_DEV_NAME_GYRO	"gyroscope"
 
@@ -665,7 +666,7 @@ static int mpu3050_probe(struct i2c_client *client,
 	u32 i;
 
 	sensor = kzalloc(sizeof(struct mpu3050_sensor), GFP_KERNEL);
-	idev = devm_input_allocate_device(&client->dev);
+	idev = input_allocate_device();
 	if (!sensor || !idev) {
 		dev_err(&client->dev, "failed to allocate driver data\n");
 		error = -ENOMEM;
@@ -821,7 +822,7 @@ static int mpu3050_probe(struct i2c_client *client,
 	error = create_sysfs_interfaces(&idev->dev);
 	if (error < 0) {
 		dev_err(&client->dev, "failed to create sysfs\n");
-		goto err_free_irq;
+		goto err_input_cleanup;
 	}
 
 	pm_runtime_enable(&client->dev);
@@ -829,6 +830,8 @@ static int mpu3050_probe(struct i2c_client *client,
 
 	return 0;
 
+err_input_cleanup:
+	input_unregister_device(idev);
 err_free_irq:
 	if (client->irq > 0)
 		free_irq(client->irq, sensor);
@@ -841,6 +844,7 @@ err_pm_set_suspended:
 err_class_sysfs:
 	sensors_classdev_unregister(&sensor->cdev);
 err_free_mem:
+	input_free_device(idev);
 	kfree(sensor);
 	return error;
 }
@@ -864,6 +868,7 @@ static int mpu3050_remove(struct i2c_client *client)
 	remove_sysfs_interfaces(&client->dev);
 	if (gpio_is_valid(sensor->enable_gpio))
 		gpio_free(sensor->enable_gpio);
+	input_unregister_device(sensor->idev);
 
 	kfree(sensor);
 
