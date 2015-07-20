@@ -70,6 +70,8 @@ static const struct mmc_fixup mmc_fixups[] = {
 	MMC_FIXUP_EXT_CSD_REV("MMC16G", CID_MANFID_KINGSTON, CID_OEMID_ANY,
 			add_quirk, MMC_QUIRK_BROKEN_HPI, 5),
 
+	MMC_FIXUP_EXT_CSD_REV("V10008", CID_MANFID_KINGSTON, CID_OEMID_ANY,
+			add_quirk, MMC_QUIRK_BROKEN_HPI, 7),
 	/*
 	 * Some Hynix cards exhibit data corruption over reboots if cache is
 	 * enabled. Disable cache for all versions until a class of cards that
