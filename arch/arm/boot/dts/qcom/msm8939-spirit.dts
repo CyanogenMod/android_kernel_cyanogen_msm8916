@@ -49,28 +49,46 @@
 		qcom,recharge-thresh-mv = <100>;
 		qcom,charging-timeout = <1536>;
 		qcom,otg-batt-curr-limit = <1500>;
-		qcom,thermal-mitigation = <1500 1200 900 0>;
+		qcom.otg-fet-present;
+		qcom,otg-fet-enable-gpio = <&pm8916_gpios 3 0>;
+		qcom,thermal-mitigation = <1200 900 600 0>;
 		qcom,empty-soc-disabled;
 		regulator-name = "smb1360_otg_vreg";
 		qcom,fg-reset-at-pon;
 		qcom,fg-reset-thresold-mv = <250>;
 		qcom,parallel-charging-enabled;
-		qcom,rsense-10mhom;
+		qcom,max-parallel-current-ma = <0x12c>;
 		qcom,batt-id-disabled;
 		qcom,shdn-after-pwroff;
 		qcom,config-hard-thresholds;
 		qcom,hot-bat-decidegc = <600>;
 		qcom,cold-bat-decidegc = <(-200)>;
 		qcom,hot-bat-mv = <4100>;
+		qcom,soft-jeita-supported;
+		qcom,cool-bat-decidegc = <100>;
+		qcom,cool-bat-mv = <4200>;
+		qcom,cool-bat-ma = <400>;
+		qcom,warm-bat-decidegc = <450>;
+		qcom,warm-bat-mv = <4350>;
+		qcom,warm-bat-ma = <0>;
 	};
 };
 
 &pm8916_chg {
 	status = "ok";
-	qcom,use-external-charger;
 };
 
 &pm8916_bms {
 	status = "ok";
 	qcom,disable-bms;
+};
+
+&pm8916_gpios {
+	gpio@c200 { /* GPIO 3 */
+		qcom,mode = <1>;
+		qcom,pull = <0>;
+		qcom,vin-sel = <0>;
+		qcom,src-sel = <0>;
+		qcom,master-en = <1>;
+	};
 };
