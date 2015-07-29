@@ -13,6 +13,7 @@
 #include "msm8916-ql790-misc.dtsi"
 #include "msm8916-ql790-camera.dtsi"
 #include "msm8916-ql790-lcd_panel-settings.dtsi"
+#include "msm8916-ql790-pm8916.dtsi"
 #include "msm8916-ql790-tp.dtsi"
 
 &soc {
