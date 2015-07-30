@@ -237,17 +237,16 @@
 #define FG_PROFILE_B_ADDR		0x6
 
 #ifdef CONFIG_MACH_SPIRIT
+#define CFG_BATT_CHG_FREQ_REG		0x03
+#define SWITCH_FREQ_BIT			BIT(7)
+
 #define OTG_UVLO_REG			0x12
 #define OTG_UVLO_MASK			SMB1360_MASK(4, 2)
 #define OTG_UVLO_DATA			2
 #define OTG_UVLO_SHIFT			2
 
 #define PRE_TO_FAST_MASK		SMB1360_MASK(7, 5)
-#ifdef CONFIG_MACH_SPIRIT
 #define PRE_TO_FAST_DATA		7
-#else
-#define PRE_TO_FAST_DATA		6
-#endif
 #define PRE_TO_FAST_SHIFT		5
 
 #define PRE_CHARGE_CURRENT_MASK		SMB1360_MASK(1, 0)
@@ -271,7 +270,11 @@
 #define MAX_8_BITS			255
 #define JEITA_WORK_MS			3000
 
+#ifdef CONFIG_MACH_SPIRIT
+#define FG_RESET_THRESHOLD_MV		50
+#else
 #define FG_RESET_THRESHOLD_MV		15
+#endif
 #define SMB1360_REV_1			0x01
 
 enum {
@@ -335,6 +338,9 @@ struct smb1360_chip {
 	bool				soft_jeita_supported;
 	int				iterm_ma;
 	int				vfloat_mv;
+#ifdef CONFIG_MACH_SPIRIT
+	int				hot_bat_mv;
+#endif
 	int				safety_time;
 	int				resume_delta_mv;
 	u32				default_batt_profile;
@@ -1344,6 +1350,34 @@ exit_work:
 	pm_relax(chip->dev);
 }
 
+#ifdef CONFIG_MACH_SPIRIT
+static int smb1360_change_float_voltage(struct smb1360_chip *chip, int voltage)
+{
+	int rc;
+	u8 float_voltage;
+
+	rc = smb1360_read(chip, BATT_CHG_FLT_VTG_REG, &float_voltage);
+	if (rc) {
+		pr_err("%s: Failed to read BATT_CHG_FLT_VTG_REG: %d\n",
+				__func__, rc);
+		return rc;
+	}
+
+	if (float_voltage * 10 + MIN_FLOAT_MV == voltage) {
+		/* No change, do nothing */
+		return 0;
+	}
+
+	rc = smb1360_float_voltage_set(chip, voltage);
+	if (rc) {
+		pr_err("%s: Failed to set BATT_CHG_FLT_VTG_REG: %d\n",
+				__func__, rc);
+	}
+
+	return rc;
+}
+#endif
+
 static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 {
 	int rc = 0, i, therm_ma, current_ma;
@@ -1476,12 +1510,30 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 
 		if (temperature > CHG_TEMP_MIN &&
 				temperature <= CHG_TEMP_MID) {
+			rc = smb1360_change_float_voltage(chip,
+					chip->vfloat_mv);
+			if (rc < 0) {
+				pr_err("%s: Couldn't configure float voltage: %d\n",
+						__func__, rc);
+			}
 			current_ma = CURRENT_AC_BETWEEN_00_10;
 		} else if (temperature > CHG_TEMP_MID &&
 				temperature <= CHG_TEMP_MAX) {
+			rc = smb1360_change_float_voltage(chip,
+					chip->vfloat_mv);
+			if (rc < 0) {
+				pr_err("%s: Couldn't configure float voltage: %d\n",
+						__func__, rc);
+			}
 			current_ma = CURRENT_AC_BETWEEN_10_45;
 		} else if (temperature > CHG_TEMP_MAX &&
 				temperature < CHG_TEMP_OVER) {
+			rc = smb1360_change_float_voltage(chip,
+					chip->hot_bat_mv);
+			if (rc < 0) {
+				pr_err("%s: Couldn't configure float voltage: %d\n",
+						__func__, rc);
+			}
 			current_ma = CURRENT_AC_BETWEEN_45_60;
 		}
 #endif
@@ -1727,19 +1779,6 @@ static void smb1360_external_power_changed(struct power_supply *psy)
 	union power_supply_propval prop = {0,};
 	int rc, current_limit = 0;
 
-#ifdef CONFIG_MACH_SPIRIT
-	int temperature = -1000;
-	bool temp_warning = false;
-
-	temperature = smb1360_get_prop_batt_temp(chip);
-	if (temperature <= CHG_TEMP_MIN ||
-			temperature >= CHG_TEMP_OVER) {
-		temp_warning = true;
-	} else {
-		temp_warning = false;
-	}
-#endif
-
 	rc = chip->usb_psy->get_property(chip->usb_psy,
 				POWER_SUPPLY_PROP_CURRENT_MAX, &prop);
 	if (rc < 0)
@@ -1750,11 +1789,7 @@ static void smb1360_external_power_changed(struct power_supply *psy)
 
 	pr_debug("current_limit = %d\n", current_limit);
 
-#ifdef CONFIG_MACH_SPIRIT
-	if (chip->usb_psy_ma != current_limit || temp_warning) {
-#else
 	if (chip->usb_psy_ma != current_limit) {
-#endif
 		mutex_lock(&chip->current_change_lock);
 		chip->usb_psy_ma = current_limit;
 		rc = smb1360_set_appropriate_usb_current(chip);
@@ -3841,6 +3876,15 @@ static int smb1360_hw_init(struct smb1360_chip *chip)
 		return rc;
 	}
 
+#ifdef CONFIG_MACH_SPIRIT
+	/* Set the switching frequency to 3.2MHz */
+	rc = smb1360_masked_write(chip, CFG_BATT_CHG_FREQ_REG, SWITCH_FREQ_BIT, 0);
+	if (rc < 0) {
+		dev_err(chip->dev, "Couldn't set CFG_BATT_CHG_FREQ_REG rc=%d\n",
+				rc);
+	}
+#endif
+
 	/* AICL enable and set input-uv glitch flt to 20ms*/
 	reg = AICL_ENABLED_BIT | INPUT_UV_GLITCH_FLT_20MS_BIT;
 	rc = smb1360_masked_write(chip, CFG_GLITCH_FLT_REG, reg, reg);
@@ -4345,6 +4389,13 @@ static int smb_parse_dt(struct smb1360_chip *chip)
 	if (rc < 0)
 		chip->vfloat_mv = -EINVAL;
 
+#ifdef CONFIG_MACH_SPIRIT
+	rc = of_property_read_u32(node, "qcom,hot-bat-mv",
+						&chip->hot_bat_mv);
+	if (rc < 0)
+		chip->hot_bat_mv = -EINVAL;
+#endif
+
 	rc = of_property_read_u32(node, "qcom,charging-timeout",
 						&chip->safety_time);
 	if (rc < 0)
@@ -4510,6 +4561,7 @@ static int smb_parse_dt(struct smb1360_chip *chip)
 static void charger_abnormal_detect_work(struct work_struct *work)
 {
 	union power_supply_propval val;
+	int rc;
 	int charger_type;
 	int temperature = -1000;
 	struct power_supply *usb_psy = power_supply_get_by_name("usb");
@@ -4530,12 +4582,30 @@ static void charger_abnormal_detect_work(struct work_struct *work)
 			if (charger_type == POWER_SUPPLY_TYPE_USB_DCP) {
 				if (temperature > CHG_TEMP_MIN &&
 						temperature <= CHG_TEMP_MID) {
+					rc = smb1360_change_float_voltage(chip,
+							chip->vfloat_mv);
+					if (rc < 0) {
+						pr_err("%s: Couldn't change float voltage: %d\n",
+								__func__, rc);
+					}
 					chip->usb_psy_ma = CURRENT_AC_BETWEEN_00_10;
 				} else if (temperature > CHG_TEMP_MID &&
 						temperature <= CHG_TEMP_MAX) {
+					rc = smb1360_change_float_voltage(chip,
+							chip->vfloat_mv);
+					if (rc < 0) {
+						pr_err("%s: Couldn't change float voltage: %d\n",
+								__func__, rc);
+					}
 					chip->usb_psy_ma = CURRENT_AC_BETWEEN_10_45;
 				} else if (temperature > CHG_TEMP_MAX &&
 						temperature < CHG_TEMP_OVER) {
+					rc = smb1360_change_float_voltage(chip,
+							chip->hot_bat_mv);
+					if (rc < 0) {
+						pr_err("%s: Couldn't change float voltage: %d\n",
+								__func__, rc);
+					}
 					chip->usb_psy_ma = CURRENT_AC_BETWEEN_45_60;
 				}
 			} else if (charger_type == POWER_SUPPLY_TYPE_USB) {
@@ -4783,36 +4853,6 @@ static int smb1360_probe(struct i2c_client *client,
 			smb1360_get_prop_batt_present(chip),
 			chip->usb_present,
 			smb1360_get_prop_batt_capacity(chip));
-
-#ifdef CONFIG_MACH_SPIRIT
-	/* Reset FG */
-	rc = smb1360_enable_fg_access(chip);
-	if (rc) {
-		dev_err(chip->dev,
-				"Unable to enable FG access: %d\n",
-				rc);
-	}
-	msleep(1500);
-	rc = smb1360_masked_write(chip, CMD_I2C_REG, FG_RESET_BIT,
-			FG_RESET_BIT);
-	if (rc) {
-		dev_err(chip->dev,
-				"Couldn't reset FG: %d\n",
-				rc);
-		goto disable_access;
-	}
-	rc = smb1360_masked_write(chip, CMD_I2C_REG, FG_RESET_BIT, 0);
-	if (rc) {
-		dev_err(chip->dev,
-				" Couldn't clear FG: %d\n",
-				rc);
-	}
-disable_access:
-	smb1360_disable_fg_access(chip);
-	msleep(1500);
-
-	schedule_delayed_work(&chip->abnormal_detect, 0);
-#endif
 
 	return 0;
 
