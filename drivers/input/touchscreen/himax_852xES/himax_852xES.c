@@ -1558,8 +1558,10 @@ void himax_HW_reset(uint8_t loadconfig,uint8_t int_off)
 {
 	struct himax_ts_data *ts = private_ts;
 	int ret = 0;
+
+	HW_RESET_ACTIVATE = 1;
 	if (ts->rst_gpio) {
-		if(int_off)
+		if(!int_off)
 			{
 				if (ts->use_irq)
 					himax_int_enable(private_ts->client->irq,0);
@@ -1579,7 +1581,7 @@ void himax_HW_reset(uint8_t loadconfig,uint8_t int_off)
 		if(loadconfig)
 			himax_loadSensorConfig(private_ts->client,private_ts->pdata);
 
-		if(int_off)
+		if(!int_off)
 			{
 				if (ts->use_irq)
 					himax_int_enable(private_ts->client->irq,1);
@@ -2173,13 +2175,13 @@ inline void himax_ts_work(struct himax_ts_data *ts)
 #ifdef HX_TP_SYS_DIAG
 			diag_cmd = getDiagCommand();
 #ifdef HX_ESD_WORKAROUND
-			if (check_sum_cal != 0 && ESD_RESET_ACTIVATE == 0 && diag_cmd == 0)  //ESD Check
+			if (check_sum_cal != 0 && ESD_RESET_ACTIVATE == 0 && HW_RESET_ACTIVATE == 0 && diag_cmd == 0)  //ESD Check
 #else
 			if (check_sum_cal != 0 && diag_cmd == 0)
 #endif
 #else
 #ifdef HX_ESD_WORKAROUND
-			if (check_sum_cal != 0 && ESD_RESET_ACTIVATE == 0 )  //ESD Check
+			if (check_sum_cal != 0 && ESD_RESET_ACTIVATE == 0 && HW_RESET_ACTIVATE == 0)  //ESD Check
 #else
 			if (check_sum_cal !=0)
 #endif
@@ -2211,7 +2213,15 @@ inline void himax_ts_work(struct himax_ts_data *ts)
 				I("[HIMAX TP MSG]:%s: Back from reset, ready to serve.\n", __func__);
 				return;
 			}
+			else if (HW_RESET_ACTIVATE)
+#else
+			 if (HW_RESET_ACTIVATE)
 #endif
+			{
+				HW_RESET_ACTIVATE = 0;/*drop 1st interrupts after chip reset*/
+				I("[HIMAX TP MSG]:%s: HW_RST Back from reset, ready to serve.\n", __func__);
+				return;
+			}
 
 		for (loop_i = 0, check_sum_cal = 0; loop_i < hx_touch_info_size; loop_i++)
 			check_sum_cal += buf[loop_i];
@@ -5446,10 +5456,12 @@ static int himax852xes_probe(struct i2c_client *client, const struct i2c_device_
 
 	himax_read_TP_info(client);
 #ifdef HX_AUTO_UPDATE_FW
-	if(i_update_FW()==false)
+	if(i_update_FW()==false) {
 		I("NOT Have new FW=NOT UPDATE=\n");
-	else
+	} else {
 		I("Have new FW=UPDATE=\n");
+		himax_read_TP_info(client);
+	}
 #endif
 
 	//Himax Power On and Load Config
@@ -5571,6 +5583,7 @@ static int himax852xes_probe(struct i2c_client *client, const struct i2c_device_
 #ifdef HX_ESD_WORKAROUND
 	ESD_RESET_ACTIVATE = 0;
 #endif
+HW_RESET_ACTIVATE = 0;
 
 
 #if defined(HX_USB_DETECT)
