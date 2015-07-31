@@ -546,7 +546,7 @@ int fts_ctpm_fw_upgrade_with_sys_fs(unsigned char *fw, int len, bool change_iref
 		FileLength = fullFileLength;		
 
 		#ifdef HX_RST_PIN_FUNC
-			himax_HW_reset(false,false);
+			himax_HW_reset(false,true);
 		#endif
 		
 		if ( i2c_himax_write(private_ts->client, 0x81 ,&cmd[0], 0, DEFAULT_RETRY_CNT) < 0)
@@ -1012,7 +1012,7 @@ static int i_update_FW(void)
 			else
 				I("%s: TP upgrade OK\n", __func__);
 #ifdef HX_RST_PIN_FUNC
-			himax_HW_reset(false,false);
+			himax_HW_reset(false,true);
 #endif
 			return 1;	
 		}
