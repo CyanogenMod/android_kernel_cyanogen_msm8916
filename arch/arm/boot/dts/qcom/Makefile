@@ -64,8 +64,9 @@ dtb-$(CONFIG_ARCH_MSM8909) += msm8909-sim.dtb \
 	msm8208-1gb-rcm.dtb \
 	msm8208-qhd-cdp.dtb \
 	msm8208-qhd-rcm.dtb
+	
 ifeq ($(CONFIG_MACH_LONGCHEER_MSM8916),y)
-dtb-$(CONFIG_ARCH_MSM8916) += msm8916-crackling.dtb
+dtb-$(CONFIG_ARCH_MSM8916) += msm8916-qrd-l8150.dtb
 else
 dtb-$(CONFIG_ARCH_MSM8916) += msm8916-cdp.dtb \
 	msm8916-cdp-smb1360.dtb \

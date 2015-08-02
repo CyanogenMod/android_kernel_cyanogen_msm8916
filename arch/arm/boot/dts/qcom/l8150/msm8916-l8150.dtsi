@@ -10,9 +10,9 @@
  * GNU General Public License for more details.
  */
 
-#include "msm8916-pinctrl-crackling.dtsi"
-#include "msm8916-camera-sensor-crackling.dtsi"
-#include "msm-pm8916-crackling.dtsi"
+#include "msm8916-pinctrl-l8150.dtsi"
+#include "msm8916-camera-sensor-l8150.dtsi"
+#include "msm-pm8916-l8150.dtsi"
 #include "../dsi-panel-otm8019a-fwvga-video.dtsi"
 #include "dsi-panel-trulyotm1288a-720p-video.dtsi"
 #include "dsi-panel-dijingILI9881C-720p-video.dtsi"
