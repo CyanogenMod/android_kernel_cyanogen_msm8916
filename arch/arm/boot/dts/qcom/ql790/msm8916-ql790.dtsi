@@ -95,6 +95,10 @@
 		android,ramoops-record-size = <0x20000>;
 		android,ramoops-dump-oops = <0x1>;
 	};
+
+        qcom,msm-thermal {
+                qcom,limit-temp = <70>;
+	};
 };
 
 &pm8916_chg {
