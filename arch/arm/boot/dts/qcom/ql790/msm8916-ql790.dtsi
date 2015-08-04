@@ -96,8 +96,8 @@
 		android,ramoops-dump-oops = <0x1>;
 	};
 
-        qcom,msm-thermal {
-                qcom,limit-temp = <70>;
+	qcom,msm-thermal {
+		qcom,limit-temp = <70>;
 	};
 };
 
