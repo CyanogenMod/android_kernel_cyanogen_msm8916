@@ -33,7 +33,7 @@
 #ifndef _CYTTSP4_REGS_H
 #define _CYTTSP4_REGS_H
 
-#define CY_FW_FILE_NAME			"cyttsp4_fw.bin"
+#define CY_FW_FILE_NAME			"cyttsp4/cyttsp4_fw.bin"
 
 #define CY_DEFAULT_ADAP_MAX_XFER	512
 #define CY_ADAP_MIN_XFER		140
