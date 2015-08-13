@@ -1544,6 +1544,10 @@ struct bma2x2_data {
 	struct timer_list	tap_timer;
 	int tap_time_period;
 #endif
+
+#ifdef BMA2X2_HRT
+	struct hrtimer	poll_timer;
+#endif
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -5040,13 +5044,18 @@ static void bma2x2_work_func(struct work_struct *work)
 	struct bma2x2_data *bma2x2 = container_of((struct delayed_work *)work,
 			struct bma2x2_data, work);
 	struct bma2x2acc value;
+#ifndef BMA2X2_HRT
 	unsigned long delay = msecs_to_jiffies(atomic_read(&bma2x2->delay));
+#endif
 
 	bma2x2_report_axis_data(bma2x2, &value);
 	mutex_lock(&bma2x2->value_mutex);
 	bma2x2->value = value;
 	mutex_unlock(&bma2x2->value_mutex);
+
+#ifndef BMA2X2_HRT
 	queue_delayed_work(bma2x2->data_wq, &bma2x2->work, delay);
+#endif
 }
 
 static ssize_t bma2x2_register_store(struct device *dev,
@@ -5381,10 +5390,16 @@ static void bma2x2_set_enable(struct device *dev, int enable)
 				bma2x2_pinctrl_state(bma2x2, true);
 				enable_irq(bma2x2->IRQ);
 			} else {
+#ifdef BMA2X2_HRT
+				hrtimer_start(&bma2x2->poll_timer,
+					ns_to_ktime(atomic_read(&bma2x2->delay) * 1000000UL),
+					HRTIMER_MODE_REL);
+#else
 				queue_delayed_work(bma2x2->data_wq,
 					&bma2x2->work,
 					msecs_to_jiffies
 					(atomic_read(&bma2x2->delay)));
+#endif
 			}
 			atomic_set(&bma2x2->enable, 1);
 		}
@@ -5415,7 +5430,12 @@ static void bma2x2_set_enable(struct device *dev, int enable)
 					goto mutex_exit;
 				}
 			} else {
+#ifdef BMA2X2_HRT
+				hrtimer_cancel(&bma2x2->poll_timer);
+				cancel_work_sync(&bma2x2->work.work);
+#else
 				cancel_delayed_work_sync(&bma2x2->work);
+#endif
 			}
 
 			atomic_set(&bma2x2->enable, 0);
@@ -7530,6 +7550,18 @@ exit:
 	return ret;
 }
 
+#ifdef BMA2X2_HRT
+static enum hrtimer_restart bma_timer_func(struct hrtimer *timer)
+{
+	struct bma2x2_data *data = container_of(timer, struct bma2x2_data, poll_timer);;
+
+	queue_work(data->data_wq, &data->work.work);
+	hrtimer_forward_now(&data->poll_timer, ns_to_ktime(atomic_read(&data->delay) * 1000000UL));
+
+	return HRTIMER_RESTART;
+}
+#endif
+
 static void bma2x2_pinctrl_state(struct bma2x2_data *data,
 			bool active)
 {
@@ -7701,10 +7733,22 @@ static int bma2x2_probe(struct i2c_client *client,
 		disable_irq(data->IRQ);
 		INIT_WORK(&data->irq_work, bma2x2_irq_work_func);
 	} else {
+#ifdef BMA2X2_HRT
+		hrtimer_init(&data->poll_timer, CLOCK_MONOTONIC,
+					HRTIMER_MODE_REL);
+		data->poll_timer.function = bma_timer_func;
+		INIT_WORK(&data->work.work, bma2x2_work_func);
+#else
 		INIT_DELAYED_WORK(&data->work, bma2x2_work_func);
+#endif
 	}
 
+#ifdef BMA2X2_HRT
+	data->data_wq = alloc_workqueue("bma2x2_data_work",
+				WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
+#else
 	data->data_wq = create_freezable_workqueue("bma2x2_data_work");
+#endif
 	if (!data->data_wq) {
 		dev_err(&client->dev, "Cannot get create workqueue!\n");
 		goto free_irq_exit;
