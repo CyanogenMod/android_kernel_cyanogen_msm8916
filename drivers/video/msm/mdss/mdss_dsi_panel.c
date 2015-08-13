@@ -641,9 +641,6 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	}
 }
 
-#ifdef CONFIG_YULONG_COLOR
-extern void color_enhancement_impl_apply(void);
-#endif
 static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
@@ -672,10 +669,6 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 
 	if (ctrl->on_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->on_cmds);
-
-#ifdef CONFIG_YULONG_COLOR
-	color_enhancement_impl_apply();
-#endif
 
 	mdss_livedisplay_update(ctrl, MODE_UPDATE_ALL);
 
@@ -1910,9 +1903,6 @@ error:
 	return -EINVAL;
 }
 
-#ifdef CONFIG_YULONG_COLOR
-extern void color_enhancement_impl_init(struct mdss_dsi_ctrl_pdata *);
-#endif
 int mdss_dsi_panel_init(struct device_node *node,
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata,
 	bool cmd_cfg_cont_splash)
@@ -1958,10 +1948,6 @@ int mdss_dsi_panel_init(struct device_node *node,
 	ctrl_pdata->low_power_config = mdss_dsi_panel_low_power_config;
 	ctrl_pdata->panel_data.set_backlight = mdss_dsi_panel_bl_ctrl;
 	ctrl_pdata->switch_mode = mdss_dsi_panel_switch_mode;
-
-#ifdef CONFIG_YULONG_COLOR
-	color_enhancement_impl_init(ctrl_pdata);
-#endif
 
 	return 0;
 }
