@@ -59,49 +59,29 @@
 			05 01 00 00 01 00 02 11 00
 			39 01 00 00 00 00 04 B9 FF 83 94
 			39 01 00 00 01 00 0A CA 2C 2C 2C 2B 2B 2B 2A 2A 20
-			05 01 00 00 00 00 02 29 00
 		];
 		qcom,mdss-dsi-off-command = [
 			05 01 00 00 14 00 02 28 00
 			05 01 00 00 78 00 02 10 00
 		];
-		qcom,panel-ce-cmds = [
+		cm,mdss-livedisplay-cabc-cmd = [
+			39 01 00 00 00 00 02 55 00
+		];
+		cm,mdss-livedisplay-cabc-ui-value = <0x01>;
+		cm,mdss-livedisplay-cabc-image-value = <0x2>;
+		cm,mdss-livedisplay-cabc-video-value = <0x3>;
+		cm,mdss-livedisplay-color-enhance-on = [
 			39 01 00 00 00 00 04 B9 FF 83 94
 			39 01 00 00 00 00 02 E4 11
 			39 01 00 00 00 00 02 B9 00
 		];
-		qcom,panel-ce-off-cmds = [
+		cm,mdss-livedisplay-color-enhance-off = [
 			39 01 00 00 00 00 04 B9 FF 83 94
 			39 01 00 00 00 00 02 E4 00
-			39 01 00 00 00 00 02 55 00
 			39 01 00 00 00 00 02 B9 00
 		];
-		qcom,panel-ce-level1-cmds = [
-			39 01 00 00 00 00 04 B9 FF 83 94
-			39 01 00 00 00 00 02 E4 11
-			39 01 00 00 00 00 02 55 03
-			39 01 00 00 00 00 02 B9 00
-		];
-		qcom,panel-ce-level2-cmds = [
-			39 01 00 00 00 00 04 B9 FF 83 94
-			39 01 00 00 00 00 02 E4 12
-			39 01 00 00 00 00 02 55 03
-			39 01 00 00 00 00 02 B9 00
-		];
-		qcom,panel-ce-level3-cmds = [
-			39 01 00 00 00 00 04 B9 FF 83 94
-			39 01 00 00 00 00 02 E4 13
-			39 01 00 00 00 00 02 55 03
-			39 01 00 00 00 00 02 B9 00
-		];
-		qcom,panel-cabc-ui-cmds = [
-			39 01 00 00 00 00 02 55 01
-		];
-		qcom,panel-cabc-moving-cmds = [
-			39 01 00 00 00 00 02 55 03
-		];
-		qcom,panel-cabc-off-cmds = [
-			39 01 00 00 00 00 02 55 00
+		cm,mdss-livedisplay-post-cmd = [
+			05 01 00 00 10 00 02 29 00
 		];
 		qcom,panel-backlight-response-curve = [
 			00 01 02 03 04 05 06 07

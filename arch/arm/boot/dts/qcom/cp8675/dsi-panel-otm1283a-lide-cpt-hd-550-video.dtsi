@@ -245,35 +245,28 @@
 			29 01 00 00 00 00 02 51 00
 			29 01 00 00 00 00 02 53 24
 			05 01 00 00 01 00 02 11 00
-			05 01 00 00 00 00 02 29 00
 			];
 		qcom,mdss-dsi-off-command = [
 			05 01 00 00 14 00 02 28 00
 			05 01 00 00 78 00 02 10 00
 		];
-		qcom,panel-ce-cmds = [
+		cm,mdss-livedisplay-cabc-cmd = [
+			29 01 00 00 00 00 02 55 00
+		];
+		cm,mdss-livedisplay-cabc-ui-value = <1>;
+		cm,mdss-livedisplay-cabc-image-value = <2>;
+		cm,mdss-livedisplay-cabc-video-value = <3>;
+/*
+		// Disabled, since it interferes with CABC
+		cm,mdss-livedisplay-color-enhance-on = [
 			29 01 00 00 00 00 02 55 80
 		];
-		qcom,panel-ce-off-cmds = [
+		cm,mdss-livedisplay-color-enhance-off = [
 			29 01 00 00 00 00 02 55 00
 		];
-		qcom,panel-ce-level1-cmds = [
-			29 01 00 00 00 00 02 55 83
-		];
-		qcom,panel-ce-level2-cmds = [
-			29 01 00 00 00 00 02 55 93
-		];
-		qcom,panel-ce-level3-cmds = [
-			29 01 00 00 00 00 02 55 B3
-		];
-		qcom,panel-cabc-ui-cmds = [
-			29 01 00 00 00 00 02 55 01
-		];
-		qcom,panel-cabc-moving-cmds = [
-			29 01 00 00 00 00 02 55 03
-		];
-		qcom,panel-cabc-off-cmds = [
-			29 01 00 00 00 00 02 55 00
+*/
+		cm,mdss-livedisplay-post-cmd = [
+			05 01 00 00 00 00 02 29 00
 		];
 		qcom,panel-backlight-response-curve = [
 			00 01 01 02 02 03 03 04
