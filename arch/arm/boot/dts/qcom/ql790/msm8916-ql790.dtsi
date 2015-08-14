@@ -179,7 +179,7 @@
 		di,ps-integrated-time = <0xc>;
 		di,wakeup-threshold = <4>;
 		di,als-sensitivity = <3000 400 100 1>;
-		di,ps-distance-table = <887 282 111 78 53 46>;
+		di,ps-distance-table = <950 500 250 160 105 75>;
 	};
 
 	bosch@18 { /* Accelerometer sensor */
