@@ -108,8 +108,8 @@ out:
 
 static int ufs_qcom_phy_qmp_28nm_calibrate(struct ufs_qcom_phy *ufs_qcom_phy)
 {
-	struct ufs_qcom_phy_calibration *tbl_A, *tbl_B;
-	int tbl_size_A, tbl_size_B;
+	struct ufs_qcom_phy_calibration *tbl_A = NULL, *tbl_B = NULL;
+	int tbl_size_A = 0, tbl_size_B = 0;
 	int rate = UFS_QCOM_LIMIT_HS_RATE;
 	u8 major = ufs_qcom_phy->host_ctrl_rev_major;
 	u16 minor = ufs_qcom_phy->host_ctrl_rev_minor;
