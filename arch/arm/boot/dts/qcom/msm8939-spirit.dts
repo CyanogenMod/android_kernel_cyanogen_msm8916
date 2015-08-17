@@ -49,8 +49,6 @@
 		qcom,recharge-thresh-mv = <100>;
 		qcom,charging-timeout = <1536>;
 		qcom,otg-batt-curr-limit = <1500>;
-		qcom.otg-fet-present;
-		qcom,otg-fet-enable-gpio = <&pm8916_gpios 3 0>;
 		qcom,thermal-mitigation = <1200 900 600 0>;
 		qcom,empty-soc-disabled;
 		regulator-name = "smb1360_otg_vreg";
@@ -81,14 +79,4 @@
 &pm8916_bms {
 	status = "ok";
 	qcom,disable-bms;
-};
-
-&pm8916_gpios {
-	gpio@c200 { /* GPIO 3 */
-		qcom,mode = <1>;
-		qcom,pull = <0>;
-		qcom,vin-sel = <0>;
-		qcom,src-sel = <0>;
-		qcom,master-en = <1>;
-	};
 };
