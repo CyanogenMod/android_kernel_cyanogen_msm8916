@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -226,25 +226,25 @@ static ssize_t kgsl_drv_memstat_show(struct device *dev,
 {
 	unsigned int val = 0;
 
-	if (!strcmp(attr->attr.name, "vmalloc"))
+	if (!strncmp(attr->attr.name, "vmalloc", 7))
 		val = kgsl_driver.stats.vmalloc;
-	else if (!strcmp(attr->attr.name, "vmalloc_max"))
+	else if (!strncmp(attr->attr.name, "vmalloc_max", 11))
 		val = kgsl_driver.stats.vmalloc_max;
-	else if (!strcmp(attr->attr.name, "page_alloc"))
+	else if (!strncmp(attr->attr.name, "page_alloc", 10))
 		val = kgsl_driver.stats.page_alloc;
-	else if (!strcmp(attr->attr.name, "page_alloc_max"))
+	else if (!strncmp(attr->attr.name, "page_alloc_max", 14))
 		val = kgsl_driver.stats.page_alloc_max;
-	else if (!strcmp(attr->attr.name, "coherent"))
+	else if (!strncmp(attr->attr.name, "coherent", 8))
 		val = kgsl_driver.stats.coherent;
-	else if (!strcmp(attr->attr.name, "coherent_max"))
+	else if (!strncmp(attr->attr.name, "coherent_max", 12))
 		val = kgsl_driver.stats.coherent_max;
 	else if (!strcmp(attr->attr.name, "secure"))
 		val = kgsl_driver.stats.secure;
 	else if (!strcmp(attr->attr.name, "secure_max"))
 		val = kgsl_driver.stats.secure_max;
-	else if (!strcmp(attr->attr.name, "mapped"))
+	else if (!strncmp(attr->attr.name, "mapped", 6))
 		val = kgsl_driver.stats.mapped;
-	else if (!strcmp(attr->attr.name, "mapped_max"))
+	else if (!strncmp(attr->attr.name, "mapped_max", 10))
 		val = kgsl_driver.stats.mapped_max;
 
 	return snprintf(buf, PAGE_SIZE, "%u\n", val);
@@ -393,7 +393,7 @@ static void kgsl_page_alloc_free(struct kgsl_memdesc *memdesc)
 	/* we certainly do not expect the hostptr to still be mapped */
 	BUG_ON(memdesc->hostptr);
 
-	if (sglen && memdesc->sg)
+	if (memdesc->sg)
 		for_each_sg(memdesc->sg, sg, sglen, i)
 			__free_pages(sg_page(sg), get_order(sg->length));
 }
@@ -681,9 +681,7 @@ _kgsl_sharedmem_page_alloc(struct kgsl_memdesc *memdesc,
 			 */
 			memdesc->sglen = sglen;
 			memdesc->size = (size - len);
-
-			if (sglen > 0)
-				sg_mark_end(&memdesc->sg[sglen - 1]);
+			sg_mark_end(&memdesc->sg[sglen - 1]);
 
 			KGSL_CORE_ERR(
 				"Out of memory: only allocated %zuKB of %zuKB requested\n",

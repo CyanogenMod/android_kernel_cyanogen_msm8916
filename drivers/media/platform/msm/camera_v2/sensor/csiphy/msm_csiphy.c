@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -16,6 +16,7 @@
 #include <linux/of.h>
 #include <linux/module.h>
 #include <linux/irqreturn.h>
+#include <soc/qcom/socinfo.h>
 #include "msm_csiphy.h"
 #include "msm_sd.h"
 #include "msm_camera_io_util.h"
@@ -26,6 +27,7 @@
 #include "include/msm_csiphy_3_2_hwreg.h"
 
 #define DBG_CSIPHY 0
+#define SOC_REVISION_3 0x30000
 
 #define V4L2_IDENT_CSIPHY                        50003
 #define CSIPHY_VERSION_V22                        0x01
@@ -42,6 +44,7 @@
 
 static struct msm_cam_clk_info csiphy_clk_info[CSIPHY_NUM_CLK_MAX];
 static struct v4l2_file_operations msm_csiphy_v4l2_subdev_fops;
+uint32_t is_3_1_rev3 = 0;
 
 static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 	struct msm_camera_csiphy_params *csiphy_params)
@@ -149,6 +152,11 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 			csiphybase + csiphy_dev->ctrl_reg->
 			csiphy_reg.mipi_csiphy_interrupt_clear0_addr);
 	} else {
+		if ((csiphy_dev->hw_version == CSIPHY_VERSION_V31) &&
+			is_3_1_rev3) {
+			msm_camera_io_w(0x01, csiphybase +
+				MIPI_CSIPHY_GLBL_PWG_CFG0_OFFSET);
+		}
 		val = 0x1;
 		msm_camera_io_w((lane_mask << 1) | val,
 				csiphybase +
@@ -524,6 +532,10 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 			csi_lane_mask >>= 1;
 			i++;
 		}
+		if ((csiphy_dev->hw_version == CSIPHY_VERSION_V31) &&
+			is_3_1_rev3)
+			msm_camera_io_w(0x00, csiphy_dev->base +
+				MIPI_CSIPHY_GLBL_PWG_CFG0_OFFSET);
 	}
 
 	if (--csiphy_dev->ref_count) {
@@ -613,6 +625,10 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 			csi_lane_mask >>= 1;
 			i++;
 		}
+		if ((csiphy_dev->hw_version == CSIPHY_VERSION_V31) &&
+			is_3_1_rev3)
+			msm_camera_io_w(0x00, csiphy_dev->base +
+				MIPI_CSIPHY_GLBL_PWG_CFG0_OFFSET);
 	}
 
 	if (--csiphy_dev->ref_count) {
@@ -625,6 +641,9 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 		csiphy_dev->ctrl_reg->csiphy_reg.mipi_csiphy_lnck_cfg2_addr);
 	msm_camera_io_w(0x0, csiphy_dev->base +
 		csiphy_dev->ctrl_reg->csiphy_reg.mipi_csiphy_glbl_pwr_cfg_addr);
+
+	if (csiphy_dev->csiphy_sof_freeze == 1)
+		disable_irq(csiphy_dev->irq->start);
 
 	if (csiphy_dev->hw_dts_version <= CSIPHY_VERSION_V22) {
 		msm_cam_clk_enable(&csiphy_dev->pdev->dev,
@@ -677,8 +696,6 @@ static int32_t msm_csiphy_cmd(struct csiphy_device *csiphy_dev, void *arg)
 			rc = -EFAULT;
 			break;
 		}
-		if (csiphy_dev->csiphy_sof_freeze == 1)
-			disable_irq(csiphy_dev->irq->start);
 		rc = msm_csiphy_release(csiphy_dev, &csi_lane_params);
 		break;
 	default:
@@ -991,6 +1008,9 @@ static struct platform_driver csiphy_driver = {
 
 static int __init msm_csiphy_init_module(void)
 {
+	if (early_machine_is_msm8939())
+		if (socinfo_get_version() == SOC_REVISION_3)
+			is_3_1_rev3 = 1;
 	return platform_driver_register(&csiphy_driver);
 }
 

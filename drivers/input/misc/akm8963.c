@@ -1,7 +1,5 @@
 /* drivers/input/misc/akm8963.c - akm8963 compass driver
  *
- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
- *
  * Copyright (C) 2007-2008 HTC Corporation.
  * Author: Hou-Kun Chen <houkun.chen@gmail.com>
  *
@@ -54,10 +52,9 @@
 #define STATUS_ERROR(st)	(((st)&0x08) != 0x0)
 #define REG_CNTL1_MODE(reg_cntl1)	(reg_cntl1 & 0x0F)
 
+#define POLL_MS_100HZ 10
 /*Max Single Measure mode supported frequency */
 #define MAX_SNG_MEASURE_SUPPORTED 20
-
-#define POLL_MS_100HZ 10
 
 /* Save last device state for power down */
 struct akm_sensor_state {
@@ -128,7 +125,6 @@ static struct sensors_classdev sensors_cdev = {
 	.resolution = "0.15",
 	.sensor_power = "0.35",
 	.min_delay = 10000,
-	.max_delay = 10000,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
 	.enabled = 0,
@@ -1517,7 +1513,7 @@ static int akm_compass_resume(struct device *dev)
 			akm->use_poll &&
 			akm->pdata->auto_report)
 			ktime = ktime_set(0,
-			akm->delay[MAG_DATA_FLAG] * NSEC_PER_MSEC);
+				akm->delay[MAG_DATA_FLAG] * NSEC_PER_MSEC);
 			hrtimer_start(&akm->mag_timer, ktime, HRTIMER_MODE_REL);
 	}
 	dev_dbg(&akm->i2c->dev, "resumed\n");
@@ -1822,8 +1818,6 @@ static int mag_poll_thread(void *data)
 			goto exit;
 		}
 
-
-
 		tmp = (int)((int16_t)(dat_buf[2]<<8)+((int16_t)dat_buf[1]));
 		tmp = tmp * akm->sense_conf[0] / 256 + tmp / 2;
 		mag_x = tmp;
@@ -1881,13 +1875,12 @@ static int mag_poll_thread(void *data)
 		input_report_abs(akm->input, ABS_Y, mag_y);
 		input_report_abs(akm->input, ABS_Z, mag_z);
 		input_event(akm->input,
-			EV_SYN, SYN_TIME_SEC,
-			ktime_to_timespec(timestamp).tv_sec);
+				EV_SYN, SYN_TIME_SEC,
+				ktime_to_timespec(timestamp).tv_sec);
 		input_event(akm->input,
-			EV_SYN, SYN_TIME_NSEC,
-			ktime_to_timespec(timestamp).tv_nsec);
+				EV_SYN, SYN_TIME_NSEC,
+				ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(akm->input);
-
 		dev_vdbg(&s_akm->i2c->dev,
 			"input report: mag_x=%02x, mag_y=%02x, mag_z=%02x",
 			mag_x, mag_y, mag_z);
@@ -1895,7 +1888,7 @@ static int mag_poll_thread(void *data)
 exit:
 		if (akm->use_sng_measure) {
 			ret = AKECS_SetMode(akm,
-			AKM_MODE_SNG_MEASURE | AKM8963_BIT_OP_16);
+				AKM_MODE_SNG_MEASURE | AKM8963_BIT_OP_16);
 			if (ret < 0)
 				dev_warn(&akm->i2c->dev,
 					"Failed to set mode\n");
@@ -1908,7 +1901,7 @@ int akm8963_compass_probe(
 		struct i2c_client *i2c,
 		const struct i2c_device_id *id)
 {
-	struct akm8963_platform_data *pdata = NULL;
+	struct akm8963_platform_data *pdata;
 	int err = 0;
 	int i;
 
@@ -2023,7 +2016,7 @@ int akm8963_compass_probe(
 		err = pinctrl_select_state(s_akm->pinctrl, s_akm->pin_default);
 		if (err) {
 			dev_err(&i2c->dev, "Can't select pinctrl state\n");
-			goto err_unregister_device;
+			goto err_compass_pwr_off;
 		}
 	}
 
@@ -2076,10 +2069,10 @@ int akm8963_compass_probe(
 		s_akm->mag_wkp_flag = 0;
 
 		hrtimer_init(&s_akm->mag_timer, CLOCK_BOOTTIME,
-					HRTIMER_MODE_REL);
+				HRTIMER_MODE_REL);
 		s_akm->mag_timer.function = mag_timer_handle;
 		s_akm->mag_task = kthread_run(mag_poll_thread,
-					s_akm, "mag_sns");
+						s_akm, "mag_sns");
 	}
 
 	/***** sysfs *****/
@@ -2087,7 +2080,7 @@ int akm8963_compass_probe(
 	if (0 > err) {
 		dev_err(&i2c->dev,
 				"%s: create sysfs failed.", __func__);
-		goto err_destroy_timer;
+		goto err_free_irq;
 	}
 
 	input_set_events_per_packet(s_akm->input, 60);
@@ -2114,17 +2107,17 @@ int akm8963_compass_probe(
 
 remove_sysfs:
 	remove_sysfs_interfaces(s_akm);
-err_destroy_timer:
-	hrtimer_cancel(&s_akm->mag_timer);
-	kthread_stop(s_akm->mag_task);
+err_free_irq:
 	if (s_akm->i2c->irq)
 		free_irq(s_akm->i2c->irq, s_akm);
+	hrtimer_cancel(&s_akm->mag_timer);
+	kthread_stop(s_akm->mag_task);
+err_unregister_device:
+	input_unregister_device(s_akm->input);
 err_gpio_free:
 	if ((s_akm->pdata->use_int) &&
 		(gpio_is_valid(s_akm->pdata->gpio_int)))
 		gpio_free(s_akm->pdata->gpio_int);
-err_unregister_device:
-	input_unregister_device(s_akm->input);
 err_compass_pwr_off:
 	akm_compass_power_set(s_akm, false);
 err_compass_pwr_init:
@@ -2148,9 +2141,6 @@ static int akm8963_compass_remove(struct i2c_client *i2c)
 	kthread_stop(akm->mag_task);
 	if (akm->i2c->irq)
 		free_irq(akm->i2c->irq, akm);
-	if ((s_akm->pdata->use_int) &&
-		(gpio_is_valid(s_akm->pdata->gpio_int)))
-		gpio_free(s_akm->pdata->gpio_int);
 	input_unregister_device(akm->input);
 	devm_kfree(&i2c->dev, akm);
 	dev_info(&i2c->dev, "successfully removed.");

@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -233,7 +233,6 @@ int kgsl_add_fence_event(struct kgsl_device *device,
 	return 0;
 
 unlock:
-	kgsl_context_put(context);
 	mutex_unlock(&device->mutex);
 
 out:
@@ -243,6 +242,7 @@ out:
 	if (fence)
 		sync_fence_put(fence);
 
+	kgsl_context_put(context);
 	return ret;
 }
 
@@ -400,13 +400,9 @@ struct kgsl_sync_fence_waiter *kgsl_sync_fence_async_wait(int fd,
 		sync_fence_put(fence);
 		return ERR_PTR(-ENOMEM);
 	}
-
 	kwaiter->fence = fence;
 	kwaiter->priv = priv;
 	kwaiter->func = func;
-
-	strlcpy(kwaiter->name, fence->name, sizeof(kwaiter->name));
-
 	sync_fence_waiter_init((struct sync_fence_waiter *) kwaiter,
 		kgsl_sync_callback);
 

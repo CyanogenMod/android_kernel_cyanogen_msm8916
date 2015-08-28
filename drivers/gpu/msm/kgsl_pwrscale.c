@@ -27,13 +27,6 @@ static void do_devfreq_resume(struct work_struct *work);
 static void do_devfreq_notify(struct work_struct *work);
 
 /*
- * These variables are used to keep the latest data
- * returned by kgsl_devfreq_get_dev_status
- */
-static struct xstats last_xstats;
-static struct devfreq_dev_status last_status = { .private_data = &last_xstats };
-
-/*
  * kgsl_pwrscale_sleep - notify governor that device is going off
  * @device: The device
  *
@@ -44,7 +37,7 @@ void kgsl_pwrscale_sleep(struct kgsl_device *device)
 	BUG_ON(!mutex_is_locked(&device->mutex));
 	if (!device->pwrscale.enabled)
 		return;
-	device->pwrscale.on_time = 0;
+	device->pwrscale.time = device->pwrscale.on_time = 0;
 
 	/* to call devfreq_suspend_device() from a kernel thread */
 	queue_work(device->pwrscale.devfreq_wq,
@@ -61,25 +54,25 @@ EXPORT_SYMBOL(kgsl_pwrscale_sleep);
 void kgsl_pwrscale_wake(struct kgsl_device *device)
 {
 	struct kgsl_power_stats stats;
-	struct kgsl_pwrscale *psc = &device->pwrscale;
 	BUG_ON(!mutex_is_locked(&device->mutex));
 
 	if (!device->pwrscale.enabled)
 		return;
 	/* clear old stats before waking */
-	memset(&psc->accum_stats, 0, sizeof(psc->accum_stats));
-	memset(&last_xstats, 0, sizeof(last_xstats));
+	memset(&device->pwrscale.accum_stats, 0,
+		sizeof(device->pwrscale.accum_stats));
 
 	/* and any hw activity from waking up*/
 	device->ftbl->power_stats(device, &stats);
 
-	psc->time = ktime_get();
+	device->pwrscale.time = ktime_to_us(ktime_get());
 
-	psc->next_governor_call = ktime_add_us(psc->time,
-			KGSL_GOVERNOR_CALL_INTERVAL);
+	device->pwrscale.next_governor_call = jiffies +
+			msecs_to_jiffies(KGSL_GOVERNOR_CALL_INTERVAL);
 
 	/* to call devfreq_resume_device() from a kernel thread */
-	queue_work(psc->devfreq_wq, &psc->devfreq_resume_ws);
+	queue_work(device->pwrscale.devfreq_wq,
+		&device->pwrscale.devfreq_resume_ws);
 }
 EXPORT_SYMBOL(kgsl_pwrscale_wake);
 
@@ -132,18 +125,16 @@ EXPORT_SYMBOL(kgsl_pwrscale_update_stats);
  */
 void kgsl_pwrscale_update(struct kgsl_device *device)
 {
-	ktime_t t;
 	BUG_ON(!mutex_is_locked(&device->mutex));
 
 	if (!device->pwrscale.enabled)
 		return;
 
-	t = ktime_get();
-	if (ktime_compare(t, device->pwrscale.next_governor_call) < 0)
+	if (time_before(jiffies, device->pwrscale.next_governor_call))
 		return;
 
-	device->pwrscale.next_governor_call = ktime_add_us(t,
-			KGSL_GOVERNOR_CALL_INTERVAL);
+	device->pwrscale.next_governor_call = jiffies
+			+ msecs_to_jiffies(KGSL_GOVERNOR_CALL_INTERVAL);
 
 	/* to call srcu_notifier_call_chain() from a kernel thread */
 	if (device->state != KGSL_STATE_SLUMBER)
@@ -274,6 +265,13 @@ int kgsl_devfreq_target(struct device *dev, unsigned long *freq, u32 flags)
 EXPORT_SYMBOL(kgsl_devfreq_target);
 
 /*
+ * These variables are used to keep the latest data
+ * returned by kgsl_devfreq_get_dev_status
+ */
+struct xstats last_xstats;
+struct devfreq_dev_status last_status = { .private_data = &last_xstats };
+
+/*
  * kgsl_devfreq_get_dev_status - devfreq_dev_profile.get_dev_status callback
  * @dev: see devfreq.h
  * @freq: see devfreq.h
@@ -287,7 +285,7 @@ int kgsl_devfreq_get_dev_status(struct device *dev,
 	struct kgsl_device *device = dev_get_drvdata(dev);
 	struct kgsl_pwrctrl *pwrctrl;
 	struct kgsl_pwrscale *pwrscale;
-	ktime_t tmp;
+	s64 tmp;
 
 	if (device == NULL)
 		return -ENODEV;
@@ -305,8 +303,8 @@ int kgsl_devfreq_get_dev_status(struct device *dev,
 	 */
 	kgsl_pwrscale_update_stats(device);
 
-	tmp = ktime_get();
-	stat->total_time = ktime_us_delta(tmp, pwrscale->time);
+	tmp = ktime_to_us(ktime_get());
+	stat->total_time = tmp - pwrscale->time;
 	pwrscale->time = tmp;
 
 	stat->busy_time = pwrscale->accum_stats.busy_time;
@@ -490,10 +488,8 @@ int kgsl_busmon_target(struct device *dev, unsigned long *freq, u32 flags)
 		((pwr_level->bus_freq + pwr->bus_mod) > pwr_level->bus_min))
 			pwr->bus_mod--;
 
-	if (pwr->bus_mod != b) {
-		pwr->bus_percent_ab = device->pwrscale.bus_profile.percent_ab;
+	if (pwr->bus_mod != b)
 		kgsl_pwrctrl_buslevel_update(device, true);
-	}
 
 	mutex_unlock(&device->mutex);
 	return 0;
@@ -607,8 +603,8 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 	INIT_WORK(&pwrscale->devfreq_resume_ws, do_devfreq_resume);
 	INIT_WORK(&pwrscale->devfreq_notify_ws, do_devfreq_notify);
 
-	pwrscale->next_governor_call = ktime_add_us(ktime_get(),
-			KGSL_GOVERNOR_CALL_INTERVAL);
+	pwrscale->next_governor_call = jiffies +
+			msecs_to_jiffies(KGSL_GOVERNOR_CALL_INTERVAL);
 
 	return 0;
 }

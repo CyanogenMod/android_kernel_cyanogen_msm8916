@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -56,6 +56,7 @@ static void __iomem *virt_bases[N_BASES];
 #define GPLL1_USER_CTL					0x20010
 #define GPLL1_CONFIG_CTL				0x20014
 #define GPLL1_STATUS					0x2001C
+#define SNOC_QOSGEN					0x2601C
 #define GPLL2_MODE					0x4A000
 #define GPLL2_L_VAL					0x4A004
 #define GPLL2_M_VAL					0x4A008
@@ -345,6 +346,7 @@ static struct pll_freq_tbl apcs_pll_freq[] = {
 	F_APCS_PLL(1190400000, 62, 0x0, 0x1, 0x0, 0x0, 0x0),
 	F_APCS_PLL(1209600000, 63, 0x0, 0x1, 0x0, 0x0, 0x0),
 	F_APCS_PLL(1248000000, 65, 0x0, 0x1, 0x0, 0x0, 0x0),
+	F_APCS_PLL(1363200000, 71, 0x0, 0x1, 0x0, 0x0, 0x0),
 	F_APCS_PLL(1401600000, 73, 0x0, 0x1, 0x0, 0x0, 0x0),
 	PLL_F_END
 };
@@ -566,6 +568,22 @@ static struct rcg_clk vfe0_clk_src = {
 			465000000),
 		CLK_INIT(vfe0_clk_src.c),
 	},
+};
+
+static struct clk_freq_tbl ftbl_gcc_oxili_gfx3d_465_clk[] = {
+	F(  19200000,	      xo,   1,	  0,	0),
+	F(  50000000,  gpll0_aux,  16,	  0,	0),
+	F(  80000000,  gpll0_aux,  10,	  0,	0),
+	F( 100000000,  gpll0_aux,   8,	  0,	0),
+	F( 160000000,  gpll0_aux,   5,	  0,	0),
+	F( 177780000,  gpll0_aux, 4.5,	  0,	0),
+	F( 200000000,  gpll0_aux,   4,	  0,	0),
+	F( 266670000,  gpll0_aux,   3,	  0,	0),
+	F( 294912000,	   gpll1,   3,	  0,	0),
+	F( 310000000,	   gpll2,   3,	  0,	0),
+	F( 400000000,  gpll0_aux,   2,	  0,	0),
+	F( 465000000,      gpll2,   2,	  0,	0),
+	F_END
 };
 
 static struct clk_freq_tbl ftbl_gcc_oxili_gfx3d_clk[] = {
@@ -1216,6 +1234,7 @@ static struct rcg_clk sdcc2_apps_clk_src = {
 
 static struct clk_freq_tbl ftbl_gcc_usb_hs_system_clk[] = {
 	F(  80000000,	   gpll0,  10,	  0,	0),
+	F( 100000000,	   gpll0,   8,	  0,	0),
 	F_END
 };
 
@@ -1228,7 +1247,7 @@ static struct rcg_clk usb_hs_system_clk_src = {
 	.c = {
 		.dbg_name = "usb_hs_system_clk_src",
 		.ops = &clk_ops_rcg,
-		VDD_DIG_FMAX_MAP2(LOW, 57140000, NOMINAL, 80000000),
+		VDD_DIG_FMAX_MAP2(LOW, 57140000, NOMINAL, 100000000),
 		CLK_INIT(usb_hs_system_clk_src.c),
 	},
 };
@@ -2334,6 +2353,18 @@ static struct branch_clk gcc_venus0_vcodec0_clk = {
 	},
 };
 
+static struct gate_clk gcc_snoc_qosgen_clk = {
+	.en_mask = BIT(0),
+	.en_reg = SNOC_QOSGEN,
+	.base = &virt_bases[GCC_BASE],
+	.c = {
+		.dbg_name = "gcc_snoc_qosgen_clk",
+		.ops = &clk_ops_gate,
+		.flags = CLKFLAG_SKIP_HANDOFF,
+		CLK_INIT(gcc_snoc_qosgen_clk.c),
+	},
+};
+
 static struct mux_clk gcc_debug_mux;
 static struct clk_ops clk_ops_debug_mux;
 
@@ -2722,7 +2753,50 @@ static struct clk_lookup msm_clocks_lookup[] = {
 	CLK_LIST(gcc_crypto_ahb_clk),
 	CLK_LIST(gcc_crypto_axi_clk),
 	CLK_LIST(crypto_clk_src),
+
+	/* QoS Reference clock */
+	CLK_LIST(gcc_snoc_qosgen_clk),
 };
+
+#define EFUSE_BASE	0x0005c004
+#define EFUSE_BASE1	0x0005c00c
+
+static void gcc_gfx3d_fmax(struct platform_device *pdev)
+{
+	void __iomem *base;
+
+	u32 pte_efuse, shift = 2, mask = 0x7;
+	int bin, version;
+
+	base = devm_ioremap(&pdev->dev, EFUSE_BASE, SZ_8);
+	if (!base) {
+		pr_err("unable to ioremap efuse base\n");
+		return;
+	}
+	pte_efuse = readl_relaxed(base);
+	devm_iounmap(&pdev->dev, base);
+	version = (pte_efuse >> 18) & 0x3;
+	if (!version)
+		return;
+
+	base = devm_ioremap(&pdev->dev, EFUSE_BASE1, SZ_8);
+	if (!base) {
+		pr_err("unable to ioremap efuse1 base\n");
+		return;
+	}
+	pte_efuse = readl_relaxed(base);
+	devm_iounmap(&pdev->dev, base);
+	bin = (pte_efuse >> shift) & mask;
+
+	if (bin != 2)
+		return;
+
+	pr_info("%s, Version: %d, bin: %d\n", __func__, version,
+					bin);
+
+	gfx3d_clk_src.c.fmax[VDD_DIG_HIGH] = 465000000;
+	gfx3d_clk_src.freq_tbl = ftbl_gcc_oxili_gfx3d_465_clk;
+}
 
 static int msm_gcc_probe(struct platform_device *pdev)
 {
@@ -2801,6 +2875,8 @@ static int msm_gcc_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Unable to get xo_a clock!!!\n");
 		return PTR_ERR(xo_a_clk_src.c.parent);
 	}
+
+	gcc_gfx3d_fmax(pdev);
 
 	ret = of_msm_clock_register(pdev->dev.of_node,
 				msm_clocks_lookup,

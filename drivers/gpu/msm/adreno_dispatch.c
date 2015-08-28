@@ -362,8 +362,10 @@ static struct kgsl_cmdbatch *_get_cmdbatch(struct adreno_context *drawctxt)
 		 * If syncpoints are pending start the canary timer if
 		 * it hasn't already been started
 		 */
-		if (!timer_pending(&cmdbatch->timer))
-			mod_timer(&cmdbatch->timer, jiffies + (5 * HZ));
+		if (!cmdbatch->timeout_jiffies) {
+			cmdbatch->timeout_jiffies = jiffies + 5 * HZ;
+			mod_timer(&cmdbatch->timer, cmdbatch->timeout_jiffies);
+		}
 
 		return ERR_PTR(-EAGAIN);
 	}
@@ -2244,10 +2246,6 @@ int adreno_dispatcher_init(struct adreno_device *adreno_dev)
 
 	setup_timer(&dispatcher->fault_timer, adreno_dispatcher_fault_timer,
 		(unsigned long) adreno_dev);
-
-	/* A304 is slower than other a3xx, So it needs a larger timer */
-	if (adreno_is_a304(adreno_dev))
-		_fault_timer_interval = 400;
 
 	INIT_WORK(&dispatcher->work, adreno_dispatcher_work);
 
