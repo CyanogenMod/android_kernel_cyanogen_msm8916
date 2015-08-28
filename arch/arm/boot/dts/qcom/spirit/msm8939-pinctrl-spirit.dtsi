@@ -37,6 +37,11 @@
 				drive-strength = <6>;
 				bias-pull-up;
 			};
+
+			red_led_gpio_suspend: suspend {
+				drive-strength = <6>;
+				bias-pull-down;
+			};
 		};
 
 		tlmm_gpio_key {

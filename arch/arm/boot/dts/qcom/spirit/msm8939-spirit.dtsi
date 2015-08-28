@@ -142,8 +142,9 @@
 		reg = <0x45>;
 		vdd-supply = <&pm8916_l17>;
 		vcc-supply = <&pm8916_l6>;
-		pinctrl-names = "aw2013_led_default";
+		pinctrl-names = "aw2013_led_default","aw2013_led_suspend";
 		pinctrl-0 = <&red_led_gpio_default>;
+		pinctrl-1 = <&red_led_gpio_suspend>;
 
 		aw2013,red {
 			aw2013,name = "red";
