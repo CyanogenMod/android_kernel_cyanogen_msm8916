@@ -81,3 +81,9 @@
 	status = "ok";
 	qcom,disable-bms;
 };
+
+&soc {
+	qcom,lpm-workarounds {
+		/delete-property/ qcom,lpm-wa-skip-l2-spm;
+	};
+};
