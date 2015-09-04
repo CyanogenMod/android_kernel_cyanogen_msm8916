@@ -2802,17 +2802,13 @@ __limProcessSmeDeauthReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
 
     if ((status == eSIR_FAILURE) || (!limIsSmeDeauthReqValid(pMac, &smeDeauthReq, psessionEntry)))
     {
-        PELOGE(limLog(pMac, LOGW,FL("received invalid SME_DEAUTH_REQ message"));)
-        if (pMac->lim.gLimRspReqd)
-        {
-            pMac->lim.gLimRspReqd = false;
+        PELOGE(limLog(pMac, LOGE,FL
+                   ("received invalid SME_DEAUTH_REQ message"));)
+        pMac->lim.gLimRspReqd = false;
 
-            retCode       = eSIR_SME_INVALID_PARAMETERS;
-            deauthTrigger = eLIM_HOST_DEAUTH;
-            goto sendDeauth;
-        }
-
-        return;
+        retCode       = eSIR_SME_INVALID_PARAMETERS;
+        deauthTrigger = eLIM_HOST_DEAUTH;
+        goto sendDeauth;
     }
     limLog(pMac, LOG1,FL("received DEAUTH_REQ message on sessionid %d "
       "Systemrole %d with reasoncode %u in limSmestate %d from "
@@ -3282,9 +3278,9 @@ void limProcessSmeGetScanChannelInfo(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
         pMac->lim.scanChnInfo.numChnInfo = SIR_MAX_SUPPORTED_CHANNEL_LIST;
     }
 
-    PELOG2(limLog(pMac, LOG2,
+    limLog(pMac, LOG1,
            FL("Sending message %s with number of channels %d"),
-           limMsgStr(eWNI_SME_GET_SCANNED_CHANNEL_RSP), pMac->lim.scanChnInfo.numChnInfo);)
+           limMsgStr(eWNI_SME_GET_SCANNED_CHANNEL_RSP), pMac->lim.scanChnInfo.numChnInfo);
 
     len = sizeof(tSmeGetScanChnRsp) + (pMac->lim.scanChnInfo.numChnInfo - 1) * sizeof(tLimScanChn);
     pSirSmeRsp = vos_mem_malloc(len);
@@ -5540,6 +5536,7 @@ limProcessSmeReqMessages(tpAniSirGlobal pMac, tpSirMsgQ pMsg)
      * want to insert NOA before processing those msgs. These msgs will be processed later when
      * start event happens
      */
+    MTRACE(macTraceMsgRx(pMac, NO_SESSION, pMsg->type));
     switch (pMsg->type)
     {
         case eWNI_SME_SCAN_REQ:

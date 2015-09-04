@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012,2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012,2014-2015 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -419,21 +419,36 @@ void wpalWcnssResetIntr(void)
 }
 
 /*---------------------------------------------------------------------------
+    wpalWcnssIsProntoHwVer3 -  Check if Pronto Hw ver3
+
+    Param:
+       None
+    Return:
+       TRUE if Ponto Hw Ver 3
+       Therefore use WQ6 instead of WQ23 for TX Low/High Priority Channel
+---------------------------------------------------------------------------*/
+int wpalWcnssIsProntoHwVer3(void)
+{
+   return wcnss_is_hw_pronto_ver3();
+}
+
+/*---------------------------------------------------------------------------
     wpalFwDumpReq -  Trigger the dump commands to Firmware
      
     Param:
-       cmd - Command No. to execute
-       arg1 - argument 1 to cmd
-       arg2 - argument 2 to cmd
-       arg3 - argument 3 to cmd
-       arg4 - argument 4 to cmd
+       cmd -   Command No. to execute
+       arg1 -  argument 1 to cmd
+       arg2 -  argument 2 to cmd
+       arg3 -  argument 3 to cmd
+       arg4 -  argument 4 to cmd
+       async -asynchronous event. Don't wait for completion.
     Return:
        NONE
 ---------------------------------------------------------------------------*/
 void wpalFwDumpReq(wpt_uint32 cmd, wpt_uint32 arg1, wpt_uint32 arg2,
-                    wpt_uint32 arg3, wpt_uint32 arg4)
+                    wpt_uint32 arg3, wpt_uint32 arg4, wpt_boolean async)
 {
-   vos_fwDumpReq(cmd, arg1, arg2, arg3, arg4);
+   vos_fwDumpReq(cmd, arg1, arg2, arg3, arg4, async);
    return;
 }
 
@@ -453,16 +468,16 @@ void wpalDevicePanic(void)
    return;
 }
 /*---------------------------------------------------------------------------
-    wpalIsWDresetInProgress -  calls vos API isWDresetInProgress()
+    wpalIslogPInProgress -  calls vos API vos_is_logp_in_progress()
 
     Param:
        NONE
     Return:
        STATUS
  ---------------------------------------------------------------------------*/
-int  wpalIsWDresetInProgress(void)
+int  wpalIslogPInProgress(void)
 {
-   return isWDresetInProgress();
+   return vos_is_logp_in_progress(VOS_MODULE_ID_WDI, NULL);
 }
 
 /*---------------------------------------------------------------------------

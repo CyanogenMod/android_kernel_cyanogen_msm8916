@@ -2056,6 +2056,35 @@ static void csrScanAddToOccupiedChannels(
         } 
     }
 }
+
+void csrAddChannelToOccupiedChannelList(tpAniSirGlobal pMac,
+                                     tANI_U8   channel)
+{
+    eHalStatus status;
+    tCsrChannel *pOccupiedChannels = &pMac->scan.occupiedChannels;
+    tANI_U8 numOccupiedChannels = pOccupiedChannels->numChannels;
+    tANI_U8 *pOccupiedChannelList = pOccupiedChannels->channelList;
+    if (!csrIsChannelPresentInList(pOccupiedChannelList,
+         numOccupiedChannels, channel))
+    {
+        status = csrAddToChannelListFront(pOccupiedChannelList,
+                                          numOccupiedChannels, channel);
+        if(HAL_STATUS_SUCCESS(status))
+        {
+            pOccupiedChannels->numChannels++;
+            smsLog(pMac, LOG2, FL("added channel %d to the list (count=%d)"),
+                channel, pOccupiedChannels->numChannels);
+            if (pOccupiedChannels->numChannels >
+                CSR_BG_SCAN_OCCUPIED_CHANNEL_LIST_LEN)
+            {
+                pOccupiedChannels->numChannels =
+                    CSR_BG_SCAN_OCCUPIED_CHANNEL_LIST_LEN;
+                smsLog(pMac, LOG2,
+                       FL("trim no of Channels for Occ channel list"));
+            }
+        }
+    }
+}
 #endif
 
 //Put the BSS into the scan result list
@@ -5397,6 +5426,28 @@ eHalStatus csrScanAgeResults(tpAniSirGlobal pMac, tSmeGetScanChnRsp *pScanChnInf
     return (status);
 }
 
+eHalStatus csrIbssAgeBss(tpAniSirGlobal pMac)
+{
+    eHalStatus status = eHAL_STATUS_SUCCESS;
+    tListElem *pEntry, *tmpEntry;
+    tCsrScanResult *pResult;
+
+    csrLLLock(&pMac->scan.scanResultList);
+    pEntry = csrLLPeekHead( &pMac->scan.scanResultList, LL_ACCESS_NOLOCK );
+    while( pEntry )
+    {
+       tmpEntry = csrLLNext(&pMac->scan.scanResultList,
+                                             pEntry, LL_ACCESS_NOLOCK);
+       pResult = GET_BASE_ADDR( pEntry, tCsrScanResult, Link );
+
+       smsLog(pMac, LOGW, FL(" age out due Forced IBSS leave"));
+       csrScanAgeOutBss(pMac, pResult);
+       pEntry = tmpEntry;
+    }
+    csrLLUnlock(&pMac->scan.scanResultList);
+
+    return (status);
+}
 
 eHalStatus csrSendMBScanReq( tpAniSirGlobal pMac, tANI_U16 sessionId, 
                     tCsrScanRequest *pScanReq, tScanReqParam *pScanReqParam )
@@ -7882,10 +7933,11 @@ eHalStatus csrProcessSetBGScanParam(tpAniSirGlobal pMac, tSmeCmd *pCommand)
 }
 
 
-eHalStatus csrScanAbortMacScan(tpAniSirGlobal pMac, tANI_U8 sessionId,
-                               eCsrAbortReason reason)
+tSirAbortScanStatus csrScanAbortMacScan(tpAniSirGlobal pMac,
+                                        tANI_U8 sessionId,
+                                        eCsrAbortReason reason)
 {
-    eHalStatus status = eHAL_STATUS_FAILURE;
+    tSirAbortScanStatus abortScanStatus = eSIR_ABORT_ACTIVE_SCAN_LIST_EMPTY;
     tSirSmeScanAbortReq *pMsg;
     tANI_U16 msgLen;
     tListElem *pEntry;
@@ -7936,8 +7988,8 @@ eHalStatus csrScanAbortMacScan(tpAniSirGlobal pMac, tANI_U8 sessionId,
             pMsg = vos_mem_malloc(msgLen);
             if ( NULL == pMsg )
             {
-               status = eHAL_STATUS_FAILURE;
                smsLog(pMac, LOGE, FL("Failed to allocate memory for SmeScanAbortReq"));
+               abortScanStatus = eSIR_ABORT_SCAN_FAILURE;
             }
             else
             {
@@ -7950,12 +8002,21 @@ eHalStatus csrScanAbortMacScan(tpAniSirGlobal pMac, tANI_U8 sessionId,
                 pMsg->type = pal_cpu_to_be16((tANI_U16)eWNI_SME_SCAN_ABORT_IND);
                 pMsg->msgLen = pal_cpu_to_be16(msgLen);
                 pMsg->sessionId = sessionId;
-                status = palSendMBMessage(pMac->hHdd, pMsg);
+                if (eHAL_STATUS_SUCCESS != palSendMBMessage(pMac->hHdd, pMsg))
+                {
+                    smsLog(pMac, LOGE,
+                           FL("Failed to post eWNI_SME_SCAN_ABORT_IND"));
+                    abortScanStatus = eSIR_ABORT_SCAN_FAILURE;
+                }
+                else
+                {
+                    abortScanStatus = eSIR_ABORT_ACTIVE_SCAN_LIST_NOT_EMPTY;
+                }
             }
         }
     }
 
-    return(status);
+    return(abortScanStatus);
 }
 
 void csrRemoveCmdWithSessionIdFromPendingList(tpAniSirGlobal pMac,
@@ -8174,7 +8235,12 @@ eHalStatus csrScanAbortMacScanNotForConnect(tpAniSirGlobal pMac,
     if( !csrIsScanForRoamCommandActive( pMac ) )
     {
         //Only abort the scan if it is not used for other roam/connect purpose
-        status = csrScanAbortMacScan(pMac, sessionId, eCSR_SCAN_ABORT_DEFAULT);
+        if (eSIR_ABORT_SCAN_FAILURE ==
+                csrScanAbortMacScan(pMac, sessionId, eCSR_SCAN_ABORT_DEFAULT))
+        {
+            smsLog(pMac, LOGE, FL("fail to abort scan"));
+            status = eHAL_STATUS_FAILURE;
+        }
     }
 
     return (status);

@@ -358,8 +358,8 @@ static void limHandleUnknownA2IndexFrames(tpAniSirGlobal pMac, void *pRxPacketIn
 
         if (limIsGroupAddr(pMacHdr->addr2))
         {
-            PELOG2(limLog(pMac, LOG2, FL("Ignoring A2 Invalid Packet received for MC/BC:"));
-                    limPrintMacAddr(pMac, pMacHdr->addr2, LOG2);)
+            limLog(pMac, LOG1, FL("Ignoring A2 Invalid Packet received for MC/BC:"));
+                    limPrintMacAddr(pMac, pMacHdr->addr2, LOG1);
 
                 return;
         }
@@ -1086,7 +1086,7 @@ limProcessAbortScanInd(tpAniSirGlobal pMac, tANI_U8 SessionId)
      * SME should send WNI_CFG_BACKGROUND_SCAN_PERIOD indication 
      * to start the background scan again
      */
-    PELOG2(limLog(pMac, LOG2, FL("Processing AbortScan Ind"));)
+    limLog(pMac, LOG1, FL("Processing AbortScan Ind"));
 
     limAbortBackgroundScan(pMac);
 
@@ -1245,7 +1245,6 @@ static tANI_BOOLEAN limAgeOutProbeReq( tpAniSirGlobal pMac, tpSirMsgQ  limMsg,
     return match;
 }
 
-
 /**
  * limProcessMessages
  *
@@ -1370,9 +1369,6 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
 #ifdef WLAN_DEBUG                
             pMac->lim.numBbt++;
 #endif
-            vos_spin_lock_acquire( &pMac->sys.lock );
-            pMac->sys.gSysBbtPendingMgmtCount--;
-            vos_spin_lock_release( &pMac->sys.lock );
             {
                 v_U16_t     pktLen = 0;
                 vos_pkt_t  *pVosPkt;
@@ -1397,6 +1393,7 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
 
                 if( !VOS_IS_STATUS_SUCCESS(vosStatus) )
                 {
+                    limDecrementPendingMgmtCount(pMac);
                     vos_pkt_return_packet(pVosPkt);
                     break;
 
@@ -1410,6 +1407,7 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
 
                 if( limAgeOutProbeReq ( pMac, &limMsgNew, pVosPkt ))
                 {
+                   limDecrementPendingMgmtCount(pMac);
                    break;
                 }
 
@@ -1444,6 +1442,7 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
                                 pMac->lim.gLimSystemRole,  pMac->lim.gLimMlmState,  pMac->lim.gLimPrevMlmState);)
                             limLogSessionStates(pMac);
                             limPrintMsgName(pMac, LOGE, limMsg->type);
+                            limDecrementPendingMgmtCount(pMac);
                             vos_pkt_return_packet(pVosPkt);
                         }
                 }
@@ -1453,6 +1452,7 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
                      * Asumption here is when Rx mgmt frame processing is done,
                      * voss packet could be freed here.
                      */
+                    limDecrementPendingMgmtCount(pMac);
                     vos_pkt_return_packet(pVosPkt);
                 }
             }
@@ -1821,6 +1821,7 @@ limProcessMessages(tpAniSirGlobal pMac, tpSirMsgQ  limMsg)
         case SIR_LIM_DISASSOC_ACK_TIMEOUT:
         case SIR_LIM_DEAUTH_ACK_TIMEOUT:
         case SIR_LIM_CONVERT_ACTIVE_CHANNEL_TO_PASSIVE:
+        case SIR_LIM_AUTH_RETRY_TIMEOUT:
             // These timeout messages are handled by MLM sub module
 
             limProcessMlmReqMessages(pMac,
