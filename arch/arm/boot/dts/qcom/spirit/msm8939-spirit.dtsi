@@ -135,8 +135,13 @@
 		liteon,ps-led = <0x7f>;
 		liteon,ps-pulses = <4>;
 		liteon,wakeup-threshold = <4>;
-		liteon,als-integration-time = <0>;
+		liteon,als-integration-time = <2>;
 		liteon,ps-distance-table = <1376 566 343 287 200 170 155>;
+		liteon,als-gain = <0>;
+		liteon,als-equation-0 = <4 1 7743 1059 44 1>;
+		liteon,als-equation-1 = <8 1 2785 9548 50 1>;
+		liteon,als-equation-2 = <2 0 0 5926 1185 40 1>;
+		liteon,als-equation-3 = <0 0 0 0 1 1>;
 	};
 
 	aw2013@45 {
