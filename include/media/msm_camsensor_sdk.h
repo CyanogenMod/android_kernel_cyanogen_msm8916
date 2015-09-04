@@ -210,9 +210,10 @@ struct msm_sensor_init_params {
 	enum camb_position_t position;
 	/* sensor mount angle */
 	uint32_t            sensor_mount_angle;
-#ifdef CONFIG_MACH_YULONG
+/* Don't ifdef this. It's also used by userspace, which doesn't have the MACH variables */
+//#ifdef CONFIG_MACH_YULONG
 	uint32_t module_id;
-#endif
+//#endif
 };
 
 struct msm_sensor_id_info_t {
