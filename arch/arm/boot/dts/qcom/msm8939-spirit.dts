@@ -82,6 +82,10 @@
 	qcom,disable-bms;
 };
 
+&pm8916_l17 {
+	regulator-always-on;
+};
+
 &soc {
 	qcom,lpm-workarounds {
 		/delete-property/ qcom,lpm-wa-skip-l2-spm;
