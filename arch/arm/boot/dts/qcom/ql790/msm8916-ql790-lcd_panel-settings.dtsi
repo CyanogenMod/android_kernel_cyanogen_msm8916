@@ -26,6 +26,7 @@
 
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
+	qcom,mdss-clk-factor = <150 100>;   /* 1.5 times */
 };
 
 &pmx_mdss {
