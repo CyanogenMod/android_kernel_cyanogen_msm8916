@@ -325,8 +325,9 @@ static int ltr559_ps_enable(struct i2c_client *client, int on)
 		msleep(WAKEUP_DELAY);
 
 		data->ps_state = 1;
-		input_report_abs(data->input_dev_ps, ABS_DISTANCE, data->ps_state);
 		ltr559_ps_dynamic_caliberate(&data->ps_cdev);
+		printk("%s, report ABS_DISTANCE=%s\n",__func__, data->ps_state ? "far" : "near");
+		input_report_abs(data->input_dev_ps, ABS_DISTANCE, data->ps_state);
 	} else {
 		ret = i2c_smbus_write_byte_data(client, LTR559_PS_CONTR, MODE_PS_StdBy);
 		if(ret<0){
@@ -416,13 +417,14 @@ static int ltr559_als_read(struct i2c_client *client)
 		return luxdata;
 }
 
+static u32 ps_state_last = 1;
+
 static void ltr559_ps_work_func(struct work_struct *work)
 {
 	struct ltr559_data *data = container_of(work, struct ltr559_data, ps_work.work);
 	struct i2c_client *client=data->client;
 	int als_ps_status;
 	int psdata;
-	static u32 ps_state_last = 1;
 	int j = 0;
 
 	mutex_lock(&data->op_lock);
@@ -484,6 +486,10 @@ static void ltr559_ps_work_func(struct work_struct *work)
 		}
 		else
 			printk("%s, ps_state still %s\n", __func__, data->ps_state ? "far" : "near");
+       } else if ((data->ps_open_state == 0) && (als_ps_status & 0x02)) {
+               /* If the interrupt fires while we're still not open, the sensor is covered */
+		data->ps_state = 0;
+		ps_state_last = data->ps_state;
 	}
 workout:
 	enable_irq(data->irq);
@@ -848,7 +854,7 @@ static ssize_t ltr559_ps_dynamic_caliberate(struct sensors_classdev *sensors_cde
 	data->dynamic_noise = noise;
 
 /*if the noise twice bigger than boot, we treat it as covered mode */
-	   if(pdata->prox_default_noise == 0){
+	   if(pdata->prox_default_noise < 0){
 		   pdata->prox_default_noise = data->dynamic_noise;
 	   }
 	   else if(data->dynamic_noise > (pdata->prox_default_noise * 2)){
@@ -1383,7 +1389,7 @@ int ltr559_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 
 	/* Enable / disable to trigger calibration at boot */
-	pdata->prox_default_noise=0;
+	pdata->prox_default_noise=-1;
 	ltr559_ps_enable(client,1);
 	ltr559_ps_enable(client,0);
 
