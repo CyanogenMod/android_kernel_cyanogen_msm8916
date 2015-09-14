@@ -242,6 +242,19 @@
 			aw2013,off-time-ms = <1>;
 		};
 	};
+
+	kionix@e {
+		compatible = "kionix,kxtj2-1009";
+		reg = <0x0e>;
+		vdd-supply = <&pm8916_l17>;
+		vio-supply = <&pm8916_l6>;
+		kionix,min-interval = <5>;
+		kionix,poll_interval = <100>;
+		kionix,accel_direction = <6>;
+		kionix,accel_irq_use_drdy = <0>;
+		kionix,accel_res = <12>;
+		kionix,accel_g_range = <2>;
+	};
 };
 
 &sdc2_cd_on {
