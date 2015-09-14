@@ -1089,7 +1089,11 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 
 		if (result2 == 1) {
 			pr_debug("%s: cable is extension cable\n", __func__);
+#ifdef CONFIG_MACH_JALEBI
+			plug_type = MBHC_PLUG_TYPE_HEADSET;
+#else
 			plug_type = MBHC_PLUG_TYPE_HIGH_HPH;
+#endif
 			wrk_complete = true;
 		} else {
 			pr_debug("%s: cable might be headset: %d\n", __func__,
@@ -1223,7 +1227,11 @@ static void wcd_mbhc_detect_plug_type(struct wcd_mbhc *mbhc)
 		if (!result1 && !(result2 & 0x01))
 			plug_type = MBHC_PLUG_TYPE_HEADSET;
 		else if (!result1 && (result2 & 0x01))
+#ifdef CONFIG_MACH_JALEBI
+			plug_type = MBHC_PLUG_TYPE_HEADSET;
+#else
 			plug_type = MBHC_PLUG_TYPE_HIGH_HPH;
+#endif
 		else {
 			plug_type = MBHC_PLUG_TYPE_INVALID;
 			goto exit;
