@@ -179,6 +179,12 @@ static void wcd_program_btn_threshold(const struct wcd_mbhc *mbhc, bool micbias)
 				__func__, course, fine, reg_addr, reg_val);
 		reg_addr++;
 	}
+
+	snd_soc_update_bits(codec, 0x153, 0xFC, 0x20);
+	snd_soc_update_bits(codec, 0x154, 0xFC, 0x40);
+	snd_soc_update_bits(codec, 0x155, 0xFC, 0x68);
+	snd_soc_update_bits(codec, 0x156, 0xFC, 0x78);
+	snd_soc_update_bits(codec, 0x157, 0xFC, 0x88);
 }
 
 static void wcd_enable_curr_micbias(const struct wcd_mbhc *mbhc,
@@ -1871,6 +1877,7 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 
 	/* Program Button threshold registers */
 	wcd_program_btn_threshold(mbhc, false);
+	snd_soc_update_bits(codec, MSM8X16_WCD_A_ANALOG_MBHC_BTN3_CTL, 0x03, 0x03);
 
 	INIT_WORK(&mbhc->correct_plug_swch, wcd_correct_swch_plug);
 	/* enable the WCD MBHC IRQ's */
