@@ -1410,6 +1410,15 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 
 	current_ma = min(therm_ma, path_current);
 
+#ifdef CONFIG_MACH_SPIRIT
+	temperature = smb1360_get_prop_batt_temp(chip);
+	if (temperature <= CHG_TEMP_MIN ||
+			temperature > CHG_TEMP_MAX) {
+		rc = smb1360_charging_disable(chip, USER, 1);
+		return 0;
+	}
+#endif
+
 	if (chip->workaround_flags & WRKRND_HARD_JEITA) {
 		if (chip->batt_warm)
 			current_ma = min(current_ma, chip->warm_bat_ma);
@@ -1506,8 +1515,6 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 		pr_debug("Setting USB 500\n");
 	} else {
 #ifdef CONFIG_MACH_SPIRIT
-		temperature = smb1360_get_prop_batt_temp(chip);
-
 		if (temperature > CHG_TEMP_MIN &&
 				temperature <= CHG_TEMP_MID) {
 			rc = smb1360_change_float_voltage(chip,
