@@ -1416,6 +1416,9 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 			temperature > CHG_TEMP_MAX) {
 		rc = smb1360_charging_disable(chip, USER, 1);
 		return 0;
+	} else if (chip->charging_disabled_status) {
+		/* Re-enable charging if disabled */
+		rc = smb1360_charging_disable(chip, USER, 0);
 	}
 #endif
 
