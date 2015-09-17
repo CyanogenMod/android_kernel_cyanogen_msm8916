@@ -276,6 +276,7 @@ enum {
 
 enum {
 	USER	= BIT(0),
+	JEITA_SOFT	= BIT(1),
 };
 
 enum {
@@ -1781,13 +1782,15 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 {
 	int temp;
 	int rc = 0;
+	bool enable_charge = false;
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct smb1360_chip *chip = container_of(dwork, struct smb1360_chip,
 							jeita_work);
 	temp = smb1360_get_prop_batt_temp(chip);
 
 	if (temp > chip->hot_bat_decidegc) {
-		/* battery status is hot, only config thresholds */
+		/* battery status is hot, disable charge and config thresholds */
+		enable_charge = false;
 		rc = smb1360_set_soft_jeita_threshold(chip,
 			chip->warm_bat_decidegc, chip->hot_bat_decidegc);
 		if (rc) {
@@ -1799,6 +1802,12 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 		/* battery status is warm, do compensation manually */
 		chip->batt_warm = true;
 		chip->batt_cool = false;
+		/* Enable/disable charging based on requested current */
+		enable_charge = (chip->warm_bat_ma > 0) ? true : false;
+		if (!enable_charge) {
+			/* Skip setting voltage/current if charging disabled */
+			goto toggle_charging;
+		}
 		rc = smb1360_float_voltage_set(chip, chip->warm_bat_mv);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't set float voltage\n");
@@ -1818,6 +1827,8 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 		/* battery status is good, do the normal charging */
 		chip->batt_warm = false;
 		chip->batt_cool = false;
+		/* Always enable charging for the normal case */
+		enable_charge = true;
 		rc = smb1360_float_voltage_set(chip, chip->vfloat_mv);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't set float voltage\n");
@@ -1836,6 +1847,12 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 		/* battery status is cool, do compensation manually */
 		chip->batt_cool = true;
 		chip->batt_warm = false;
+		/* Enable/disable charging based on requested current */
+		enable_charge = (chip->cool_bat_ma > 0) ? true : false;
+		if (!enable_charge) {
+			/* Skip setting voltage/current if charging disabled */
+			goto toggle_charging;
+		}
 		rc = smb1360_float_voltage_set(chip, chip->cool_bat_mv);
 		if (rc) {
 			dev_err(chip->dev, "Couldn't set float voltage\n");
@@ -1851,7 +1868,8 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 			goto end;
 		}
 	} else {
-		/* battery status is cold, only config thresholds */
+		/* battery status is cold, disable charge and config thresholds */
+		enable_charge = false;
 		rc = smb1360_set_soft_jeita_threshold(chip,
 			chip->cold_bat_decidegc, chip->cool_bat_decidegc);
 		if (rc) {
@@ -1859,6 +1877,16 @@ static void smb1360_jeita_work_fn(struct work_struct *work)
 			goto end;
 		}
 	}
+
+toggle_charging:
+	rc = smb1360_charging_disable(chip, JEITA_SOFT, !enable_charge);
+	if (rc) {
+		dev_err(chip->dev, "Couldn't %s charging, rc = %d\n",
+				enable_charge ? "enable" : "disable", rc);
+		goto end;
+	}
+	power_supply_changed(&chip->batt_psy);
+	power_supply_changed(chip->usb_psy);
 
 	pr_debug("warm %d, cool %d, soft_cold_rt_sts %d, soft_hot_rt_sts %d, jeita supported %d, threshold_now %d %d\n",
 		chip->batt_warm, chip->batt_cool, !!chip->soft_cold_rt_stat,
