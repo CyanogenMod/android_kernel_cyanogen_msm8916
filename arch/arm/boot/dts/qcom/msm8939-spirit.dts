@@ -60,16 +60,15 @@
 		qcom,batt-id-disabled;
 		qcom,shdn-after-pwroff;
 		qcom,config-hard-thresholds;
-		qcom,hot-bat-decidegc = <600>;
-		qcom,cold-bat-decidegc = <(-200)>;
-		qcom,hot-bat-mv = <4100>;
 		qcom,soft-jeita-supported;
+		qcom,cold-bat-decidegc = <0>;
 		qcom,cool-bat-decidegc = <100>;
 		qcom,cool-bat-mv = <4200>;
-		qcom,cool-bat-ma = <400>;
+		qcom,cool-bat-ma = <450>;
 		qcom,warm-bat-decidegc = <450>;
-		qcom,warm-bat-mv = <4350>;
+		qcom,warm-bat-mv = <0>;
 		qcom,warm-bat-ma = <0>;
+		qcom,hot-bat-decidegc = <600>;
 	};
 };
 
