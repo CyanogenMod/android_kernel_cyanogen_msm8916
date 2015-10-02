@@ -1,0 +1,86 @@
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "../msm8916-pinctrl.dtsi"
+
+&soc {
+	tlmm_pinmux: pinctrl@1000000 {
+
+		usb-id-pin {
+			qcom,pins = <&gp 111>;
+		};
+
+		pmx_i2c_1 {
+		       /* CLK, DATA */
+		       qcom,pins = <&gp 3>, <&gp 2>;
+		       qcom,num-grp-pins = <2>;
+		       qcom,pin-func = <3>;
+		       label = "pmx_i2c_1";
+
+		       i2c_1_active: i2c_1_active {
+			       drive-strength = <2>; /* 2 MA */
+			       bias-disable;	     /* No PULL */
+		       };
+
+		       i2c_1_sleep: i2c_1_sleep {
+			       drive-strength = <2>; /* 2 MA */
+			       bias-disable;	     /* No PULL */
+		       };
+		};
+
+		pmx_i2c_3 {
+			/* CLK, DATA */
+			qcom,pins = <&gp 11>, <&gp 10>;
+			qcom,num-grp-pins = <2>;
+			qcom,pin-func = <2>;
+			label = "pmx_i2c_3";
+		
+			i2c_3_active: i2c_3_active {
+				drive-strength = <2>; /* 2 MA */
+				bias-disable;		  /* No PULL */
+			};
+		
+			i2c_3_sleep: i2c_3_sleep {
+				drive-strength = <2>; /* 2 MA */
+				bias-disable;		  /* No PULL */
+			};
+		};
+
+		ovp-id-pin {
+			qcom,pins = <&gp 110>;
+			qcom,num-grp-pins = <1>;
+			qcom,pin-func = <0>;
+			label = "ovp-id-pin";
+			ovp_default: ovp-irq {
+				drive-strength = <8>;
+				bias-pull-up;
+			};
+		};
+
+		ltr559_int_pin {
+			qcom,pins = <&gp 115>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <1>;
+			label = "ltr559-irq";
+			ltr_default: ltr_default {
+			drive-strength = <6>;
+			bias-pull-up;
+			};
+			ltr_sleep: ltr_sleep {
+				drive-strength = <2>;
+				bias-pull-down;
+			};
+		};
+
+
+	};
+};

@@ -1556,8 +1556,17 @@ static int fwu_start_reflash(void)
 			return 0;
 		}
 
-		snprintf(fwu->image_name, NAME_BUFFER_SIZE, "%s",
-			fwu->rmi4_data->fw_image_name);
+		if(fwu->rmi4_data->fw_cfg_id == 0x70030000) {
+			snprintf(fwu->image_name, NAME_BUFFER_SIZE, "%s",
+				"synaptics_dsx_fw_update_dj.bin");
+		} else if (fwu->rmi4_data->fw_cfg_id == 0x80012000) {
+			snprintf(fwu->image_name, NAME_BUFFER_SIZE, "%s",
+					"synaptics_dsx_fw_update_boyi.bin");
+		} else {
+			snprintf(fwu->image_name, NAME_BUFFER_SIZE, "%s",
+				fwu->rmi4_data->fw_image_name);
+		}
+
 		dev_info(&fwu->rmi4_data->i2c_client->dev,
 			"%s: Requesting firmware image %s\n",
 			__func__, fwu->image_name);

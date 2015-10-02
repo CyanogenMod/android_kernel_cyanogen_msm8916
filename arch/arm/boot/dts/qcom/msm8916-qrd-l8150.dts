@@ -1,0 +1,190 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+
+#include "msm8916-qrd.dtsi"
+#include "msm8916-memory.dtsi"
+#include "l8150/msm8916-l8150.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM 8916 L8152";
+	compatible = "qcom,msm8916-qrd-skui", "qcom,msm8916-qrd", "qcom,msm8916", "qcom,qrd";
+	qcom,board-id = <0x1000b 9> , <0x1010b 9> , <0x3010b 9>;
+};
+
+&soc {
+	i2c@78b9000 { /* BLSP1 QUP5 */
+
+		qcom,fs-clk-div = <106>;
+		qcom,high-time-clk-div = <86>;
+
+		himax@48{
+			compatible = "himax,8528d";
+			reg = <0x48>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			/* pins used by touchscreen */
+			himax,family-id = <0x82>;
+			himax,reset-gpio = <&msm_gpio 12 0x0>;
+			himax,power_ldo-gpio = <&msm_gpio 17 0x0>;
+			himax,irq-gpio = <&msm_gpio 13 0x2008>; //IRQF_TRIGGER_LOW
+			himax,display-coords = <0 720 0 1280>;
+			himax,panel-coords = <0 720 0 1280>;
+			himax,button-map= <158 102 139>;
+			himax,no-force-update;
+			himax,i2c-pull-up;
+			report_type = <1>;
+		};
+
+		synaptics@20 {
+			compatible = "synaptics,rmi4";
+			reg = <0x20>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2>;
+			vdd-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			/* pins used by touchscreen */
+			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+			pinctrl-2 = <&ts_release>;
+			synaptics,button-map= <139 102 158>;
+			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
+			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
+			synaptics,power-ldo-gpio = <&msm_gpio 17 0x0>;
+			synaptics,i2c-pull-up;
+			synaptics,power-down;
+			synaptics,use-external-ldo;
+			synaptics,display-coords = <0 0 720 1280>;
+			synaptics,panel-coords = <0 0 720 1280>;
+			synaptics,fw-image-name = "synaptics_dsx_fw_update.bin";
+		};
+	};
+
+	gen-vkeys {
+		compatible = "qcom,gen-vkeys";
+		label = "ft5x06_ts";
+		qcom,disp-maxx = <480>;
+		qcom,disp-maxy = <854>;
+		qcom,panel-maxx = <480>;
+		qcom,panel-maxy = <946>;
+		qcom,key-codes = <139 172 158>;
+		qcom,y-offset = <0>;
+	};
+};
+
+&i2c_6 {
+	status = "disabled";
+};
+
+&i2c_1 { /* BLSP1 QUP1 */
+	aw2013@45 {
+		compatible = "awinic,aw2013";
+		reg = <0x45>;
+		vdd-supply = <&pm8916_l17>;
+		vcc-supply = <&pm8916_l6>;
+
+		aw2013,red {
+			aw2013,name = "red";
+			aw2013,id = <0>;
+			aw2013,max-brightness = <255>;
+			aw2013,max-current = <1>;
+			aw2013,rise-time-ms = <2>;
+			aw2013,hold-time-ms = <1>;
+			aw2013,fall-time-ms = <2>;
+			aw2013,off-time-ms = <1>;
+		};
+
+		aw2013,green {
+			aw2013,name = "green";
+			aw2013,id = <1>;
+			aw2013,max-brightness = <255>;
+			aw2013,max-current = <1>;
+			aw2013,rise-time-ms = <2>;
+			aw2013,hold-time-ms = <1>;
+			aw2013,fall-time-ms = <2>;
+			aw2013,off-time-ms = <1>;
+		};
+
+		aw2013,blue {
+			aw2013,name = "blue";
+			aw2013,id = <2>;
+			aw2013,max-brightness = <255>;
+			aw2013,max-current = <1>;
+			aw2013,rise-time-ms = <2>;
+			aw2013,hold-time-ms = <1>;
+			aw2013,fall-time-ms = <2>;
+			aw2013,off-time-ms = <1>;
+		};
+	};
+};
+
+&sdc2_cd_on {
+        /delete-property/ bias-pull-up;
+        bias-pull-down;
+};
+
+&sdc2_cd_off {
+        /delete-property/ bias-disable;
+        bias-pull-down;
+};
+
+&sdhc_2 {
+        qcom,nonremovable;
+
+        interrupts = <0 1>;
+        interrupt-map = <0 &intc 0 125 0
+                1 &intc 0 221 0>;
+        interrupt-names = "hc_irq", "pwr_irq";
+        /delete-property/ cd-gpios;
+};
+
+&pm8916_chg {
+	qcom,vddmax-mv = <4350>;
+	qcom,vddsafe-mv = <4370>;
+	qcom,vinmin-mv = <4470>;
+	qcom,bms-controlled-charging;
+	qcom,disable-vbatdet-based-recharge;
+	qcom,cfg-current-limited = <900>;
+
+	qcom,usbin-ovp-irq = <&msm_gpio 110 0>;
+	pinctrl-names = "ovp-irq";
+	pinctrl-0 = <&ovp_default>;
+	status = "ok";
+};
+
+/ {
+	l8152_batterydata: qcom,battery-data {
+		qcom,rpull-up-kohm = <100>;
+		qcom,vref-batt-therm = <1800000>;
+
+		#include "l8150/batterydata-l8150-jd-4v35-2500mah.dtsi"
+	};
+};
+
+&pm8916_bms {
+	status = "ok";
+	qcom,resume-soc = <95>;
+	qcom,use-reported-soc;
+	qcom,force-bms-active-on-charger;
+	qcom,battery-data = <&l8152_batterydata>;
+};
+
+&pm8916_vadc {
+	chan@30 {
+		// SCALE_QRD_BATT_THERM @ include/linux/qpnp/qpnp-adc.h
+		qcom,scale-function = <6>;
+	};
+};
+

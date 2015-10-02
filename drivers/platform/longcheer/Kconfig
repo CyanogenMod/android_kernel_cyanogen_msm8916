@@ -1,0 +1,24 @@
+# Longcheer configuration options
+
+config MACH_LONGCHEER
+	bool "Wingtech device"
+	depends on ARCH_MSM
+	help
+	  Support for Longcheer products
+
+config MACH_LONGCHEER_MSM8916
+	bool "Longcheer MSM8916"
+	depends on ARCH_MSM8916
+	select MACH_LONGCHEER
+	help
+	  Support for MSM8916 Longcheer variants
+
+menu "LC board selection"
+
+config MACH_CRACKLING
+	bool "Crackling board"
+	select MACH_LONGCHEER_MSM8916
+	help
+	  Support for Longcheer Crackling variant
+
+endmenu

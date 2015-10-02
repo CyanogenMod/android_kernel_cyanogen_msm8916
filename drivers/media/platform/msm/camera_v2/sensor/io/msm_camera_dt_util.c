@@ -1530,6 +1530,7 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
 		}
 	}
 	if (ctrl->cam_pinctrl_status) {
+
 		ret = pinctrl_select_state(ctrl->pinctrl_info.pinctrl,
 				ctrl->pinctrl_info.gpio_state_suspend);
 		if (ret)
