@@ -1,0 +1,69 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/* Include the original, then override it with ours */
+#include "../msm8939-pinctrl.dtsi"
+
+&soc {
+	tlmm_pinmux: pinctrl@1000000 {
+
+		pmx_sdc1_cmd {
+			sdc1_cmd_on: cmd_on {
+				drive-strength = <16>; /* 16 MA */
+			};
+		};
+
+		pmx_sdc1_data {
+			sdc1_data_on: data_on {
+				drive-strength = <16>; /* 16 MA */
+			};
+		};
+
+		fan_int_pin {
+			qcom,pins = <&gp 62>;
+			qcom,num-grp-pins = <1>;
+			qcom,pin-func = <0>;
+			label = "fan5405_int_gpio";
+			fan_int_active: fan_int_active {
+				drive-strength = <2>;	/* 2 MA */
+				bias-disable = <0>;	/* No PULL */
+			};
+			fan_int_sleep: fan_int_sleep {
+				drive-strength = <2>;	/* 2 MA */
+				bias-disable = <0>;	/* No PULL */
+			};
+		};
+
+		fan_en_pin {
+			qcom,pins = <&gp 2>;
+			qcom,num-grp-pins = <1>;
+			qcom,pin-func = <0>;
+			label = "fan5405_en_gpio";
+		};
+
+		pa12200001_int_pin {
+			/* Ambient light and proximity sensor pa12200001 */
+			qcom,pins = <&gp 113>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <1>;
+			label = "pa12200001-irq";
+			pa12200001_default: pa12200001_default {
+				drive-strength = <6>;
+				bias-pull-up;
+			};
+			pa12200001_sleep: pa12200001_sleep {
+				drive-strength = <2>;
+				bias-pull-down;
+			};
+		};
+	};
+};

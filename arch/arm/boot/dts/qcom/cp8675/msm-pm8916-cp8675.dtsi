@@ -1,0 +1,49 @@
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&spmi_bus {
+	qcom,pm8916@0 {
+		pm8916_rtc: qcom,pm8916_rtc {
+			qcom,qpnp-rtc-alarm-pwrup = <1>;
+		};
+
+		pm8916_vadc: vadc@3100 {
+			qcom,vadc-recalib-check;
+		};
+
+		pm8916_adc_tm: vadc@3400 {
+			qcom,adc-tm-recalib-check;
+		};
+
+		pm8916_vbus: yl,vbus {
+			spmi-dev-container;
+			compatible = "yulong,yl_pm8916_vbus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			status = "ok";
+			qcom,chg-vadc = <&pm8916_vadc>;
+			qcom,bat-if@1200 {
+				reg = <0x1200 0x100>;
+			};
+			qcom,usb-chgpth@1300 {
+				reg = <0x1300 0x100>;
+				interrupts = <0 0x13 0x2>,
+					<0 0x13 0x1>;
+				interrupt-names = "chg-gone",
+					"usbin-valid";
+			};
+			qcom,vm-bms@4000 {
+				reg = <0x4000 0x100>;
+			};
+		};
+	};
+};
