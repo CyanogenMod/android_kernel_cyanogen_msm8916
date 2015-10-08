@@ -312,7 +312,7 @@ static ssize_t  touchscreen_firmware_update_store(struct device *dev,struct devi
 
 	if(strncmp(buf, "update",count-1))
 	{
-		printk("BJ_BSP_Driver:CP_Touchscreen:string is %s,count=%d not update!\n",buf,count);
+		printk("BJ_BSP_Driver:CP_Touchscreen:string is %s,count=%zu not update!\n",buf,count);
 		return -ENOMEM;
 	}
 

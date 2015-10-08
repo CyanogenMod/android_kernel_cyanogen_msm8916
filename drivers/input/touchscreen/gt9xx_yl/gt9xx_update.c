@@ -595,7 +595,7 @@ u8 gup_check_update_file(struct i2c_client *client, st_fw_head* fw_head, u8* pat
     
     if (path)
     {
-        GTP_DEBUG("Update File path:%s, %d", path, strlen(path));
+        GTP_DEBUG("Update File path:%s, %zu", path, strlen(path));
         update_msg.file = filp_open(path, O_RDONLY, 0);
 
         if (IS_ERR(update_msg.file))
