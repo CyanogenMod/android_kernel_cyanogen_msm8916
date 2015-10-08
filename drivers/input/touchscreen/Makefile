@@ -98,3 +98,4 @@ obj-$(CONFIG_MACH_LONGCHEER)	+= lct_ctp_upgrade.o
 obj-$(CONFIG_MACH_LONGCHEER)	+= lct_if_ctp_upgrade.o
 
 obj-$(CONFIG_TOUCHSCREEN_MSG2XXX)	+= msg2xxx.o
+obj-$(CONFIG_MACH_YULONG)		+= touchscreen_yl.o
