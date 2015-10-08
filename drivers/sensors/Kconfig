@@ -23,6 +23,7 @@ config YL_SENSORS
 	  If unsure, say Y.
 
 if YL_SENSORS
+source "drivers/sensors/hall/Kconfig"
 source "drivers/sensors/sensparams/Kconfig"
 endif
 
