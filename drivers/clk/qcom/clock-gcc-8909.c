@@ -62,6 +62,7 @@ static void __iomem *virt_bases[N_BASES];
 #define GPLL2_USER_CTL					0x25010
 #define GPLL2_CONFIG_CTL				0x25018
 #define GPLL2_STATUS					0x25024
+#define SNOC_QOSGEN					0x2601C
 #define MSS_CFG_AHB_CBCR				0x49000
 #define MSS_Q6_BIMC_AXI_CBCR				0x49004
 #define QPIC_AHB_CBCR					0x3F01C
@@ -1142,8 +1143,9 @@ static struct rcg_clk sdcc2_apps_clk_src = {
 };
 
 static struct clk_freq_tbl ftbl_gcc_usb_hs_system_clk[] = {
-	F( 57140000,	gpll0,	14,	0,	0),
-	F( 80000000,	gpll0,	10,	0,	0),
+	F(  57140000,	gpll0,	14,	0,	0),
+	F(  80000000,	gpll0,	10,	0,	0),
+	F( 100000000,	gpll0,	 8,	0,	0),
 	F_END
 };
 
@@ -1156,7 +1158,7 @@ static struct rcg_clk usb_hs_system_clk_src = {
 	.c = {
 		.dbg_name = "usb_hs_system_clk_src",
 		.ops = &clk_ops_rcg,
-		VDD_DIG_FMAX_MAP2(LOW, 57142857.14, NOMINAL, 80000000),
+		VDD_DIG_FMAX_MAP2(LOW, 57140000, NOMINAL, 100000000),
 		CLK_INIT(usb_hs_system_clk_src.c),
 	},
 };
@@ -2125,6 +2127,18 @@ static struct branch_clk gcc_venus0_vcodec0_clk = {
 	},
 };
 
+static struct gate_clk gcc_snoc_qosgen_clk = {
+	.en_mask = BIT(0),
+	.en_reg = SNOC_QOSGEN,
+	.base = &virt_bases[GCC_BASE],
+	.c = {
+		.dbg_name = "gcc_snoc_qosgen_clk",
+		.ops = &clk_ops_gate,
+		.flags = CLKFLAG_SKIP_HANDOFF,
+		CLK_INIT(gcc_snoc_qosgen_clk.c),
+	},
+};
+
 static struct mux_clk gcc_debug_mux;
 static struct clk_ops clk_ops_debug_mux;
 
@@ -2491,6 +2505,9 @@ static struct clk_lookup msm_clocks_lookup[] = {
 	/* Reset clocks */
 	CLK_LIST(gcc_usb2_hs_phy_only_clk),
 	CLK_LIST(gcc_qusb2_phy_clk),
+
+	/* QoS Reference clock */
+	CLK_LIST(gcc_snoc_qosgen_clk),
 };
 
 static int msm_gcc_probe(struct platform_device *pdev)

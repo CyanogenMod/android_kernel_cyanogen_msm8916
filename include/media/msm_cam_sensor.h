@@ -314,6 +314,7 @@ struct msm_camera_sensor_slave_info32 {
 	uint8_t  is_init_params_valid;
 	struct msm_sensor_init_params sensor_init_params;
 	uint8_t is_flash_supported;
+	enum msm_sensor_output_format_t output_format;
 };
 
 struct msm_camera_csid_lut_params32 {
@@ -635,6 +636,7 @@ struct msm_camera_i2c_reg_setting32 {
 	enum msm_camera_i2c_reg_addr_type addr_type;
 	enum msm_camera_i2c_data_type data_type;
 	uint16_t delay;
+	enum msm_camera_qup_i2c_write_batch_t qup_i2c_batch;
 };
 
 struct msm_actuator_tuning_params_t32 {

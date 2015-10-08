@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -55,6 +55,8 @@
 #define WCNSS_DISABLE_PC_LATENCY	100
 #define WCNSS_ENABLE_PC_LATENCY	PM_QOS_DEFAULT_VALUE
 #define WCNSS_PM_QOS_TIMEOUT	15000
+#define IS_CAL_DATA_PRESENT     0
+#define WAIT_FOR_CBC_IND	2
 
 /* module params */
 #define WCNSS_CONFIG_UNSPECIFIED (-1)
@@ -1051,6 +1053,21 @@ static void wcnss_log_iris_regs(void)
 	}
 }
 
+int wcnss_get_mux_control(void)
+{
+	void __iomem *pmu_conf_reg;
+	u32 reg = 0;
+
+	if (NULL == penv)
+		return 0;
+
+	pmu_conf_reg = penv->msm_wcnss_base + PRONTO_PMU_OFFSET;
+	reg = readl_relaxed(pmu_conf_reg);
+	reg |= WCNSS_PMU_CFG_GC_BUS_MUX_SEL_TOP;
+	writel_relaxed(reg, pmu_conf_reg);
+	return 1;
+}
+
 void wcnss_log_debug_regs_on_bite(void)
 {
 	struct platform_device *pdev = wcnss_get_platform_device();
@@ -1080,6 +1097,8 @@ void wcnss_log_debug_regs_on_bite(void)
 
 		if (clk_rate) {
 			wcnss_pronto_log_debug_regs();
+			if (wcnss_get_mux_control())
+				wcnss_log_iris_regs();
 		} else {
 			pr_err("clock frequency is zero, cannot access PMU or other registers\n");
 			wcnss_log_iris_regs();
@@ -1095,6 +1114,8 @@ void wcnss_reset_intr(void)
 {
 	if (wcnss_hardware_type() == WCNSS_PRONTO_HW) {
 		wcnss_pronto_log_debug_regs();
+		if (wcnss_get_mux_control())
+			wcnss_log_iris_regs();
 		wmb();
 		__raw_writel(1 << 16, penv->fiq_reg);
 	} else {
@@ -1150,20 +1171,20 @@ static void wcnss_remove_sysfs(struct device *dev)
 
 static void wcnss_pm_qos_add_request(void)
 {
-	pr_info("%s: add request", __func__);
+	pr_info("%s: add request\n", __func__);
 	pm_qos_add_request(&penv->wcnss_pm_qos_request, PM_QOS_CPU_DMA_LATENCY,
 			PM_QOS_DEFAULT_VALUE);
 }
 
 static void wcnss_pm_qos_remove_request(void)
 {
-	pr_info("%s: remove request", __func__);
+	pr_info("%s: remove request\n", __func__);
 	pm_qos_remove_request(&penv->wcnss_pm_qos_request);
 }
 
 void wcnss_pm_qos_update_request(int val)
 {
-	pr_info("%s: update request %d", __func__, val);
+	pr_info("%s: update request %d\n", __func__, val);
 	pm_qos_update_request(&penv->wcnss_pm_qos_request, val);
 }
 
@@ -1496,7 +1517,7 @@ int wcnss_device_ready(void)
 }
 EXPORT_SYMBOL(wcnss_device_ready);
 
-int wcnss_cbc_complete(void)
+bool wcnss_cbc_complete(void)
 {
 	if (penv && penv->pdev && penv->is_cbc_done &&
 		!wcnss_device_is_shutdown())
@@ -2052,8 +2073,10 @@ static void wcnssctrl_rx_handler(struct work_struct *worker)
 		smd_read(penv->smd_ch, NULL, len);
 		return;
 	}
-	if (len < sizeof(struct smd_msg_hdr))
+	if (len < sizeof(struct smd_msg_hdr)) {
+		pr_err("wcnss: incomplete header available len = %d\n", len);
 		return;
+	}
 
 	rc = smd_read(penv->smd_ch, buf, sizeof(struct smd_msg_hdr));
 	if (rc < sizeof(struct smd_msg_hdr)) {
@@ -2138,6 +2161,8 @@ static void wcnssctrl_rx_handler(struct work_struct *worker)
 		fw_status = wcnss_fw_status();
 		pr_debug("wcnss: received WCNSS_NVBIN_DNLD_RSP from ccpu %u\n",
 			fw_status);
+		if (fw_status != WAIT_FOR_CBC_IND)
+			penv->is_cbc_done = 1;
 		wcnss_setup_vbat_monitoring();
 		break;
 
@@ -2448,7 +2473,7 @@ static void wcnss_nvbin_dnld_main(struct work_struct *worker)
 	if (!FW_CALDATA_CAPABLE())
 		goto nv_download;
 
-	if (!penv->fw_cal_available && WCNSS_CONFIG_UNSPECIFIED
+	if (!penv->fw_cal_available && IS_CAL_DATA_PRESENT
 		!= has_calibrated_data && !penv->user_cal_available) {
 		while (!penv->user_cal_available && retry++ < 5)
 			msleep(500);
@@ -2578,6 +2603,7 @@ static int
 wcnss_trigger_config(struct platform_device *pdev)
 {
 	int ret;
+	struct clk *snoc_qosgen;
 	struct qcom_wcnss_opts *pdata;
 	struct resource *res;
 	int is_pronto_vt;
@@ -2910,6 +2936,18 @@ wcnss_trigger_config(struct platform_device *pdev)
 		penv->fw_vbatt_state = WCNSS_CONFIG_UNSPECIFIED;
 	}
 
+	snoc_qosgen = clk_get(&pdev->dev, "snoc_qosgen");
+
+	if (IS_ERR(snoc_qosgen)) {
+		pr_err("Couldn't get snoc_qosgen\n");
+	} else {
+		if (clk_prepare_enable(snoc_qosgen)) {
+			pr_err("snoc_qosgen enable failed\n");
+		} else {
+			pr_info("snoc_qosgen configured successfully\n");
+		}
+	}
+
 	do {
 		/* trigger initialization of the WCNSS */
 		penv->pil = subsystem_get(WCNSS_PIL_DEVICE);
@@ -3104,6 +3142,7 @@ static int wcnss_notif_cb(struct notifier_block *this, unsigned long code,
 		wcnss_disable_pc_add_req();
 		schedule_delayed_work(&penv->wcnss_pm_qos_del_req,
 				msecs_to_jiffies(WCNSS_PM_QOS_TIMEOUT));
+		penv->is_shutdown = 1;
 		wcnss_log_debug_regs_on_bite();
 	} else if (code == SUBSYS_POWERUP_FAILURE) {
 		if (pdev && pwlanconfig)

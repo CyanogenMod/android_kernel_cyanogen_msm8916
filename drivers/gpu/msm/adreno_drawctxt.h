@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -77,6 +77,11 @@ struct adreno_context {
 	uint64_t submit_retire_ticks[SUBMIT_RETIRE_TICKS_SIZE];
 	int ticks_index;
 };
+
+/* Flag definitions for flag field in adreno_context */
+
+/* Set when sync timer of cmdbatch belonging to the context times out */
+#define ADRENO_CONTEXT_CMDBATCH_FLAG_FENCE_LOG	BIT(0)
 
 /**
  * enum adreno_context_priv - Private flags for an adreno draw context
