@@ -1,0 +1,24 @@
+# Wingtech configuration options
+
+config MACH_WINGTECH
+	bool "Wingtech device"
+	depends on ARCH_MSM
+	help
+	  Support for Wingtech products
+
+config MACH_WINGTECH_MSM8916
+	bool "Wingtech MSM8916"
+	depends on ARCH_MSM8916
+	select MACH_WINGTECH
+	help
+	  Support for MSM8916 Wingtech variants
+
+menu "Wingtech board selection"
+
+config MACH_T86519A1
+	bool "T86519A1 board"
+	select MACH_WINGTECH_MSM8916
+	help
+	  Support for Wingtech T86519A1 variant
+
+endmenu
