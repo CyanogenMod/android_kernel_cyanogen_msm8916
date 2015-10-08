@@ -12,4 +12,5 @@ source "drivers/platform/longcheer/Kconfig"
 source "drivers/platform/msm/Kconfig"
 source "drivers/platform/haier/Kconfig"
 source "drivers/platform/wingtech/Kconfig"
+source "drivers/platform/yulong/Kconfig"
 endif
