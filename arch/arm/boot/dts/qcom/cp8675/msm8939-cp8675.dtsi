@@ -1,0 +1,388 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "msm8939-audio-internal_codec-cp8675.dtsi"
+#include "msm8939-camera-sensor-cp8675.dtsi"
+#include "msm8939-panels-cp8675.dtsi"
+#include "msm8939-pinctrl-cp8675.dtsi"
+#include "msm8939-regulator-cp8675.dtsi"
+#include "msm-pm8916-cp8675.dtsi"
+
+/ {
+	memory {
+		pstore_reserve_mem: pstore_reserve_region@0 {
+			linux,reserve-contiguous-region;
+			linux,reserve-region;
+			linux,remove-completely;
+			reg = <0x0 0x8c300000 0x0 0x00100000>;
+			label = "pstore_reserve_mem";
+		};
+	};
+};
+
+&soc {
+	ramoops {
+		compatible = "ramoops";
+		status = "ok";
+
+		android,ramoops-buffer-start = <0x8c300000>;
+		android,ramoops-buffer-size = <0x100000>;
+		android,ramoops-console-size = <0x80000>;
+		android,ramoops-record-size = <0x20000>;
+		android,ramoops-dump-oops = <0x1>;
+	};
+
+	i2c@78b9000 { /* BLSP1 QUP5 */
+		goodix_ts@5d {
+			compatible = "Goodix,Goodix-TS";
+			reg = <0x5d>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2>;
+			vdd_ana-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+
+			goodix,reset-gpio = <&msm_gpio 12 0x00>;
+			goodix,irq-gpio = <&msm_gpio 13 0x2>;
+			goodix,irq_flags = <0x2>;
+			goodix,screen_x = <720>;
+			goodix,screen_y = <1280>;
+		};
+	};
+
+	i2c@78b8000 { /* BLSP1 QUP4 */
+		fan5405_charger@6A {
+			compatible = "yl,fan5405_charger";
+			reg = <0x6A>;
+			fan5405,irq-gpio = <&msm_gpio 62 0x00>;
+			fan5405,en-gpio = <&msm_gpio 2 0x00>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <62 0>;
+			interrupt-names = "fan5405_irq";
+			pinctrl-names = "active", "sleep";
+			pinctrl-0 = <&fan_int_active>;
+			pinctrl-1 = <&fan_int_sleep>;
+			yl,max-vbus-current-mA = <1500>;
+			yl,weak-batt-vol-mv = <3400>;
+			yl,max-voltage-mv = <4380>;
+			yl,max-charge-current-mA = <900>;
+			yl,term-current-mA = <150>;
+			yl,vsp-mv = <4500>;
+			yl,safety-charge_current-mA = <1500>;
+			yl,safety-voltage-mv = <4380>;
+			yl,enable-te;
+			yl,recharge-thresh-mv = <100>;
+			yl,vbus-ovp-mv = <6500>;
+			yl,recharge-capa = <99>;
+			yl,batt-temp-hot = <520>; /* 52 celsius */
+			yl,batt-temp-too-hot = <570>; /* 57 celsius*/
+			yl,batt-temp-cold = <100>;  /* 10 celsius */
+			yl,batt-temp-too-cold = <0>;  /*3 celsius*/
+			yl,batt-psy-name = "battery";
+			yl,battery-psy-name = "lc709203_battery";
+		};
+
+		tps651321@3E {
+			compatible="qcom,tps-651321";
+			reg=<0x3e>;
+			interrupt-parent=<&msm_gpio>;
+			vdd-supply=<&pm8916_l17>;
+			vcc_i2c-supply=<&pm8916_l5>;
+			interrupts=<13 0x2008>;
+		};
+	};
+
+	yl_adc_battery {
+		compatible = "yl,yl_adc_battery";
+		yl,adc_batt_psy_name = "yl_adc_battery";
+		yl,charge_psy_name = "battery";
+		yl,lcd_open_delta_mv = <50>;
+		yl,lcd_close_delta_mv = <30>;
+		yl,bk_level_offset_step = <5>;
+		yl,pon_volt_delta = <50>;
+		yl,voltage_max_uv = <4350000>;
+		yl,capa_design_mAH = <2500>;
+		yl,soc_high_scaled = <98>;
+		yl,soc_low_scaled = <3>;
+		qcom,yl_adc-vadc=<&pm8916_vadc>;
+	};
+
+	i2c@78b6000 { /* BLSP1 QUP2 */
+		mpu6880@68 {
+			compatible = "mpu6880";
+			reg = <0x68>;
+		};
+		pa12200001@1e {
+			compatible = "pa12200001";
+			reg = <0x1e>;
+			pinctrl-names = "default","sleep";
+			pinctrl-0 = <&pa12200001_default>;
+			pinctrl-1 = <&pa12200001_sleep>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <113 0x2>;
+			vdd_ana-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			alsp_vreg-supply = <&pm8916_l6>;
+			pa12200001,gpio_int = <&msm_gpio 113 0x00>;
+			pa12200001,irq_flags = <0x2>;
+			pa12200001,cfgs = <40 25 255 0 5 1 0 2 0 1 3 1 1 0 0 50 100>;
+		};
+		yl_lc709203@0B {
+			compatible = "yl,yl_lc709203";
+			reg = <0x0B>;
+			qcom,lc-vadc = <&pm8916_vadc>;
+			yl,soc-high-scaled = <990>;
+			yl,soc-low-scaled = <0>;
+			yl,lc709203-psy-name = "lc709203_battery";
+			yl,charge-psy-name = "battery";
+			yl,battery-data {
+				yl,rpull-up-kohm = <100>;
+				yl,vref-batt-id-uv = <1800000>;
+				yl,CPLD-351-BB-data {
+					yl,batt-full-capa = <2500>;
+					yl,batt-id-kohm = <47>;
+					yl,battery-type = "CPLD-351-BB";
+					yl,battery-appli = <0x0025>;
+				};
+				yl,CPLD-351-CC-data {
+					yl,batt-full-capa = <2500>;
+					yl,batt-id-kohm = <1>;
+					yl,battery-type = "CPLD-351-CC";
+					yl,battery-appli = <0x0038>;
+				};
+				yl,CPLD-351-LS-data {
+					yl,batt-full-capa = <2500>;
+					yl,batt-id-kohm = <220>;
+					yl,battery-type = "CPLD-351-LS";
+					yl,battery-appli = <0x0033>;
+				};
+				yl,CPLD-351-TM-data {
+					yl,batt-full-capa = <2500>;
+					yl,batt-id-kohm = <1000>;
+					yl,battery-type = "CPLD-351-TM";
+					yl,battery-appli = <0x002D>;
+				};
+			};
+		};
+		aw2013@45 {
+			compatible = "awinic,aw2013";
+			reg = <0x45>;
+			vdd-supply = <&pm8916_l17>;
+			vcc-supply = <&pm8916_l6>;
+
+			aw2013,red {
+				aw2013,name = "red";
+				aw2013,id = <2>;
+				aw2013,gpio = <1018>;
+				aw2013,max-brightness = <255>;
+				aw2013,max-current = <3>;
+				aw2013,rise-time-ms = <2>;
+				aw2013,hold-time-ms = <1>;
+				aw2013,fall-time-ms = <2>;
+				aw2013,off-time-ms = <1>;
+			};
+
+			aw2013,green {
+				aw2013,name = "green";
+				aw2013,id = <1>;
+				aw2013,gpio = <1018>;
+				aw2013,max-brightness = <255>;
+				aw2013,max-current = <3>;
+				aw2013,rise-time-ms = <2>;
+				aw2013,hold-time-ms = <1>;
+				aw2013,fall-time-ms = <2>;
+				aw2013,off-time-ms = <1>;
+			};
+
+			aw2013,blue {
+				aw2013,name = "blue";
+				aw2013,id = <0>;
+				aw2013,gpio = <1018>;
+				aw2013,max-brightness = <255>;
+				aw2013,max-current = <3>;
+				aw2013,rise-time-ms = <2>;
+				aw2013,hold-time-ms = <1>;
+				aw2013,fall-time-ms = <2>;
+				aw2013,off-time-ms = <1>;
+			};
+		};
+
+	};
+
+	hall_sensor {
+		compatible = "hall_switch";
+		switch_name = "hall";
+		hall_right {
+			hall_name = "right";
+			gpios = <&msm_gpio 114 0x1>;
+			wakeup;
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+		pinctrl-names = "tlmm_gpio_key_active","tlmm_gpio_key_suspend";
+		pinctrl-0 = <&gpio_key_active>;
+		pinctrl-1 = <&gpio_key_suspend>;
+
+		vol_up {
+			label = "volume_up";
+			gpios = <&msm_gpio 107 0x1>;
+			linux,input-type = <1>;
+			linux,code = <115>;
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
+	};
+};
+
+&sdhc_1 {
+	vdd-supply = <&pm8916_l8>;
+	qcom,vdd-voltage-level = <2900000 2900000>;
+	qcom,vdd-current-level = <200 400000>;
+
+	vdd-io-supply = <&pm8916_l5>;
+	qcom,vdd-io-always-on;
+	qcom,vdd-io-lpm-sup;
+	qcom,vdd-io-voltage-level = <1800000 1800000>;
+	qcom,vdd-io-current-level = <200 60000>;
+
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&sdc1_clk_on &sdc1_cmd_on &sdc1_data_on>;
+	pinctrl-1 = <&sdc1_clk_off &sdc1_cmd_off &sdc1_data_off>;
+
+	qcom,nonremovable;
+
+	status = "ok";
+};
+
+&sdhc_2 {
+	vdd-supply = <&pm8916_l11>;
+	qcom,vdd-voltage-level = <2800000 2950000>;
+	qcom,vdd-current-level = <15000 400000>;
+
+	vdd-io-supply = <&pm8916_l12>;
+	qcom,vdd-io-voltage-level = <1800000 2950000>;
+	qcom,vdd-io-current-level = <200 50000>;
+
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
+	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
+
+	#address-cells = <0>;
+	interrupt-parent = <&sdhc_2>;
+	interrupts = <0 1 2>;
+	#interrupt-cells = <1>;
+	interrupt-map-mask = <0xffffffff>;
+	interrupt-map = <0 &intc 0 125 0
+			1 &intc 0 221 0
+			2 &msm_gpio 38 0>;
+	interrupt-names = "hc_irq", "pwr_irq", "status_irq";
+	cd-gpios = <&msm_gpio 38 0x0>;
+
+	status = "ok";
+};
+
+&spmi_bus {
+	qcom,pm8916@0 {
+		qcom,leds@a100 {
+			status = "okay";
+			qcom,led_mpp_2 {
+				label = "mpp";
+				linux,name = "button-backlight";
+				linux,default-trigger = "none";
+				qcom,default-state = "off";
+				qcom,max-current = <40>;
+				qcom,current-setting = <5>;
+				qcom,id = <6>;
+				qcom,mode = "manual";
+				qcom,source-sel = <1>;
+				qcom,mode-ctrl = <0x60>;
+			};
+		};
+	};
+
+	qcom,pm8916@1 {
+		qcom,vibrator@c000 {
+			status = "okay";
+			qcom,vib-timeout-ms = <15000>;
+			qcom,vib-vtg-level-mV = <3100>;
+		};
+	};
+};
+
+&pm8916_chg {
+	status = "disabled";
+};
+
+/ {
+	mtp_batterydata: qcom,battery-data {
+		qcom,rpull-up-kohm = <100>;
+		qcom,vref-batt-therm = <1800000>;
+
+		#include "batterydata-CPLD-351-BB.dtsi"
+		#include "batterydata-CPLD-351-CC.dtsi"
+		#include "batterydata-CPLD-351-LS.dtsi"
+		#include "batterydata-CPLD-351-MK.dtsi"
+		#include "batterydata-CPLD-351-TM.dtsi"
+	};
+};
+
+&pm8916_bms {
+	status = "disabled";
+};
+
+&qcom_tzlog {
+	status = "okay";
+};
+
+&qcom_rng {
+	status = "okay";
+};
+
+&qcom_crypto {
+	status = "okay";
+};
+
+&qcom_cedev {
+	status = "okay";
+};
+
+&qcom_seecom {
+	status = "okay";
+};
+
+&mdss_dsi0 {
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
+	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
+	qcom,dsi-pref-prim-pan = <&dsi_hx8394a_lide_lg_hd>;
+
+	qcom,platform-enable-gpio = <&msm_gpio 97 0>;
+	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
+	qcom,platform-bklight-en-gpio = <&msm_gpio 98 0>;
+};
+
+&apc_vreg_corner {
+	qcom,cpr-up-threshold = <3>;
+	qcom,cpr-down-threshold = <6>;
+};
+
+&usb_otg {
+	qcom,hsusb-otg-mode = <3>;
+	qcom,usbid-gpio = <&msm_gpio 110 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usbid_default>;
+};
