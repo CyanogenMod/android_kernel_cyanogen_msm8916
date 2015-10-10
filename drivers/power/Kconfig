@@ -558,7 +558,7 @@ config YL_BQ24157_CHARGER
 	help
 	  Say Y here to enable the fan5405 sm charge driver
 
-config CHARGING_DISABLE_IN_HIGH_TEMPERATURE_MICROMAX
+config CHARGE_CONFIG_MICROMAX
 	bool "Use Micromax config for Yulong BQ24157 charger"
 	depends on YL_BQ24157_CHARGER
 	help
