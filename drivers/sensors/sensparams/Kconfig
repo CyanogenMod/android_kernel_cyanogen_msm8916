@@ -1,0 +1,7 @@
+
+config YL_SENSORS_PARAMS
+	tristate "sensor calibration params storage Support"
+	depends on I2C
+	default n
+	help
+	  sensor calibration params storage Driver
