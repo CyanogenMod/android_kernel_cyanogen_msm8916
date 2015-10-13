@@ -25,6 +25,7 @@ config YL_SENSORS
 if YL_SENSORS
 source "drivers/sensors/hall/Kconfig"
 source "drivers/sensors/mpu6880/Kconfig"
+source "drivers/sensors/pa12200001/Kconfig"
 source "drivers/sensors/sensparams/Kconfig"
 endif
 
