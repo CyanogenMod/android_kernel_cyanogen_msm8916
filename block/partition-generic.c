@@ -20,6 +20,9 @@
 
 #include "partitions/check.h"
 
+#ifdef CONFIG_MMC_YL_PARAMS
+extern void notify_ylparams(struct hd_struct *part);
+#endif
 #ifdef CONFIG_BLK_DEV_MD
 extern void md_autodetect_dev(dev_t dev);
 #endif
@@ -531,6 +534,9 @@ rescan:
 			       disk->disk_name, p, -PTR_ERR(part));
 			continue;
 		}
+#ifdef CONFIG_MMC_YL_PARAMS
+		notify_ylparams(part);
+#endif
 #ifdef CONFIG_BLK_DEV_MD
 		if (state->parts[p].flags & ADDPART_FLAG_RAID)
 			md_autodetect_dev(part_to_dev(part)->devt);
