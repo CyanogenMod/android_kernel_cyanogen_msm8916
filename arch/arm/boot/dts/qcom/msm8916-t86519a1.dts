@@ -1,0 +1,98 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+
+#include "msm8916-qrd.dtsi"
+#include "msm8916-memory.dtsi"
+#include "t86519a1/msm8916-t86519a1.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM 8916 T86519A1";
+	compatible = "qcom,msm8916-qrd", "qcom,msm8916", "qcom,qrd";
+	qcom,board-id = <0x1010b 7>, <0x1000b 5>, <0x1010b 5>, <0x3010b 5>;
+};
+
+&soc {
+	i2c@78b8000 {
+		smb1360_otg_supply: smb1360-chg-fg@14 {
+			compatible = "qcom,smb1360-chg-fg";
+			reg = <0x14>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <62 8>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&smb_int_default>;
+			qcom,chg-inhibit-disabled;
+			qcom,fg-batt-capacity-mah = <2230>;
+			qcom,fg-cc-soc-coeff = <0x8359>;
+			qcom,fg-delta-soc = <1>;
+			qcom,fg-cutoff-voltage-mv = <3300>;
+			qcom,fg-iterm-ma = <150>;
+			qcom,fg-ibatt-standby-ma = <200>;
+			qcom,fg-cc-to-cv-mv = <4350>;
+			qcom,fg-auto-recharge-soc = <99>;
+			qcom,thermistor-c1-coeff = <0x86DA>;
+			qcom,float-voltage-mv = <4350>;
+			qcom,chg-pre-to-fast-mv = <3000>;
+			qcom,iterm-ma = <100>;
+			qcom,thermal-mitigation = <1500 700 600 0>;
+			qcom,config-hard-thresholds;
+			qcom,hot-bat-decidegc = <590>;
+			qcom,cold-bat-decidegc = <0>;
+			qcom,soft-jeita-supported;
+			qcom,warm-bat-decidegc = <510>;
+			qcom,cool-bat-decidegc = <100>;
+			qcom,warm-bat-mv = <4350>;
+			qcom,cool-bat-mv = <4350>;
+			qcom,warm-bat-ma = <600>;
+			qcom,cool-bat-ma = <600>;
+			regulator-name = "smb1360_otg_vreg";
+			qcom,shdn-after-pwroff;
+		};
+	};
+};
+
+&pm8916_chg {
+	status = "okay";
+	qcom,use-external-charger;
+};
+
+
+&pm8916_bms {
+	status = "ok";
+	qcom,disable-bms;
+};
+
+&usb_otg {
+	qcom,hsusb-otg-mode = <3>;
+	qcom,usbid-gpio = <&msm_gpio 110 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usbid_default>;
+	vbus_otg-supply = <&smb1360_otg_supply>;
+};
+
+&spmi_bus {
+	qcom,pm8916@0 {
+		pm8916_leds {
+			status = "disabled";
+		};
+	};
+
+	qcom,pm8916@1 {
+		qcom,vibrator@c000 {
+			status = "okay";
+			qcom,vib-timeout-ms = <15000>;
+			qcom,vib-vtg-level-mV = <3100>;
+		};
+	};
+ };
+
