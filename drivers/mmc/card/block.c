@@ -3277,6 +3277,9 @@ static const struct mmc_fixup blk_fixups[] =
 	END_FIXUP
 };
 
+#ifdef CONFIG_MMC_YL_PARAMS
+extern int yl_params_init(struct mmc_card *card);
+#endif
 static int mmc_blk_probe(struct mmc_card *card)
 {
 	struct mmc_blk_data *md, *part_md;
@@ -3306,6 +3309,12 @@ static int mmc_blk_probe(struct mmc_card *card)
 
 #ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	mmc_set_bus_resume_policy(card->host, 1);
+#endif
+#ifdef CONFIG_MMC_YL_PARAMS
+	if (!strcmp(md->disk->disk_name, "mmcblk0")) {
+		if (yl_params_init(card))
+			pr_err("%s: call yl_params_init failed!\n", __func__);
+	}
 #endif
 	if (mmc_add_disk(md))
 		goto out;
