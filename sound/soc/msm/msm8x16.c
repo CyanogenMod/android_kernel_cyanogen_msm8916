@@ -34,6 +34,10 @@
 #include "../codecs/wcd9306.h"
 #define DRV_NAME "msm8x16-asoc-wcd"
 
+#define SAMPLING_RATE_48KHZ 48000
+#define SAMPLING_RATE_96KHZ 96000
+#define SAMPLING_RATE_192KHZ 192000
+
 #define BTSCO_RATE_8KHZ 8000
 #define BTSCO_RATE_16KHZ 16000
 #define MAX_SND_CARDS 3
@@ -208,6 +212,10 @@ struct cdc_pdm_pinctrl_info {
 	struct pinctrl_state *cdc_lines_act;
 	struct pinctrl_state *cross_conn_det_sus;
 	struct pinctrl_state *cross_conn_det_act;
+#ifdef CONFIG_MACH_CP8675
+	struct pinctrl_state *cdc_lines_dmic_act;
+	struct pinctrl_state *cdc_lines_dmic_sus;
+#endif
 };
 
 struct ext_cdc_tlmm_pinctrl_info {
@@ -220,6 +228,7 @@ static struct cdc_pdm_pinctrl_info pinctrl_info;
 struct ext_cdc_tlmm_pinctrl_info ext_cdc_pinctrl_info;
 
 static int mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+static int mi2s_rx_sample_rate = SAMPLING_RATE_48KHZ;
 
 static inline int param_is_mask(int p)
 {
@@ -246,18 +255,33 @@ static void param_set_mask(struct snd_pcm_hw_params *p, int n, unsigned bit)
 static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event);
 
+#ifdef CONFIG_MACH_CP8675
+static int msm8x16_dmic_event(struct snd_soc_dapm_widget *w,
+		struct snd_kcontrol *kcontrol, int event);
+#endif
+
 static const struct snd_soc_dapm_widget msm8x16_dapm_widgets[] = {
 
 	SND_SOC_DAPM_SUPPLY_S("MCLK", -1, SND_SOC_NOPM, 0, 0,
+#ifdef CONFIG_MACH_CP8675
+	msm8x16_mclk_event, SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+#else
 	msm8x16_mclk_event, SND_SOC_DAPM_POST_PMD),
+#endif
 	SND_SOC_DAPM_MIC("Handset Mic", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("Secondary Mic", NULL),
+#ifdef CONFIG_MACH_CP8675
+	SND_SOC_DAPM_MIC("Digital Mic1", msm8x16_dmic_event),
+	SND_SOC_DAPM_MIC("Digital Mic2", msm8x16_dmic_event),
+#else
 	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
 	SND_SOC_DAPM_MIC("Digital Mic2", NULL),
+#endif
 };
 
 static char const *rx_bit_format_text[] = {"S16_LE", "S24_LE"};
+static char const *mi2s_rx_sample_rate_text[] = {"KHZ_48", "KHZ_96", "KHZ_192"};
 static const char *const ter_mi2s_tx_ch_text[] = {"One", "Two"};
 static const char *const loopback_mclk_text[] = {"DISABLE", "ENABLE"};
 
@@ -321,8 +345,59 @@ static int msm_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
 
 	pr_debug("%s()\n", __func__);
-	rate->min = rate->max = 48000;
+	rate->min = rate->max = mi2s_rx_sample_rate;
 	channels->min = channels->max = 2;
+
+	return 0;
+}
+
+static int mi2s_rx_sample_rate_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	int sample_rate_val = 0;
+
+	switch (mi2s_rx_sample_rate) {
+	case SAMPLING_RATE_192KHZ:
+		sample_rate_val = 2;
+		break;
+
+	case SAMPLING_RATE_96KHZ:
+		sample_rate_val = 1;
+		break;
+
+	case SAMPLING_RATE_48KHZ:
+	default:
+		sample_rate_val = 0;
+		break;
+	}
+
+	ucontrol->value.integer.value[0] = sample_rate_val;
+	pr_debug("%s: mi2s_rx_sample_rate = %d\n", __func__,
+				mi2s_rx_sample_rate);
+
+	return 0;
+}
+
+static int mi2s_rx_sample_rate_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s: ucontrol value = %ld\n", __func__,
+			ucontrol->value.integer.value[0]);
+
+	switch (ucontrol->value.integer.value[0]) {
+	case 2:
+		mi2s_rx_sample_rate = SAMPLING_RATE_192KHZ;
+		break;
+	case 1:
+		mi2s_rx_sample_rate = SAMPLING_RATE_96KHZ;
+		break;
+	case 0:
+	default:
+		mi2s_rx_sample_rate = SAMPLING_RATE_48KHZ;
+	}
+
+	pr_debug("%s: mi2s_rx_sample_rate = %d\n", __func__,
+			mi2s_rx_sample_rate);
 
 	return 0;
 }
@@ -386,6 +461,17 @@ static int loopback_mclk_put(struct snd_kcontrol *kcontrol,
 	case 1:
 		ret = pinctrl_select_state(pinctrl_info.pinctrl,
 				pinctrl_info.cdc_lines_act);
+#ifdef CONFIG_MACH_CP8675
+		if (ret < 0) {
+			pr_err("%s: failed to enable codec GPIO: %d\n",
+					__func__, ret);
+			break;
+		}
+#endif
+		pdata->digital_cdc_clk.clk_val = 9600000;
+		ret = afe_set_digital_codec_core_clock(
+				AFE_PORT_ID_PRIMARY_MI2S_RX,
+				&pdata->digital_cdc_clk);
 		if (ret < 0) {
 			pr_err("%s: failed to configure the gpio; ret=%d\n",
 					__func__, ret);
@@ -834,6 +920,7 @@ static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(2, rx_bit_format_text),
 	SOC_ENUM_SINGLE_EXT(2, ter_mi2s_tx_ch_text),
 	SOC_ENUM_SINGLE_EXT(2, loopback_mclk_text),
+	SOC_ENUM_SINGLE_EXT(2, mi2s_rx_sample_rate_text),
 };
 
 static const char *const btsco_rate_text[] = {"8000", "16000"};
@@ -852,7 +939,8 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 			loopback_mclk_get, loopback_mclk_put),
 	SOC_ENUM_EXT("Internal BTSCO SampleRate", msm_btsco_enum[0],
 		     msm_btsco_rate_get, msm_btsco_rate_put),
-
+	SOC_ENUM_EXT("MI2S_RX SampleRate", msm_snd_enum[3],
+			mi2s_rx_sample_rate_get, mi2s_rx_sample_rate_put),
 };
 
 static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
@@ -864,6 +952,12 @@ static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 	pdata = snd_soc_card_get_drvdata(w->codec->card);
 	pr_debug("%s: event = %d\n", __func__, event);
 	switch (event) {
+#ifdef CONFIG_MACH_CP8675
+	case SND_SOC_DAPM_PRE_PMU:
+		if (atomic_read(&pdata->mclk_rsc_ref) < 1)
+			return msm8x16_enable_codec_ext_clk(w->codec, 1, true);
+		break;
+#endif
 	case SND_SOC_DAPM_POST_PMD:
 		pr_debug("%s: mclk_res_ref = %d\n",
 			__func__, atomic_read(&pdata->mclk_rsc_ref));
@@ -887,6 +981,37 @@ static int msm8x16_mclk_event(struct snd_soc_dapm_widget *w,
 	}
 	return 0;
 }
+
+#ifdef CONFIG_MACH_CP8675
+static int msm8x16_dmic_event(struct snd_soc_dapm_widget *w,
+		struct snd_kcontrol *kcontrol, int event)
+{
+	struct msm8916_asoc_mach_data *pdata = NULL;
+	int ret = 0;
+
+	pdata = snd_soc_card_get_drvdata(w->codec->card);
+	pr_debug("%s: event = %d\n", __func__, event);
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		ret = pinctrl_select_state(pinctrl_info.pinctrl,
+				pinctrl_info.cdc_lines_dmic_act);
+		if (ret < 0)
+			pr_err("%s: error during pinctrl state select\n",
+					__func__);
+		break;
+	case SND_SOC_DAPM_POST_PMD:
+		ret = pinctrl_select_state(pinctrl_info.pinctrl,
+				pinctrl_info.cdc_lines_dmic_sus);
+		if (ret < 0)
+			pr_err("%s: error during pinctrl state select\n",
+					__func__);
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+#endif
 
 static void msm_mi2s_snd_shutdown(struct snd_pcm_substream *substream)
 {
@@ -1328,7 +1453,11 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	}
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(msm8x16_wcd_cal)->X) = (Y))
+#ifdef CONFIG_MACH_CP8675
+	S(v_hs_max, 2550);
+#else
 	S(v_hs_max, 1500);
+#endif
 #undef S
 #define S(X, Y) ((WCD_MBHC_CAL_BTN_DET_PTR(msm8x16_wcd_cal)->X) = (Y))
 	S(num_btn, WCD_MBHC_DEF_BUTTONS);
@@ -1346,6 +1475,18 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	 * all btn_low corresponds to threshold for current source
 	 * all bt_high corresponds to threshold for Micbias
 	 */
+#ifdef CONFIG_MACH_CP8675
+	btn_low[0] = 50;
+	btn_high[0] = 50;
+	btn_low[1] = 75;
+	btn_high[1] = 75;
+	btn_low[2] = 87;
+	btn_high[2] = 87;
+	btn_low[3] = 112;
+	btn_high[3] = 112;
+	btn_low[4] = 137;
+	btn_high[4] = 137;
+#else
 	btn_low[0] = 25;
 	btn_high[0] = 25;
 	btn_low[1] = 50;
@@ -1356,6 +1497,7 @@ static void *def_msm8x16_wcd_mbhc_cal(void)
 	btn_high[3] = 112;
 	btn_low[4] = 137;
 	btn_high[4] = 137;
+#endif
 
 	return msm8x16_wcd_cal;
 }
@@ -2338,6 +2480,20 @@ int get_cdc_gpio_lines(struct pinctrl *pinctrl, int ext_pa)
 			pr_err("failed to enable codec gpios\n");
 		break;
 	default:
+#ifdef CONFIG_MACH_CP8675
+		pinctrl_info.cdc_lines_dmic_sus = pinctrl_lookup_state(pinctrl,
+			"cdc_lines_dmic_sus");
+		if (IS_ERR(pinctrl_info.cdc_lines_dmic_sus)) {
+			pr_err("%s: Unable to get pinctrl cdc_lines_dmic_sus handle\n",
+								__func__);
+		}
+		pinctrl_info.cdc_lines_dmic_act = pinctrl_lookup_state(pinctrl,
+			"cdc_lines_dmic_act");
+		if (IS_ERR(pinctrl_info.cdc_lines_dmic_act)) {
+			pr_err("%s: Unable to get pinctrl cdc_lines_dmic_act handle\n",
+								__func__);
+		}
+#endif
 		pinctrl_info.cdc_lines_sus = pinctrl_lookup_state(pinctrl,
 			"cdc_lines_sus");
 		if (IS_ERR(pinctrl_info.cdc_lines_sus)) {
