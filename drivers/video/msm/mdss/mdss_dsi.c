@@ -1948,6 +1948,9 @@ int dsi_panel_device_register(struct device_node *pan_node,
 	ctrl_pdata->panel_data.event_handler = mdss_dsi_event_handler;
 
 	if (ctrl_pdata->status_mode == ESD_REG ||
+#ifdef CONFIG_MACH_YULONG
+			ctrl_pdata->status_mode == ESD_REG_YL ||
+#endif
 			ctrl_pdata->status_mode == ESD_REG_NT35596)
 		ctrl_pdata->check_status = mdss_dsi_reg_status_check;
 	else if (ctrl_pdata->status_mode == ESD_BTA)
