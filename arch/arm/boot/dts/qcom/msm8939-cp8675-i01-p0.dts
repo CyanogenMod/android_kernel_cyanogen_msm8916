@@ -38,3 +38,9 @@
 		qcom,led-flash-src = <&led_flash0>;
 	};
 };
+
+&soc {
+	qcom,lpm-workarounds {
+		/delete-property/ qcom,lpm-wa-skip-l2-spm;
+	};
+};
