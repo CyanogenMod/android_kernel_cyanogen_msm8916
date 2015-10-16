@@ -343,6 +343,7 @@ static void AKECS_SetYPR(
 	int *rbuf)
 {
 	uint32_t ready;
+	struct timespec ts;
 	dev_vdbg(&akm->i2c->dev, "%s: flag =0x%X", __func__, rbuf[0]);
 	dev_vdbg(&akm->input->dev, "  Acc [LSB]   : %6d,%6d,%6d stat=%d",
 		rbuf[1], rbuf[2], rbuf[3], rbuf[4]);
@@ -390,6 +391,9 @@ static void AKECS_SetYPR(
 		input_report_abs(akm->input, ABS_VOLUME, rbuf[15]);
 	}
 
+	get_monotonic_boottime(&ts);
+	input_event(akm->input, EV_SYN, SYN_TIME_SEC, ts.tv_sec);
+	input_event(akm->input, EV_SYN, SYN_TIME_NSEC, ts.tv_nsec);
 	input_sync(akm->input);
 }
 
@@ -2120,6 +2124,7 @@ static int akm_report_data(struct akm_compass_data *akm)
 	int mag_x, mag_y, mag_z;
 	int tmp;
 	int count = 10;
+	struct timespec ts;
 
 	do {
 		/* The typical time for single measurement is 7.2ms */
@@ -2203,9 +2208,12 @@ static int akm_report_data(struct akm_compass_data *akm)
 		break;
 	}
 
+	get_monotonic_boottime(&ts);
 	input_report_abs(akm->input, ABS_X, mag_x);
 	input_report_abs(akm->input, ABS_Y, mag_y);
 	input_report_abs(akm->input, ABS_Z, mag_z);
+	input_event(akm->input, EV_SYN, SYN_TIME_SEC, ts.tv_sec);
+	input_event(akm->input, EV_SYN, SYN_TIME_NSEC, ts.tv_nsec);
 	input_sync(akm->input);
 
 	return 0;
