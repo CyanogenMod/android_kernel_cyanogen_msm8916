@@ -657,6 +657,7 @@ static void mpu6050_remap_gyro_data(struct axis_data *data, int place)
  */
 static void mpu6050_read_single_event(struct mpu6050_sensor *sensor)
 {
+	ktime_t timestamp;
 	u32 shift;
 
 	if (sensor->cfg.accel_enable) {
@@ -668,10 +669,17 @@ static void mpu6050_read_single_event(struct mpu6050_sensor *sensor)
 			(sensor->axis.y << shift));
 		input_report_abs(sensor->accel_dev, ABS_Z,
 			(sensor->axis.z << shift));
+		input_event(sensor->gyro_dev,
+				EV_SYN, SYN_TIME_SEC,
+				ktime_to_timespec(timestamp).tv_sec);
+		input_event(sensor->gyro_dev, EV_SYN,
+				SYN_TIME_NSEC,
+				ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(sensor->accel_dev);
 	}
 
 	if (sensor->cfg.gyro_enable) {
+		timestamp = ktime_get_boottime();
 		mpu6050_read_gyro_data(sensor, &sensor->axis);
 		mpu6050_remap_gyro_data(&sensor->axis,
 			sensor->pdata->place);
@@ -683,6 +691,12 @@ static void mpu6050_read_single_event(struct mpu6050_sensor *sensor)
 			(sensor->axis.ry >> shift));
 		input_report_abs(sensor->gyro_dev, ABS_RZ,
 			(sensor->axis.rz >> shift));
+		input_event(sensor->gyro_dev,
+				EV_SYN, SYN_TIME_SEC,
+				ktime_to_timespec(timestamp).tv_sec);
+		input_event(sensor->gyro_dev, EV_SYN,
+				SYN_TIME_NSEC,
+				ktime_to_timespec(timestamp).tv_nsec);
 		input_sync(sensor->gyro_dev);
 	}
 	return;
