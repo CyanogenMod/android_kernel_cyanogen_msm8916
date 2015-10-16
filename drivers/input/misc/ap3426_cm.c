@@ -343,6 +343,17 @@ static inline void ap3426_verify_client_mutex_locked(struct i2c_client *client)
 #define ap3426_verify_client_mutex_locked(args)
 #endif
 
+static inline void ap3426_report_abs_ts(
+	struct input_dev *dev, int code, int value)
+{
+	struct timespec ts;
+	get_monotonic_boottime(&ts);
+	input_report_abs(dev, code, value);
+	input_event(dev, EV_SYN, SYN_TIME_SEC, ts.tv_sec);
+	input_event(dev, EV_SYN, SYN_TIME_NSEC, ts.tv_nsec);
+	input_sync(dev);
+}
+
 
 static inline void ap3426_lock_mutex(struct ap3426_data *data)
 {
@@ -894,8 +905,7 @@ static int ap3426_ps_enable(struct ap3426_data *ps_data, int enable)
 		if (distance != 1) {
 			PS_ERR("Unexpected distance:%d upon enable\n", distance);
 		}
-		input_report_abs(ps_data->psensor_input_dev, ABS_DISTANCE, 1);
-		input_sync(ps_data->psensor_input_dev);
+		ap3426_report_abs_ts(ps_data->psensor_input_dev, ABS_DISTANCE, 1);
 		wake_lock_timeout(&ps_data->ps_wakelock, 2*HZ);
 		pxvalue = ap3426_get_px_value(client);
 		PS_DBG("pxvalue:%d, distance:%d\n", pxvalue, distance);
@@ -1264,8 +1274,7 @@ static void ap3426_change_ls_threshold(struct i2c_client *client)
 	ap3426_set_ahthres(client,ap3426_threshole[value]);
     }
 
-    input_report_abs(data->lsensor_input_dev, ABS_MISC, value);
-    input_sync(data->lsensor_input_dev);
+    ap3426_report_abs_ts(data->lsensor_input_dev, ABS_MISC, value);
 
 }
 #endif
@@ -2493,8 +2502,7 @@ static void psensor_work_handler(struct work_struct *w)
 	distance = ap3426_get_object(data->client);
 	pxvalue = ap3426_get_px_value(data->client); //test
 
-	input_report_abs(data->psensor_input_dev, ABS_DISTANCE, distance);
-	input_sync(data->psensor_input_dev);
+	ap3426_report_abs_ts(data->psensor_input_dev, ABS_DISTANCE, distance);
 
 	ALS_DBG("Reported ABS_DISTANCE:%d to input device, value:%d\n", distance, pxvalue);
 
@@ -2537,15 +2545,13 @@ static void lsensor_work_handler(struct work_struct *w)
 		 * the input driver sends EV_ABS events only when if value changed
 		 * from the last report. Done here to give user space time to prepare.
 		 */
-		input_report_abs(data->lsensor_input_dev, ABS_MISC, value + 1);
-		input_sync(data->lsensor_input_dev);
+		ap3426_report_abs_ts(data->lsensor_input_dev, ABS_MISC, value + 1);
 		ALS_DBG("data->als_polling_just_enabled:%d = 0; Reported an EXTRA ABS_MISC value:%d to input device.\n",
 		         data->als_polling_just_enabled,                                   value);
 
 		data->als_polling_just_enabled = 0;
 	}
-	input_report_abs(data->lsensor_input_dev, ABS_MISC, value);
-	input_sync(data->lsensor_input_dev);
+	ap3426_report_abs_ts(data->lsensor_input_dev, ABS_MISC, value);
 
 	ALS_DBG("Reported ABS_MISC value:%d to input device.\n", value);
 
@@ -2583,24 +2589,21 @@ static irqreturn_t ap3426_threaded_isr(int irq, void *client_data)
 		/* We have a PS Interrupt */
 		if (misc_ps_opened) {
 			distance = ap3426_get_object(data->client);
-			input_report_abs(data->psensor_input_dev, ABS_DISTANCE, distance);
-			input_sync(data->psensor_input_dev);
+			ap3426_report_abs_ts(data->psensor_input_dev, ABS_DISTANCE, distance);
 			wake_lock_timeout(&data->ps_wakelock, 2*HZ);
 		}
 	}
 
 #ifdef CONFIG_AP3426_HEARTBEAT_SENSOR
 	if (misc_ht_opened) {
-		input_report_abs(data->hsensor_input_dev, ABS_WHEEL, ps_value);
-		input_sync(data->hsensor_input_dev);
+		ap3426_report_abs_ts(data->hsensor_input_dev, ABS_WHEEL, ps_value);
 	}
 #endif
 
 	if (int_stat & AP3426_REG_SYS_INT_AMASK) {
 		/* We have an ALS Interrupt */
 		if (misc_als_opened) {
-			input_report_abs(data->lsensor_input_dev, ABS_MISC, als_value);
-			input_sync(data->lsensor_input_dev);
+			ap3426_report_abs_ts(data->lsensor_input_dev, ABS_MISC, als_value);
 		}
 	}
 	PS_DBG("ps_value:%d, als_value:%d, distance:%d;\n", \
@@ -2911,8 +2914,7 @@ static int ap3426_probe(struct i2c_client *client,
 	private_pl_data = data;
 
 	// init the ps event value because it may cause screen off at first call
-	input_report_abs(data->psensor_input_dev, ABS_DISTANCE, 1);
-	input_sync(data->psensor_input_dev);
+	ap3426_report_abs_ts(data->psensor_input_dev, ABS_DISTANCE, 1);
 
 	dev_info(&client->dev, "Driver version %s enabled\n", DRIVER_VERSION);
 
