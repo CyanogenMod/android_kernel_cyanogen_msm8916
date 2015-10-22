@@ -26,9 +26,9 @@
 		qcom,mdss-dsi-h-back-porch = <46>;
 		qcom,mdss-dsi-h-pulse-width = <6>;
 		qcom,mdss-dsi-h-sync-skew = <0>;
-		qcom,mdss-dsi-v-front-porch = <6>;
-		qcom,mdss-dsi-v-back-porch = <2>;
-		qcom,mdss-dsi-v-pulse-width = <3>;
+		qcom,mdss-dsi-v-front-porch = <7>;
+		qcom,mdss-dsi-v-back-porch = <6>;
+		qcom,mdss-dsi-v-pulse-width = <2>;
 		qcom,mdss-dsi-h-left-border = <0>;
 		qcom,mdss-dsi-h-right-border = <0>;
 		qcom,mdss-dsi-v-top-border = <0>;
@@ -39,7 +39,6 @@
 		qcom,mdss-dsi-pixel-packing = <0>;
 		qcom,mdss-dsi-on-command = [
 			39 01 00 00 00 00 02 FF EE
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 0A 00 02 18 40
 			39 01 00 00 14 00 02 18 00
 			39 01 00 00 00 00 02 24 4F
@@ -50,7 +49,6 @@
 			39 01 00 00 00 00 02 7E 71
 			39 01 00 00 00 00 02 7C 31
 			39 01 00 00 00 00 02 FF 01
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 00 01
 			39 01 00 00 00 00 02 01 55
 			39 01 00 00 00 00 02 02 40
@@ -94,7 +92,6 @@
 			39 01 00 00 00 00 02 5F 02
 			39 01 00 00 00 00 02 72 31
 			39 01 00 00 00 00 02 FF 05
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 00 01
 			39 01 00 00 00 00 02 01 0B
 			39 01 00 00 00 00 02 02 0C
@@ -178,15 +175,11 @@
 			39 01 00 00 00 00 02 8A 00
 			39 01 00 00 00 00 02 9B 0F
 			39 01 00 00 00 00 02 FF 04
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 07 20
 			39 01 00 00 00 00 02 08 06
 			39 01 00 00 00 00 02 FF 01
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 FF 02
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 FF 03
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 00 50
 			39 01 00 00 00 00 02 01 54
 			39 01 00 00 00 00 02 02 58
@@ -220,12 +213,17 @@
 			39 01 00 00 00 00 02 63 00
 			39 01 00 00 00 00 02 FF 00
 			39 01 00 00 00 00 02 FF 04
-			39 01 00 00 00 00 02 FB 01
 			39 01 00 00 00 00 02 FF 00
-			39 01 00 00 00 00 02 D3 05
-			39 01 00 00 00 00 02 D4 04
+			39 01 00 00 00 00 02 D3 08
+			39 01 00 00 00 00 02 D4 07
 			39 01 00 00 00 00 02 51 00
 			39 01 00 00 00 00 02 53 24
+			39 01 00 00 00 00 02 55 91
+			39 01 00 00 00 00 02 FF EE
+			39 01 00 00 00 00 02 7C 31
+			39 01 00 00 00 00 02 FF 05
+			39 01 00 00 00 00 02 54 75
+			39 01 00 00 00 00 02 FF 00
 			05 01 00 00 78 00 02 11 00
 		];
 		qcom,mdss-dsi-off-command = [
@@ -283,13 +281,6 @@
 		];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-off-command-state = "dsi_lp_mode";
-		/*
-		qcom,panel-alive-reg-content = [
-			0A 01 9C
-			0B 01 00
-			0D 01 00
-		];
-		*/
 		qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 02 0A 08];
 		qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-panel-status-check-mode = "reg_read";
