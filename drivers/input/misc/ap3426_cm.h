@@ -243,6 +243,8 @@ struct ap3426_data {
 	uint16_t		ps_calibration_expected;
 	uint16_t		ps_calibration_max;
 	uint16_t		ps_integrated_time;
+	bool			ps_calibrated;
+	uint16_t		ps_crosstalk_cal_value;
 };
 
 #endif
