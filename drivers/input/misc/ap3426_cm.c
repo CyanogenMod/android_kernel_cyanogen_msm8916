@@ -2844,14 +2844,6 @@ static int ap3426_probe(struct i2c_client *client,
 		goto exit_free_gpio_int;
 	}
 
-	/* enable irq wake up */
-	DBG("enable_irq_wake(gpio_to_irq(data->int_pin:%d)); irq:%d\n", data->int_pin, gpio_to_irq(data->int_pin));
-	err = enable_irq_wake(gpio_to_irq(data->int_pin));
-	if (err) {
-		dev_err(&client->dev, "err: %d, could not enable irq wake for irq:%d\n", err, gpio_to_irq(data->int_pin));
-		goto exit_request_irq;
-	}
-
 	data->psensor_wq = create_singlethread_workqueue("psensor_wq");
 
 	if (!data->psensor_wq) {
