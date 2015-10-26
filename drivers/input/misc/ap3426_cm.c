@@ -72,7 +72,7 @@
 #define MIN_ALS_POLL_DELAY_MS		110
 #define MAX_ALS_POLL_DELAY_MS		10000
 #define DEFAULT_ALS_POLL_DELAY_MS	200
-
+#define POWER_ON_DELAY_MS		10
 
 #define AP3426_VDD_MIN_UV	2000000
 #define AP3426_VDD_MAX_UV	3300000
@@ -1683,6 +1683,7 @@ static int ap3426_power_ctl(struct ap3426_data *data, bool on)
 
 		data->power_enabled = on;
 		printk(KERN_INFO "%s: enable ap3426 power\n", __func__);
+		msleep(POWER_ON_DELAY_MS);
 	}
 	else
 	{
