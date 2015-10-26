@@ -1441,8 +1441,6 @@ static int ap3426_als_poll_delay_set(struct sensors_classdev *sensors_cdev, unsi
 }
 
 #ifdef DI_AUTO_CAL
-static u8 ps_calibrated = 0;
-
 static inline void swap_at(u16 *x, u16 *y)
 {
 	u16 temp = *x;
@@ -1508,7 +1506,7 @@ int ap3426_ps_calibration(struct i2c_client *client)
 
 	PS_ENTRY("client:%p", client);
 
-	if (!ps_calibrated) {
+	if (!pdata->ps_calibrated) {
 		ap3426_set_ps_crosstalk_calibration(client, 0);		/* Baseline */
 
 		for (i = 0; i < CAL_SAMPLES; i++) {
@@ -1542,15 +1540,17 @@ int ap3426_ps_calibration(struct i2c_client *client)
 				samples++;
 			}
 			ave = total/samples;
+			pdata->ps_crosstalk_cal_value = ave;
 			PS_DBG("ave = %d\n", ave);
-			ap3426_set_ps_crosstalk_calibration(client, ave);
+			ap3426_set_ps_crosstalk_calibration(
+                                client, pdata->ps_crosstalk_cal_value);
 			msleep(50);
 			sample = ap3426_get_px_value(client);
 			PS_DBG("sample = %d\n", sample);
 			msleep(50);
 			sample = ap3426_get_px_value(client);
 			PS_DBG("sample = %d\n", sample);
-			ps_calibrated = 1;
+			pdata->ps_calibrated = 1;
 			rv = 1;
 		} else {
 			ave = pdata->ps_calibration_expected;
@@ -1591,7 +1591,7 @@ static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 	ap3426_lock_mutex(ps_data);
 
 #ifdef DI_AUTO_CAL
-	if (enabled == 1 && !ps_calibrated) {
+	if (enabled == 1 && !ps_data->ps_calibrated) {
 		struct i2c_client *client = ps_data->client;
 
 		/*
@@ -2425,6 +2425,10 @@ static int ap3426_init_client(struct i2c_client *client)
 		/*psensor high low thread*/
     di_ap3426_set_ps_thd_l(data, data->ps_thd_l);
     di_ap3426_set_ps_thd_h(data, data->ps_thd_h);
+    /* apply calibration if present */
+    if (data->ps_calibrated)
+        ap3426_set_ps_crosstalk_calibration(
+                client, data->ps_crosstalk_cal_value);
 
     /* read all the registers once to fill the cache.
      * if one of the reads fails, we consider the init failed */
