@@ -768,13 +768,17 @@ done:
 }
 
 
-static inline void ap3426_disable_ps_and_als_interrupts(struct i2c_client *client)
+static inline int ap3426_disable_ps_and_als_interrupts(struct i2c_client *client)
 {
+	int rv;
+
 	PS_ENTRY("client:%p", client);
 
-	i2c_smbus_write_byte_data(client, AP3426_REG_SYS_INTCTRL, 0);
+	rv = i2c_smbus_write_byte_data(client, AP3426_REG_SYS_INTCTRL, 0);
 
-	PS_RETURN_VOID();
+	PS_RETURN("rv: %d", rv);
+
+	return rv;
 }
 
 static inline void ap3426_disable_ps_interrupts(struct i2c_client *client)
@@ -2393,67 +2397,92 @@ static const struct attribute_group ap3426_attr_group = {
 	.attrs = ap3426_attributes,
 };
 
-static int32_t di_ap3426_set_ps_thd_l(struct ap3426_data *ps_data, uint16_t thd_l)
-{
-	return i2c_smbus_write_word_data(ps_data->client, 0x2A, thd_l);
-}
-
-static int32_t di_ap3426_set_ps_thd_h(struct ap3426_data *ps_data, uint16_t thd_h)
-{
-	return i2c_smbus_write_word_data(ps_data->client, 0x2C, thd_h);
-}
-
-
 static int ap3426_init_client(struct i2c_client *client)
 {
-    struct ap3426_data *data = i2c_get_clientdata(client);
-    int rv = 0;
-    int i;
+	struct ap3426_data *data = i2c_get_clientdata(client);
+	int rv = 0;
+	int i;
+	u16 cal;
+	u8 buf[16];
 
-    ENTRY("client:%p", client);
+	ENTRY("client:%p", client);
 
-    ap3426_verify_client_mutex_locked(client);
+	ap3426_verify_client_mutex_locked(client);
 
-		/*lsensor high low thread*/
-    i2c_smbus_write_byte_data(client, 0x1A, 0);
-    i2c_smbus_write_byte_data(client, 0x1B, 0);
+	/**
+	 * Write the ALS low/high thresholds to:
+	 * AP3426_REG_ALS_THDL_L, AP3426_REG_ALS_THDL_H, AP3426_REG_ALS_THDH_L
+	 * AP3426_REG_ALS_THDH_H
+	 */
+	buf[0] = 0;
+	buf[1] = 0;
+	buf[2] = 0xFF;
+	buf[3] = 0XFF;
 
-    i2c_smbus_write_byte_data(client, 0x1C, 0xFF);
-    i2c_smbus_write_byte_data(client, 0x1D, 0XFF);
-		/*psensor high low thread*/
-    di_ap3426_set_ps_thd_l(data, data->ps_thd_l);
-    di_ap3426_set_ps_thd_h(data, data->ps_thd_h);
-    /* apply calibration if present */
-    if (data->ps_calibrated)
-        ap3426_set_ps_crosstalk_calibration(
-                client, data->ps_crosstalk_cal_value);
-
-    /* read all the registers once to fill the cache.
-     * if one of the reads fails, we consider the init failed */
-    for (i = 0; i < AP3426_NUM_CACHABLE_REGS; i++) {
-	int v = i2c_smbus_read_byte_data(client, reg_array[i]);
-
-	if (v < 0) {
-		rv = -ENODEV;
+	rv = i2c_smbus_write_block_data(client, AP3426_REG_ALS_THDL_L, 4, buf);
+	if (rv) {
+		dev_err(&client->dev, "error writing ALS config: %d\n", rv);
 		goto done;
 	}
-	data->reg_cache[i] = v;
-    }
-    /* set defaults */
-    ap3426_set_range(client, AP3426_ALS_RANGE_0);
-    ap3426_set_mode(client, AP3426_SYS_DEV_DOWN);
 
-    ap3426_disable_ps_and_als_interrupts(client);
+	/**
+	 * Write the proximity sensor crosstalk, low and high threshold calibration
+	 * values
+	 *
+	 * AP3426_REG_PS_CAL_L, AP3426_REG_PS_CAL_H, AP3426_REG_PS_THDL_L
+	 * AP3426_REG_PS_THDL_H, AP3426_REG_PS_THDH_L, AP3426_REG_PS_THDH_H
+	 */
+	cal = data->ps_calibrated ? data->ps_crosstalk_cal_value : 0;
+	buf[0] = cal & 0xff;
+	buf[1] = cal >> 8;
+	buf[2] = data->ps_thd_l & 0xff;
+	buf[3] = data->ps_thd_l >> 8;
+	buf[4] = data->ps_thd_h & 0xff;
+	buf[5] = data->ps_thd_h >> 8;
+
+	rv = i2c_smbus_write_block_data(client, AP3426_REG_PS_CAL_L, 6, buf);
+	if (rv) {
+		dev_err(&client->dev, "error writing ALS config: %d\n", rv);
+		goto done;
+	}
+
+	/* read all the registers once to fill the cache.
+	 * if one of the reads fails, we consider the init failed */
+	for (i = 0; i < AP3426_NUM_CACHABLE_REGS; i++) {
+		rv = i2c_smbus_read_byte_data(client, reg_array[i]);
+		if (rv < 0) {
+			dev_err(&client->dev, "error reading register %d: %d\n",
+				reg_array[i], rv);
+			goto done;
+		}
+		data->reg_cache[i] = rv;
+	}
+	/* set defaults */
+	rv = ap3426_set_range(client, AP3426_ALS_RANGE_0);
+	if (rv < 0) {
+		dev_err(&client->dev, "error setting als range: %d\n", rv);
+		goto done;
+	}
+	rv = ap3426_set_mode(client, AP3426_SYS_DEV_DOWN);
+	if (rv < 0) {
+		dev_err(&client->dev, "error setting mode: %d\n", rv);
+		goto done;
+	}
+	rv = ap3426_disable_ps_and_als_interrupts(client);
+	if (rv < 0) {
+		dev_err(&client->dev, "error configuring interrupts: %d\n", rv);
+		goto done;
+	}
 
 	// PS mean time default = 0x00 (1 converseion time = 5ms)
 	// 5 + N x 0.0627 (ADC photodiode sample period, where N is the integrated time)
 	if (data->ps_integrated_time > 0) {
-	    i2c_smbus_write_byte_data(client, 0x25, data->ps_integrated_time);
+		rv = i2c_smbus_write_byte_data(
+			client, AP3426_REG_PS_INTEGR, data->ps_integrated_time);
 	}
-
 done:
-    RETURN("rv:%d", rv);
-    return rv;;
+	RETURN("rv:%d", rv);
+	return rv;;
 }
 
 /*
@@ -3095,6 +3124,8 @@ static int ap3426_suspend(struct device *dev)
 static int ap3426_resume(struct device *dev)
 {
 	struct ap3426_data *ps_data = dev_get_drvdata(dev);
+	int rc;
+	bool retry = true;
 
 	ENTRY("dev:%p)", dev);
 
@@ -3107,9 +3138,21 @@ static int ap3426_resume(struct device *dev)
 	//
 	// ap3426_power_init(ps_data,true);
 	ap3426_power_ctl(ps_data, true);
-
-	 // Always re-iniialized our register cache and stuff.
-	ap3426_init_client(ps_data->client);
+again:
+	// Always re-initialize our register cache and stuff.
+	// Retry once if init fails
+	rc = ap3426_init_client(ps_data->client);
+	if (rc) {
+		if (retry) {
+			dev_warn(dev, "i2c error resuming device, retrying: %d\n",
+				rc);
+			retry = false;
+			msleep(POWER_ON_DELAY_MS);
+			goto again;
+		}
+		dev_err(dev, "failed resuming device. error: %d\n", rc);
+		return -EAGAIN;
+	}
 
 	if (ps_data->ps_re_enable ) {
 		ap3426_ps_enable(ps_data, 1);
