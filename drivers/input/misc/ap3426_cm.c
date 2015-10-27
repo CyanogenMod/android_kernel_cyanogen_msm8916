@@ -902,10 +902,7 @@ static int ap3426_ps_enable(struct ap3426_data *ps_data, int enable)
 	msleep(50);
 	if (misc_ps_opened){
 		distance = ap3426_get_object(client);
-		if (distance != 1) {
-			PS_ERR("Unexpected distance:%d upon enable\n", distance);
-		}
-		ap3426_report_abs_ts(ps_data->psensor_input_dev, ABS_DISTANCE, 1);
+		ap3426_report_abs_ts(ps_data->psensor_input_dev, ABS_DISTANCE, distance);
 		wake_lock_timeout(&ps_data->ps_wakelock, 2*HZ);
 		pxvalue = ap3426_get_px_value(client);
 		PS_DBG("pxvalue:%d, distance:%d\n", pxvalue, distance);
