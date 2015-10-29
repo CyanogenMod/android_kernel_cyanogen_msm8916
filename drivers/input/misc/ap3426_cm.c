@@ -1591,6 +1591,13 @@ static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 
 	ap3426_lock_mutex(ps_data);
 
+	err = ap3426_ps_enable(ps_data, enabled);
+
+	if (err < 0) {
+		rv = err;
+		goto out_unlock;
+	}
+
 #ifdef DI_AUTO_CAL
 	if (enabled == 1 && !ps_data->ps_calibrated) {
 		struct i2c_client *client = ps_data->client;
@@ -1610,11 +1617,8 @@ static int ap3426_ps_enable_set(struct sensors_classdev *sensors_cdev,
 		ap3426_enable_ps_interrupts(client);
 	}
 #endif
-	err = ap3426_ps_enable(ps_data, enabled);
 
-	if (err < 0)
-		rv = err;
-
+out_unlock:
 	ap3426_unlock_mutex(ps_data);
 
 	PS_RETURN("rv:%d", rv);
