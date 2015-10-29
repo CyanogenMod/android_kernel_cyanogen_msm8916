@@ -47,6 +47,7 @@
 #endif
 
 static struct mutex gsl_i2c_lock;
+static struct mutex gsl_wake_config_lock;
 
 /* Print Information */
 #ifdef GSL_DEBUG 
@@ -1467,19 +1468,26 @@ static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 {
 	struct gsl_ts_data *ts = ddata;
 	struct i2c_client *gsl_client = ts->client;
-#if 1
+	int old_gesture_flag;
+
+	mutex_lock(&gsl_wake_config_lock);
+	old_gesture_flag = gsl_gesture_flag;
 	if(buf[0] == '0'){
 		gsl_gesture_flag = 0;  
-		disable_irq_wake(gsl_client->irq);
+		if (old_gesture_flag)
+			disable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '1'){
 		gsl_gesture_flag = 1;
-		enable_irq_wake(gsl_client->irq);
+		if (!old_gesture_flag)
+			enable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '2'){
 	//enable character gesture
 		gsl_gesture_flag = 2;
-		enable_irq_wake(gsl_client->irq);
+		if (!old_gesture_flag)
+			enable_irq_wake(gsl_client->irq);
 	}
-#endif
+	mutex_unlock(&gsl_wake_config_lock);
+
 	return count;
 }
 static DEVICE_ATTR(gesture, 0664, gsl_sysfs_tpgesture_show, gsl_sysfs_tpgesturet_store);
@@ -2306,6 +2314,7 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 		goto exit_alloc_cinfo_failed;
 	}
 	mutex_init(&gsl_i2c_lock);
+	mutex_init(&gsl_wake_config_lock);
 		
 	ddata->client = client;
 	i2c_set_clientdata(client, ddata);
