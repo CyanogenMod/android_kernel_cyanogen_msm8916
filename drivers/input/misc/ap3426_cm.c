@@ -2423,7 +2423,7 @@ static int ap3426_init_client(struct i2c_client *client)
 	buf[2] = 0xFF;
 	buf[3] = 0XFF;
 
-	rv = i2c_smbus_write_block_data(client, AP3426_REG_ALS_THDL_L, 4, buf);
+	rv = i2c_smbus_write_i2c_block_data(client, AP3426_REG_ALS_THDL_L, 4, buf);
 	if (rv) {
 		dev_err(&client->dev, "error writing ALS config: %d\n", rv);
 		goto done;
@@ -2444,7 +2444,7 @@ static int ap3426_init_client(struct i2c_client *client)
 	buf[4] = data->ps_thd_h & 0xff;
 	buf[5] = data->ps_thd_h >> 8;
 
-	rv = i2c_smbus_write_block_data(client, AP3426_REG_PS_CAL_L, 6, buf);
+	rv = i2c_smbus_write_i2c_block_data(client, AP3426_REG_PS_CAL_L, 6, buf);
 	if (rv) {
 		dev_err(&client->dev, "error writing ALS config: %d\n", rv);
 		goto done;
