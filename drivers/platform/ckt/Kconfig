@@ -1,0 +1,24 @@
+# CK Telecom configuration options
+
+config MACH_CKT
+	bool "CK Telecom device"
+	depends on ARCH_MSM
+	help
+	  Support for CK Telecom products
+
+config MACH_CKT_MSM8939
+	bool "CK Telecom MSM8939"
+	depends on ARCH_MSM8916
+	select MACH_CKT
+	help
+	  Support for CK Telecom MSM8939 variants
+
+menu "CK Telecom board selection"
+
+config MACH_SPIRIT
+	bool "Spirit board"
+	select MACH_CKT_MSM8939
+	help
+	  Support for CK Telecom Spirit variant
+
+endmenu

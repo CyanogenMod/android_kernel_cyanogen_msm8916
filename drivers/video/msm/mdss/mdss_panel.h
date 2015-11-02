@@ -398,6 +398,7 @@ struct mdss_panel_info {
 	u32 min_height;
 	u32 min_fps;
 	u32 max_fps;
+	u32 idle_fps;
 
 	u32 cont_splash_enabled;
 	bool esd_rdy;

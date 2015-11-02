@@ -1,0 +1,92 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "../msm8939-pinctrl.dtsi"
+
+&soc {
+	tlmm_pinmux: pinctrl@1000000 {
+
+		pmx_i2c_6 {
+			/delete-property/ qcom,pins;
+		};
+
+		pmx_nfc_reset {
+			/delete-property/ qcom,pins;
+		};
+
+		pmx_rd_nfc_int {
+			/delete-property/ qcom,pins;
+		};
+
+		red_led_gpio {
+			qcom,pins = <&gp 22>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <1>;
+			label = "red_led_gpio";
+
+			red_led_gpio_default: default {
+				drive-strength = <6>;
+				bias-pull-up;
+			};
+
+			red_led_gpio_suspend: suspend {
+				drive-strength = <6>;
+				bias-pull-down;
+			};
+		};
+
+		tlmm_gpio_key {
+			qcom,pins = <&gp 107>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <1>;
+			label = "tlmm_gpio_key";
+			gpio_key_active: gpio_key_active {
+				drive-strength = <2>;
+				bias-pull-up;
+			};
+			gpio_key_suspend: gpio_key_suspend {
+				drive-strength = <2>;
+				bias-pull-up;
+			};
+		};
+
+		ltr553_int_pin {
+			qcom,pins = <&gp 113>;
+			qcom,pin-func = <0>;
+			qcom,num-grp-pins = <1>;
+			label = "ltr553-irq";
+
+			ltr553_default: ltr553_default {
+				drive-strength = <6>;
+				bias-pull-up;
+			};
+
+			ltr553_sleep: ltr553_sleep {
+				drive-strength = <2>;
+				bias-pull-down;
+			};
+		};
+
+		button_backlight_pin {
+			qcom,pins = <&gp 116>;
+			qcom,num-grp-pins = <1>;
+			qcom,pin-func = <0>;
+			label = "button-backlight-pin";
+
+			button_backlight_off: button_backlight_off {
+				drive-strength = <2>;
+				bias-disable;
+				output-low;
+			};
+		};
+	};
+};

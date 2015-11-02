@@ -64,7 +64,9 @@ dtb-$(CONFIG_ARCH_MSM8909) += msm8909-sim.dtb \
 	msm8208-1gb-rcm.dtb \
 	msm8208-qhd-cdp.dtb \
 	msm8208-qhd-rcm.dtb
-ifeq ($(CONFIG_MACH_HAIER_MSM8916),y)
+ifeq ($(CONFIG_MACH_CKT_MSM8939),y)
+dtb-$(CONFIG_ARCH_MSM8916) += msm8939-spirit.dtb
+else ifeq ($(CONFIG_MACH_HAIER_MSM8916),y)
 dtb-$(CONFIG_ARCH_MSM8916) += msm8916-g36c1h.dtb
 else ifeq ($(CONFIG_MACH_LONGCHEER_MSM8916),y)
 dtb-$(CONFIG_ARCH_MSM8916) += msm8916-qrd-l8150.dtb
@@ -117,7 +119,6 @@ dtb-$(CONFIG_ARCH_MSM8916) += msm8916-cdp.dtb \
 	msm8929-qrd-skulb.dtb \
 	msm8929-cdp-jdi.dtb
 endif
-
 dtb-$(CONFIG_ARCH_MSM8226) += msm8226-sim.dtb \
 	msm8226-fluid.dtb \
 	msm8226-v1-cdp.dtb \
