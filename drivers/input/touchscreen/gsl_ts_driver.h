@@ -131,6 +131,8 @@ struct gsl_ts_data{
 	#if 0
 	struct gsl_ts_platform_data *pdata;
 	#endif
+
+	struct mutex hw_lock;
 };
 
 #ifdef GSL_PROXIMITY_SENSOR
