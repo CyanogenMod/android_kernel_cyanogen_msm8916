@@ -24,8 +24,6 @@
 #if defined(CONFIG_FB)
 #include <linux/notifier.h>
 #include <linux/fb.h>
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-#include <linux/earlysuspend.h>
 #endif
 
 //#define GSL_DEBUG		//调试信息开关，打开则输出调试信息
@@ -110,8 +108,6 @@ struct gsl_ts_data{
 #endif
 	#if defined(CONFIG_FB)
 	struct notifier_block fb_notif;
-	#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	struct early_suspend pm;
 	#endif
 
 	struct gsl_touch_info		*cinfo;
