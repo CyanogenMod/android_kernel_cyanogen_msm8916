@@ -108,8 +108,6 @@ struct gsl_ts_data{
 	struct input_dev 		*input_dev_ps;
 	struct sensors_classdev ps_cdev;
 #endif
-	struct work_struct		work;
-	struct workqueue_struct 	*wq;
 	#if defined(CONFIG_FB)
 	struct notifier_block fb_notif;
 	#elif defined(CONFIG_HAS_EARLYSUSPEND)
