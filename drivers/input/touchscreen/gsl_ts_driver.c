@@ -1409,6 +1409,8 @@ static void gsl_enter_doze(struct gsl_ts_data *ts, bool bCharacterGesture)
 	gsl_start_core(ts->client);
 	msleep(1000);		
 #endif
+	WARN_ON(dozing);
+	dozing = true;
 
 	buf[0] = 0xa;
 	buf[1] = 0;
@@ -1425,21 +1427,23 @@ static void gsl_enter_doze(struct gsl_ts_data *ts, bool bCharacterGesture)
 	}
 	gsl_write_interface(ts->client,0x8,buf,4);
 	//gsl_gesture_status = GE_NOWORK;
-	msleep(10);
 	gsl_gesture_status = GE_ENABLE;
-	dozing = true;
 
-	dev_dbg(&ts->client->dev, "entering doze mode\n");
+	dev_dbg(&ts->client->dev, "entering doze mode (gesture mode:%d)\n",
+		(int) bCharacterGesture);
 }
 static void gsl_quit_doze(struct gsl_ts_data *ts)
 {
 	u8 buf[4] = {0};
 	//u32 tmp;
 
-	dozing = false;
+	WARN_ON(!dozing);
+
+	/* disable the IRQ while we go reset the peripheral */
+	disable_irq(ts->client->irq);
+
 	gsl_gesture_status = GE_DISABLE;
-	free_irq(ts->client->irq,ddata);
-		
+
 	gpio_direction_output(GSL_IRQ_GPIO_NUM,0);
 	gpio_set_value(GSL_RST_GPIO_NUM,0);
 	mdelay(5);
@@ -1466,6 +1470,11 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	gsl_load_fw(ddata->client,GSLX68X_FW_CONFIG,temp);
 	gsl_start_core(ddata->client);
 #endif
+	dozing = false;
+
+	/* all done, re-enable IRQ */
+	enable_irq(ts->client->irq);
+
 	dev_dbg(&ts->client->dev, "exiting doze mode\n");
 }
 
@@ -1995,14 +2004,6 @@ static void gsl_ts_resume(void)
 	#ifdef GSL_GESTURE
 		WARN_ON(!dozing);
 		gsl_quit_doze(ddata);
-			{
-			int err = 0;
-			//msleep(10);
-			err = request_irq(client->irq, gsl_ts_interrupt, IRQF_TRIGGER_RISING, client->name, ddata);
-			if (err < 0) {
-				dev_err(&client->dev, " request irq failed\n");
-			}
-			}
 	#else
 		gsl_power_on(client, true);
 		gpio_set_value(GSL_RST_GPIO_NUM, 1);
