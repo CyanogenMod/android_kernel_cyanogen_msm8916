@@ -414,9 +414,10 @@ static void gsl_load_fw(struct i2c_client *client,const struct fw_data *GSL_DOWN
 	u8 addr=0;
 	u32 source_line = 0;
 	u32 source_len = data_len;//ARRAY_SIZE(GSL_DOWNLOAD_DATA);
+	unsigned long start_time_jf;
 
 	print_info("=============gsl_load_fw start==============\n");
-
+	start_time_jf = jiffies;
 	for (source_line = 0; source_line < source_len; source_line++) 
 	{
 		/* init page trans, set the page val */
@@ -424,6 +425,8 @@ static void gsl_load_fw(struct i2c_client *client,const struct fw_data *GSL_DOWN
 		memcpy(buf,&GSL_DOWNLOAD_DATA[source_line].val,4);
 		gsl_write_interface(client, addr, buf, 4);	
 	}
+	dev_info(&client->dev, "gsl_load_fw: took %u ms\n",
+		jiffies_to_msecs(jiffies - start_time_jf));
 	print_info("=============gsl_load_fw end==============\n");
 }
 
@@ -791,6 +794,7 @@ static const struct file_operations gsl_seq_fops = {
 #endif
 
 #ifdef GSL_TIMER
+/** this function checks if the HW hung and resets it */
 static void gsl_timer_check_func(struct work_struct *work)
 {
 	struct gsl_ts_data *ts = ddata;
@@ -878,8 +882,10 @@ static void gsl_timer_check_func(struct work_struct *work)
 #endif
 
 queue_monitor_init_chip:
-	if(init_chip_flag)
+	if(init_chip_flag) {
+		dev_warn(&gsl_client->dev, "fw corruption detected in watchdog task\n");
 		gsl_sw_init(gsl_client);
+	}
 	
 	i2c_lock_flag = 0;
 
@@ -1048,6 +1054,8 @@ static void gsl_sw_init(struct i2c_client *client)
 	//struct fw_data *fw = GSLx68x_FW;
 	if(1==ddata->gsl_sw_flag)
 		return;
+
+	dev_dbg(&client->dev, "begin sw init\n");
 	ddata->gsl_sw_flag = 1;
 	
 	gpio_set_value(GSL_RST_GPIO_NUM, 0);
@@ -1100,6 +1108,7 @@ static void check_mem_data(struct i2c_client *client)
 	{
 		print_info("0xb4 ={0x%02x%02x%02x%02x}\n",
 			read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
+		dev_warn(&client->dev, "fw corruption detected, reloading\n");
 		gsl_sw_init(client);
 	}
 #endif	
@@ -1420,6 +1429,7 @@ static void gsl_enter_doze(struct gsl_ts_data *ts, bool bCharacterGesture)
 	gsl_gesture_status = GE_ENABLE;
 	dozing = true;
 
+	dev_dbg(&ts->client->dev, "entering doze mode\n");
 }
 static void gsl_quit_doze(struct gsl_ts_data *ts)
 {
@@ -1456,6 +1466,7 @@ static void gsl_quit_doze(struct gsl_ts_data *ts)
 	gsl_load_fw(ddata->client,GSLX68X_FW_CONFIG,temp);
 	gsl_start_core(ddata->client);
 #endif
+	dev_dbg(&ts->client->dev, "exiting doze mode\n");
 }
 
 static ssize_t gsl_sysfs_tpgesture_show(struct device *dev,
@@ -1905,9 +1916,9 @@ static irqreturn_t gsl_ts_interrupt(int irq, void *dev_id)
 static void gsl_ts_suspend(void)
 {
 	u32 tmp;
-//#ifndef GSL_GESTURE
+#ifndef GSL_GESTURE
 	struct i2c_client *client = ddata->client;
-//#endif
+#endif
 	print_info("==gslX68X_ts_suspend=\n");
 	//version info
 	print_info("[tp-gsl]the last time of debug:%x\n",TPD_DEBUG_TIME);
@@ -1943,24 +1954,9 @@ static void gsl_ts_suspend(void)
 
 /*Guesture Resume*/
 #ifdef GSL_GESTURE
-		if(gsl_gesture_flag == 1){
-			gsl_enter_doze(ddata, false);
-			return;
-		}
-		else if(gsl_gesture_flag == 2)
-		{
-			gsl_enter_doze(ddata, true);
-			return;
-		}
-		else
-		{
-			disable_irq_nosync(client->irq);
-			gpio_set_value(GSL_RST_GPIO_NUM, 0);		
-			gsl_power_on(client, false);
-		}
-#endif
-
-#ifndef GSL_GESTURE
+	/* always doze */
+	gsl_enter_doze(ddata, gsl_gesture_flag == 2);
+#else
 	disable_irq_nosync(client->irq);
 	gpio_set_value(GSL_RST_GPIO_NUM, 0);
 	gsl_power_on(client, false);
@@ -1997,8 +1993,8 @@ static void gsl_ts_resume(void)
 
 	/*Gesture Resume*/
 	#ifdef GSL_GESTURE
-		if((gsl_gesture_flag == 1)||(gsl_gesture_flag == 2) || dozing){
-			gsl_quit_doze(ddata);
+		WARN_ON(!dozing);
+		gsl_quit_doze(ddata);
 			{
 			int err = 0;
 			//msleep(10);
@@ -2007,14 +2003,6 @@ static void gsl_ts_resume(void)
 				dev_err(&client->dev, " request irq failed\n");
 			}
 			}
-		}
-		else
-		{
-			gsl_power_on(client, true);
-			gpio_set_value(GSL_RST_GPIO_NUM, 1);
-			msleep(20);
-			enable_irq(client->irq);		
-		}
 	#else
 		gsl_power_on(client, true);
 		gpio_set_value(GSL_RST_GPIO_NUM, 1);
