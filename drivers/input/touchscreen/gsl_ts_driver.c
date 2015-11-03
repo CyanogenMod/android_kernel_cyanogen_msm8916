@@ -1798,7 +1798,8 @@ static irqreturn_t gsl_ts_isr(int irq, void *priv)
 			else {
 				gsl_gesture_c = (char)(tmp_c & 0xff);
 				gsl_gesture_status = GE_WAKEUP;
-				print_info("gsl_obtain_gesture():tmp_c=%c\n",gsl_gesture_c);
+				dev_dbg(&client->dev, "wake up gesture: %#02x '%c'\n",
+					gsl_gesture_c, gsl_gesture_c);
 				wake_lock_timeout(&ddata->gesture_wake_lock,
 					GSL_GESTURE_WAKELOCK_DUR);
 
