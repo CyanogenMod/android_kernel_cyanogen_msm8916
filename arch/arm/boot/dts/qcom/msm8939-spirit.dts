@@ -1,0 +1,92 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 and
+* only version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*/
+
+/dts-v1/;
+
+#include "msm8939.dtsi"
+#include "msm8939-audio-internal_codec.dtsi"
+#include "spirit/msm8939-spirit.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM 8939 SPIRIT";
+	compatible = "qcom,msm8939";
+	qcom,board-id = <0x1000b 8>, <0x2000b 5>;
+};
+
+&i2c_4 {
+	smb1360_otg_supply: smb1360-chg-fg@14 {
+		compatible = "qcom,smb1360-chg-fg";
+		reg = <0x14>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <62 2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&smb_int_default>;
+		qcom,stat-pulsed-irq;
+		qcom,chg-inhibit-disabled;
+		qcom,fg-batt-capacity-mah = <2500>;
+		qcom,fg-cc-soc-coeff = <0x828E>;
+		qcom,float-voltage-mv = <4350>;
+		qcom,fg-cc-to-cv-mv = <4330>;
+		qcom,fg-voltage-min-mv = <3200>;
+		qcom,fg-voltage-empty-mv = <3200>;
+		qcom,fg-cutoff-voltage-mv = <3450>;
+		qcom,ibatt-standby-ma = <200>;
+		qcom,fg-soc-max = <90>;
+		qcom,fg-soc-min = <15>;
+		/delete-property/ qcom,fg-auto-recharge-soc;
+		qcom,fg-delta-soc = <1>;
+		qcom,thermistor-c1-coeff = <0x86C2>;
+		qcom,iterm-ma = <200>;
+		qcom,recharge-thresh-mv = <100>;
+		qcom,charging-timeout = <1536>;
+		qcom,otg-batt-curr-limit = <1500>;
+		qcom,thermal-mitigation = <1200 900 600 0>;
+		qcom,empty-soc-disabled;
+		regulator-name = "smb1360_otg_vreg";
+		qcom,fg-reset-at-pon;
+		qcom,fg-reset-thresold-mv = <250>;
+		qcom,parallel-charging-enabled;
+		qcom,max-parallel-current-ma = <0x12c>;
+		qcom,rsense-10mhom;
+		qcom,batt-id-disabled;
+		qcom,shdn-after-pwroff;
+		qcom,config-hard-thresholds;
+		qcom,soft-jeita-supported;
+		qcom,cold-bat-decidegc = <0>;
+		qcom,cool-bat-decidegc = <100>;
+		qcom,cool-bat-mv = <4200>;
+		qcom,cool-bat-ma = <450>;
+		qcom,warm-bat-decidegc = <450>;
+		qcom,warm-bat-mv = <0>;
+		qcom,warm-bat-ma = <0>;
+		qcom,hot-bat-decidegc = <600>;
+	};
+};
+
+&pm8916_chg {
+	status = "ok";
+};
+
+&pm8916_bms {
+	status = "ok";
+	qcom,disable-bms;
+};
+
+&pm8916_l17 {
+	regulator-always-on;
+};
+
+&soc {
+	qcom,lpm-workarounds {
+		/delete-property/ qcom,lpm-wa-skip-l2-spm;
+	};
+};
