@@ -32,8 +32,6 @@
 #if defined(CONFIG_FB)
 #include <linux/notifier.h>
 #include <linux/fb.h>
-#elif defined(CONFIG_HAS_EARLYSUSPEND) 
-#include <linux/earlysuspend.h>
 #endif
 #include <linux/firmware.h>
 #include <linux/proc_fs.h>
@@ -132,9 +130,6 @@ static void gsl_sw_init(struct i2c_client *client);
 
 #if defined(CONFIG_FB)
 static int fb_notifier_callback(struct notifier_block *self,unsigned long event, void *data);
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-static void gsl_early_suspend(struct early_suspend *handler);
-static void gsl_early_resume(struct early_suspend *handler);
 #endif
 
 #ifdef GSL_GESTURE
@@ -2046,67 +2041,6 @@ static int fb_notifier_callback(struct notifier_block *self,
 
 	return 0;
 }
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-static void gsl_early_suspend(struct early_suspend *handler)
-{
-	u32 tmp;
-	struct i2c_client *client = ddata->client;
-	print_info("==gslX68X_ts_suspend=\n");
-	//version info
-	print_info("[tp-gsl]the last time of debug:%x\n",TPD_DEBUG_TIME);
-
-	//if(1==ddata->gsl_sw_flag)
-	//	return;
-
-	ddata->gsl_halt_flag = 1;
-
-#ifdef TPD_PROC_DEBUG
-	if(gsl_proc_flag == 1){
-		return;
-	}
-#endif
-
-#ifdef GSL_ALG_ID
-	tmp = gsl_version_id();	
-	print_info("[tp-gsl]the version of alg_id:%x\n",tmp);
-#endif
-#ifdef GSL_TIMER	
-	cancel_delayed_work_sync(&gsl_timer_check_work);
-#endif	
-
-	disable_irq_nosync(client->irq);
-	gpio_set_value(GSL_RST_GPIO_NUM, 0);
-}
-
-static void gsl_early_resume(struct early_suspend *handler)
-{	
-	struct i2c_client *client = ddata->client;
-	print_info("==gslX68X_ts_resume=\n");
-	//if(1==ddata->gsl_sw_flag){
-	//	ddata->gsl_halt_flag = 0;
-	//	return;
-	//}
-
-	gpio_set_value(GSL_RST_GPIO_NUM, 1);
-	msleep(20);
-	gsl_reset_core(client);
-	gsl_start_core(client);
-	msleep(20);
-	check_mem_data(client);
-	enable_irq(client->irq);
-#ifdef TPD_PROC_DEBUG
-	if(gsl_proc_flag == 1){
-		return;
-	}
-#endif
-	
-#ifdef GSL_TIMER
-	queue_delayed_work(gsl_timer_workqueue, &gsl_timer_check_work, GSL_TIMER_CHECK_CIRCLE);
-#endif
-	
-	ddata->gsl_halt_flag = 0;
-
-}
 #endif
 
 #if defined(CONFIG_FB)
@@ -2327,11 +2261,6 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 		dev_err(&ddata->client->dev,
 			"Unable to register fb_notifier: %d\n",
 			err);
-	#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	ddata->pm.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-	ddata->pm.suspend = gsl_early_suspend;
-	ddata->pm.resume = gsl_early_resume;
-	register_early_suspend(&ddata->pm);
 	#endif
 
 	/*gesture resume*/
@@ -2458,8 +2387,6 @@ exit_irq_request_failed:
 	if (fb_unregister_client(&ddata->fb_notif))
 		dev_err(&client->dev,
 			"Error occurred while unregistering fb_notifier.\n");
-	#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	unregister_early_suspend(&ddata->pm);
 	#endif
  
 	input_unregister_device(ddata->idev);
