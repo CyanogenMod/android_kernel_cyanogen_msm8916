@@ -1646,11 +1646,12 @@ static void gsl_report_point(struct input_dev *idev, struct gsl_touch_info *cinf
 }
 
 
-static void gsl_report_work(struct work_struct *work)
+static irqreturn_t gsl_ts_isr(int irq, void *priv)
 {
 	int rc,tmp;
 	u8 buf[44] = {0};
 	int tmp1=0;
+	struct gsl_ts_data *ddata = priv;
 	struct gsl_touch_info *cinfo = ddata->cinfo;
 	struct i2c_client *client = ddata->client;
 	struct input_dev *idev = ddata->idev;
@@ -1836,7 +1837,7 @@ schedule:
 	i2c_lock_flag = 0;
 i2c_lock_schedule:
 #endif	
-	enable_irq(client->irq);
+	return IRQ_HANDLED;
 }
 
 static int gsl_request_input_dev(struct gsl_ts_data *ddata)
@@ -1905,20 +1906,6 @@ err_register_input_device_fail:
 	input_free_device(input_dev);			
 err_allocate_input_device_fail:
 	return err;
-}
-
-static irqreturn_t gsl_ts_interrupt(int irq, void *dev_id)
-{
-	struct i2c_client *client = ddata->client;
-	//print_info("gslX68X_ts_interrupt\n");
-	
-	disable_irq_nosync(client->irq);
-	
-	if (!work_pending(&ddata->work)) {
-		queue_work(ddata->wq, &ddata->work);
-	}
-	
-	return IRQ_HANDLED;
 }
 
 #if defined(CONFIG_FB)
@@ -2339,26 +2326,6 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	register_early_suspend(&ddata->pm);
 	#endif
 
-	/*init work queue*/
-	INIT_WORK(&ddata->work, gsl_report_work);
-	ddata->wq = create_singlethread_workqueue(dev_name(&client->dev));
-	if (!ddata->wq) {
-		err = -ESRCH;
-		goto exit_create_singlethread;
-	}
-
-	/*request irq */
-	client->irq = GSL_IRQ_NUM;
-	print_info("%s: ==request_irq=\n",__func__);
-	print_info("%s IRQ number is %d\n", client->name, client->irq);
-	err = request_irq(client->irq, gsl_ts_interrupt, IRQF_TRIGGER_RISING, client->name, ddata);
-	if (err < 0) {
-		dev_err(&client->dev, "gslX68X_probe: request irq failed\n");
-		goto exit_irq_request_failed;
-	}
-	
-	disable_irq_nosync(client->irq);
-
 	/*gesture resume*/
 	#ifdef GSL_GESTURE
 		gsl_GestureExternInt(gsl_model_extern,sizeof(gsl_model_extern) / sizeof(unsigned int) / 18);
@@ -2442,13 +2409,6 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 		create_ctp_proc();
 #endif
 
-	enable_irq(client->irq);
-
-#ifdef GSL_GESTURE
-	if (gsl_gesture_flag)
-		enable_irq_wake(client->irq);
-#endif
-
 	//zhangpeng add for TW test.
 	//add for The hardware information begin
 	version = gsl_ts_read_version();
@@ -2465,15 +2425,27 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	set_bit(KEY_POWER, gesture_bmp);
 #endif
 
+	/* TODO - get IRQ from device tree */
+	client->irq = GSL_IRQ_NUM;
+
+	dev_info(&client->dev, "%s IRQ number is %d\n", client->name, client->irq);
+	err = request_threaded_irq(client->irq, NULL, gsl_ts_isr,
+		IRQF_TRIGGER_RISING | IRQF_ONESHOT, client->name, ddata);
+	if (err < 0) {
+		dev_err(&client->dev, "gslX68X_probe: request irq failed\n");
+		goto exit_irq_request_failed;
+	}
+
+#ifdef GSL_GESTURE
+	if (gsl_gesture_flag)
+		enable_irq_wake(client->irq);
+#endif
+
 	//is_tp_driver_loaded = 1;
 	print_info("%s: ==probe over =\n",__func__);
 	return 0;
 
-
 exit_irq_request_failed:
-	cancel_work_sync(&ddata->work);
-	destroy_workqueue(ddata->wq);
-exit_create_singlethread:
 	#if defined(CONFIG_FB)
 	if (fb_unregister_client(&ddata->fb_notif))
 		dev_err(&client->dev,
@@ -2510,8 +2482,6 @@ static int  gsl_ts_remove(struct i2c_client *client)
 	gpio_free(GSL_RST_GPIO_NUM);
 	gpio_free(GSL_IRQ_GPIO_NUM);
 	
-	cancel_work_sync(&ddata->work);
-	destroy_workqueue(ddata->wq);
 	i2c_set_clientdata(client, NULL);
 	//sprd_free_gpio_irq(client->irq);
 	kfree(ddata->cinfo);
