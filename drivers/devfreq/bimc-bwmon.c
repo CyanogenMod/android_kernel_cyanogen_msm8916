@@ -40,6 +40,13 @@
 #define MON_MASK(m)		((m)->base + 0x298)
 #define MON_MATCH(m)		((m)->base + 0x29C)
 
+/*
+ * Don't set the threshold lower than this value. This helps avoid
+ * threshold IRQs when the traffic is close to zero and even small
+ * changes can exceed the threshold percentage.
+ */
+#define FLOOR_MBPS	100UL
+
 struct bwmon_spec {
 	bool wrap_on_thres;
 	bool overflow;
@@ -66,6 +73,11 @@ static void mon_enable(struct bwmon *m)
 static void mon_disable(struct bwmon *m)
 {
 	writel_relaxed(0x0, MON_EN(m));
+	/*
+	 * mon_disable() and mon_irq_clear(),
+	 * If latter goes first and count happen to trigger irq, we would
+	 * have the irq line high but no one handling it.
+	 */
 	mb();
 }
 
@@ -87,6 +99,10 @@ static void mon_irq_enable(struct bwmon *m)
 	val = readl_relaxed(MON_INT_EN(m));
 	val |= 0x1;
 	writel_relaxed(val, MON_INT_EN(m));
+	/*
+	 * make Sure irq enable complete for local and global
+	 * to avoid race with other monitor calls
+	 */
 	mb();
 }
 
@@ -103,6 +119,10 @@ static void mon_irq_disable(struct bwmon *m)
 	val = readl_relaxed(MON_INT_EN(m));
 	val &= ~0x1;
 	writel_relaxed(val, MON_INT_EN(m));
+	/*
+	 * make Sure irq disable complete for local and global
+	 * to avoid race with other monitor calls
+	 */
 	mb();
 }
 
@@ -198,7 +218,7 @@ static unsigned long meas_bw_and_set_irq(struct bw_hwmon *hw,
 	 * multiple times before the IRQ is processed.
 	 */
 	if (likely(!m->spec->wrap_on_thres))
-		limit = mbps_to_bytes(mbps, sample_ms, tol);
+		limit = mbps_to_bytes(max(mbps, FLOOR_MBPS), sample_ms, tol);
 	else
 		limit = mbps_to_bytes(max(mbps, 400UL), sample_ms, tol);
 

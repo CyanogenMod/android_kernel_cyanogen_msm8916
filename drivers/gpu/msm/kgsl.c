@@ -609,13 +609,12 @@ EXPORT_SYMBOL(kgsl_context_init);
  * detached by checking the KGSL_CONTEXT_PRIV_DETACHED bit in
  * context->priv.
  */
-int kgsl_context_detach(struct kgsl_context *context)
+static void kgsl_context_detach(struct kgsl_context *context)
 {
-	int ret;
 	struct kgsl_device *device;
 
 	if (context == NULL)
-		return -EINVAL;
+		return;
 
 	/*
 	 * Mark the context as detached to keep others from using
@@ -623,7 +622,7 @@ int kgsl_context_detach(struct kgsl_context *context)
 	 * we don't try to detach twice.
 	 */
 	if (test_and_set_bit(KGSL_CONTEXT_PRIV_DETACHED, &context->priv))
-		return -EINVAL;
+		return;
 
 	device = context->device;
 
@@ -631,7 +630,7 @@ int kgsl_context_detach(struct kgsl_context *context)
 
 	/* we need to hold device mutex to detach */
 	mutex_lock(&device->mutex);
-	ret = context->device->ftbl->drawctxt_detach(context);
+	context->device->ftbl->drawctxt_detach(context);
 	mutex_unlock(&device->mutex);
 
 	/*
@@ -645,8 +644,6 @@ int kgsl_context_detach(struct kgsl_context *context)
 	kgsl_del_event_group(&context->events);
 
 	kgsl_context_put(context);
-
-	return ret;
 }
 
 void
@@ -1596,30 +1593,60 @@ static void _kgsl_cmdbatch_timer(unsigned long data)
 	struct kgsl_device *device;
 	struct kgsl_cmdbatch *cmdbatch = (struct kgsl_cmdbatch *) data;
 	struct kgsl_cmdbatch_sync_event *event;
+	struct adreno_context *drawctxt;
 
 	if (cmdbatch == NULL || cmdbatch->context == NULL)
 		return;
+
+	drawctxt = ADRENO_CONTEXT(cmdbatch->context);
+	/* We are in timer context, this can be non-bh */
+	spin_lock(&drawctxt->lock);
+	set_bit(ADRENO_CONTEXT_CMDBATCH_FLAG_FENCE_LOG,
+		&drawctxt->flags);
+	spin_lock(&cmdbatch->lock);
+	if (list_empty(&cmdbatch->synclist))
+		goto done;
 
 	device = cmdbatch->context->device;
 
 	dev_err(device->dev,
 		"kgsl: possible gpu syncpoint deadlock for context %d timestamp %d\n",
 		cmdbatch->context->id, cmdbatch->timestamp);
+	dev_err(device->dev, " Active sync points:\n");
 
-	set_bit(CMDBATCH_FLAG_FENCE_LOG, &cmdbatch->priv);
-	kgsl_context_dump(cmdbatch->context);
-	clear_bit(CMDBATCH_FLAG_FENCE_LOG, &cmdbatch->priv);
-
-	spin_lock(&cmdbatch->lock);
-	/* Print all the fences */
+	/* Print all the pending sync objects */
 	list_for_each_entry(event, &cmdbatch->synclist, node) {
-		if (KGSL_CMD_SYNCPOINT_TYPE_FENCE == event->type &&
-			event->handle && event->handle->fence)
-			kgsl_sync_fence_log(event->handle->fence);
-	}
-	spin_unlock(&cmdbatch->lock);
-	dev_err(device->dev, "--gpu syncpoint deadlock print end--\n");
+		switch (event->type) {
+		case KGSL_CMD_SYNCPOINT_TYPE_TIMESTAMP: {
+			unsigned int retired;
 
+			kgsl_readtimestamp(event->device,
+				event->context, KGSL_TIMESTAMP_RETIRED,
+					&retired);
+
+			dev_err(device->dev,
+				"  [timestamp] context %d timestamp %d (retired %d)\n",
+				event->context->id, event->timestamp, retired);
+			break;
+		}
+		case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
+			if (event->handle && event->handle->fence) {
+				set_bit(CMDBATCH_FLAG_FENCE_LOG,
+					&cmdbatch->priv);
+				kgsl_sync_fence_log(event->handle->fence);
+				clear_bit(CMDBATCH_FLAG_FENCE_LOG,
+					&cmdbatch->priv);
+			} else
+				dev_err(device->dev, "  fence: invalid\n");
+			break;
+		}
+	}
+
+done:
+	spin_unlock(&cmdbatch->lock);
+	clear_bit(ADRENO_CONTEXT_CMDBATCH_FLAG_FENCE_LOG,
+		&drawctxt->flags);
+	spin_unlock(&drawctxt->lock);
 }
 
 /**
@@ -2582,14 +2609,15 @@ long kgsl_ioctl_drawctxt_destroy(struct kgsl_device_private *dev_priv,
 {
 	struct kgsl_drawctxt_destroy *param = data;
 	struct kgsl_context *context;
-	long result;
 
 	context = kgsl_context_get_owner(dev_priv, param->drawctxt_id);
+	if (context == NULL)
+		return -EINVAL;
 
-	result = kgsl_context_detach(context);
-
+	kgsl_context_detach(context);
 	kgsl_context_put(context);
-	return result;
+
+	return 0;
 }
 
 static long _sharedmem_free_entry(struct kgsl_mem_entry *entry)

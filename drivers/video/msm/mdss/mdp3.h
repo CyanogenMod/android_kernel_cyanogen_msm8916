@@ -25,15 +25,19 @@
 #include "mdss_fb.h"
 #include "mdss.h"
 
-#define MDP_VSYNC_CLK_RATE	19200000
-#define MDP_CORE_CLK_RATE_SVS	160000000
-#define MDP_CORE_CLK_RATE_SUPER_SVS	200000000
-#define MDP_CORE_CLK_RATE_MAX	307200000
+#define MDP_VSYNC_CLK_RATE			19200000
+#define MDP_CORE_CLK_RATE_WEARABLE_NOM		50000000
+#define MDP_CORE_CLK_RATE_WEARABLE_SVS		80000000
+#define MDP_CORE_CLK_RATE_WEARABLE_SUPER_SVS	100000000
+#define MDP_CORE_CLK_RATE_SVS			160000000
+#define MDP_CORE_CLK_RATE_SUPER_SVS		200000000
+#define MDP_CORE_CLK_RATE_MAX			307200000
 
 /* PPP cant work at SVS for panel res above qHD */
 #define SVS_MAX_PIXEL		(540 * 960)
 
 #define KOFF_TIMEOUT msecs_to_jiffies(84)
+#define WAIT_DMA_TIMEOUT msecs_to_jiffies(84)
 
 enum  {
 	MDP3_CLK_AHB,
@@ -186,6 +190,7 @@ struct mdp3_hw_resource {
 	struct regulator *fs;
 	bool fs_ena;
 	u8 smart_blit_en;
+	bool solid_fill_vote_en;
 };
 
 struct mdp3_img_data {

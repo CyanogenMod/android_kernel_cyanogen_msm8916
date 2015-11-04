@@ -13,7 +13,7 @@ Required properties:
 			 registers.
 			"kgsl_3d0_shader_memory" gives the physical address and length of
 			device shader memory.
-			"efuse_memory" gives the physical address and length of core PTE memory.
+			"qfprom_memory" gives the physical address and length of qfprom memory.
 - interrupts:		Interrupt mapping for GPU IRQ.
 - interrupt-names:	String property to describe the name of the interrupt.
 - qcom,id:		An integer used as an identification number for the device.
@@ -130,7 +130,7 @@ Example of A330 GPU in MSM8916:
 		reg = <0x01c00000 0x10000
 		       0x01c20000 0x20000
 		       0x0005c00c 0x8>;
-		reg-names = "kgsl_3d0_reg_memory" , "kgsl_3d0_shader_memory" , "efuse_memory";
+		reg-names = "kgsl_3d0_reg_memory" , "kgsl_3d0_shader_memory" , "qfprom_memory";
 		interrupts = <0 33 0>;
 		interrupt-names = "kgsl_3d0_irq";
 		qcom,id = <0>;

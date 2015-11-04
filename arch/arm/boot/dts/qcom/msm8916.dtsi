@@ -310,6 +310,7 @@
 		clocks = <&clock_gcc clk_gpll0_ao_clk_src>,
 			 <&clock_gcc clk_a53sspll>;
 		clock-names = "clk-4", "clk-5";
+		#clock-cells = <1>;
 		qcom,speed0-bin-v0 =
 			<          0 0>,
 			<  200000000 1>,
@@ -353,7 +354,6 @@
 			< 1152000000 7>,
 			< 1209600000 8>,
 			< 1363200000 9>;
-		#clock-cells = <1>;
 	};
 
 	cpubw: qcom,cpubw {
@@ -1363,10 +1363,8 @@
 		clocks = <&clock_rpm clk_xo_wlan_clk>,
 			 <&clock_rpm clk_rf_clk2>,
 			 <&clock_debug clk_gcc_debug_mux>,
-			 <&clock_gcc clk_wcnss_m_clk>,
-			 <&clock_gcc clk_gcc_snoc_qosgen_clk>;
-		clock-names = "xo", "rf_clk", "measure", "wcnss_debug",
-				"snoc_qosgen";
+			 <&clock_gcc clk_wcnss_m_clk>;
+		clock-names = "xo", "rf_clk", "measure", "wcnss_debug";
 
 		qcom,has-autodetect-xo;
 		qcom,wlan-rx-buff-count = <512>;

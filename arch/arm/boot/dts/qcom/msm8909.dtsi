@@ -125,6 +125,13 @@
 			reg = <0x0 0x83000000 0x0 0xc00000>;
 			label = "cont_splash_mem";
 		};
+
+		wb_mem: wb_region@83c00000 {
+			linux,reserve-contiguous-region;
+			linux,reserve-region;
+			reg = <0x0 0x83c00000 0x0 0xc00000>;
+			label = "wb_mem";
+		};
 	};
 
 	soc: soc { };
@@ -280,7 +287,7 @@
 			<          0 0>,
 			<  400000000 4>,
 			<  800000000 5>,
-			< 1305600000 7>;
+			< 1267200000 7>;
 		qcom,speed2-bin-v0 =
 			<          0 0>,
 			<  400000000 4>,
@@ -313,7 +320,7 @@
 	};
 
 	qcom,cpu-bwmon {
-		compatible = "qcom,bimc-bwmon";
+		compatible = "qcom,bimc-bwmon2";
 		reg = <0x408000 0x300>, <0x401000 0x200>;
 		reg-names = "base", "global_base";
 		interrupts = <0 183 4>;
@@ -339,7 +346,7 @@
 			 < 1094400 >,
 			 < 1190400 >,
 			 < 1248000 >,
-			 < 1305600 >;
+			 < 1267200 >;
 	};
 
 
@@ -459,6 +466,11 @@
 		qcom,freq-mitigation-control-mask = <0x01>;
 		qcom,online-hotplug-core;
 		qcom,therm-reset-temp = <115>;
+		qcom,disable-cx-phase-ctrl;
+		qcom,disable-gfx-phase-ctrl;
+		qcom,disable-vdd-mx;
+		qcom,disable-psm;
+		qcom,disable-ocr;
 		qcom,vdd-restriction-temp = <5>;
 		qcom,vdd-restriction-temp-hysteresis = <10>;
 		vdd-dig-supply = <&pm8909_s1_floor_corner>;
@@ -650,6 +662,7 @@
 		qcom,rx-ring-size = <32>;
 		qcom,no-cpu-affinity;
 		qcom,max-rx-mtu = <4096>;
+		qcom,fast-shutdown;
 	};
 
 	qcom,smdtty {

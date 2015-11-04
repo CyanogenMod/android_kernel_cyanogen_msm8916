@@ -1692,7 +1692,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 	case CPUFREQ_GOV_LIMITS:
 		__cpufreq_driver_target(policy,
 				policy->cur, CPUFREQ_RELATION_L);
-
 		for_each_cpu(j, policy->cpus) {
 			pcpu = &per_cpu(cpuinfo, j);
 

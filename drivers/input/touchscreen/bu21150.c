@@ -62,10 +62,6 @@
 #define BU21150_MAX_OPS_LOAD_UA	150000
 #define BU21150_PIN_ENABLE_DELAY_US		1000
 #define BU21150_PINCTRL_VALID_STATE_CNT		2
-#define	BU21150_RESET_DURATION_US		10
-#define	BU21150_HOLD_DURATION_US		10
-#define BU21150_REG_INT_RUN_ENB_DELAY1_MS	70
-#define BU21150_REG_INT_RUN_ENB_DELAY2_US	1000
 
 #define AFE_SCAN_DEFAULT			0x00
 #define AFE_SCAN_SELF_CAP			0x01
@@ -115,7 +111,6 @@ struct bu21150_data {
 	struct bu21150_ioctl_get_frame_data frame_get;
 	struct mutex mutex_frame;
 	struct mutex mutex_wake;
-	struct mutex mutex_irq;
 	bool irq_enabled;
 	/* frame work */
 	u8 frame_work[MAX_FRAME_SIZE];
@@ -143,7 +138,6 @@ struct bu21150_data {
 	int mod_en_gpio;
 	int disp_vsn_gpio;
 	int ddic_rst_gpio;
-	int irq_count;
 	const char *panel_model;
 	const char *afe_version;
 	const char *pitch_type;
@@ -200,6 +194,7 @@ static void get_frame_timer_handler(unsigned long data);
 static void get_frame_timer_delete(void);
 static int bu21150_fb_suspend(struct device *dev);
 static int bu21150_fb_early_resume(struct device *dev);
+static int bu21150_fb_resume(struct device *dev);
 static int fb_notifier_callback(struct notifier_block *self,
 					unsigned long event, void *data);
 
@@ -207,31 +202,6 @@ static int fb_notifier_callback(struct notifier_block *self,
 static struct spi_device *g_client_bu21150;
 static int g_io_opened;
 static struct timer_list get_frame_timer;
-
-static void bu21150_enable_irq(struct bu21150_data *ts)
-{
-	mutex_lock(&ts->mutex_irq);
-	if (!ts->irq_count) {
-		enable_irq(ts->client->irq);
-		ts->irq_count++;
-	} else {
-		pr_err("%s: irq is already enabled\n", __func__);
-	}
-	mutex_unlock(&ts->mutex_irq);
-}
-
-static void bu21150_disable_irq(struct bu21150_data *ts)
-{
-
-	mutex_lock(&ts->mutex_irq);
-	if (ts->irq_count) {
-		disable_irq(ts->client->irq);
-		ts->irq_count--;
-	} else {
-		pr_err("%s: irq is already disabled\n", __func__);
-	}
-	mutex_unlock(&ts->mutex_irq);
-}
 
 static ssize_t bu21150_wake_up_enable_store(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
@@ -281,14 +251,9 @@ static ssize_t bu21150_trigger_esd_store(struct kobject *kobj,
 {
 	struct bu21150_data *ts = spi_get_drvdata(g_client_bu21150);
 
-	if (!ts->irq_enabled) {
-		pr_err("%s: irq is not requested\n", __func__);
-		return -EINVAL;
-	}
-
-	bu21150_disable_irq(ts);
+	disable_irq(ts->client->irq);
 	msleep(ESD_TEST_TIMER_MS);
-	bu21150_enable_irq(ts);
+	enable_irq(ts->client->irq);
 
 	return count;
 }
@@ -1004,7 +969,6 @@ static int bu21150_probe(struct spi_device *client)
 		device_init_wakeup(&client->dev, ts->wake_up);
 
 	mutex_init(&ts->mutex_wake);
-	mutex_init(&ts->mutex_irq);
 
 	return 0;
 
@@ -1034,6 +998,7 @@ err_parse_dt:
 static int bu21150_fb_suspend(struct device *dev)
 {
 	struct bu21150_data *ts = spi_get_drvdata(g_client_bu21150);
+	struct spi_device *client = ts->client;
 	int rc;
 	u8 buf1[2] = {0x00, 0x00};
 	u8 buf2[2] = {0x04, 0x00};
@@ -1072,7 +1037,7 @@ static int bu21150_fb_suspend(struct device *dev)
 			__func__, rc);
 
 	if (!ts->wake_up) {
-		bu21150_disable_irq(ts);
+		disable_irq(client->irq);
 		rc = bu21150_pin_enable(ts, false);
 		if (rc) {
 			dev_err(&ts->client->dev,
@@ -1117,36 +1082,16 @@ static int bu21150_fb_early_resume(struct device *dev)
 			return rc;
 		}
 
-		rc = bu21150_pinctrl_select(ts, true);
-		if (rc < 0) {
-			dev_err(&ts->client->dev,
-				"failed to enable panel pins\n");
-			goto err_pin_enable;
-		}
-
 		/*
 		 * Wait before pin enablement to comply
 		 * with hardware requirement.
 		 */
-		usleep_range(BU21150_PIN_ENABLE_DELAY_US,
-			BU21150_PIN_ENABLE_DELAY_US +
-			BU21150_HOLD_DURATION_US);
-
-		rc = bu21150_pinctrl_select(ts, false);
-		if (rc < 0) {
-			dev_err(&ts->client->dev,
-				"failed to toggle AFE reset pin\n");
-			goto err_pin_enable;
-		}
-
-		usleep_range(BU21150_RESET_DURATION_US,
-				BU21150_RESET_DURATION_US +
-				BU21150_HOLD_DURATION_US);
+		usleep(BU21150_PIN_ENABLE_DELAY_US);
 
 		rc = bu21150_pin_enable(ts, true);
 		if (rc) {
 			dev_err(&ts->client->dev,
-				"failed to enable pin\n");
+				"failed to enable panel power\n");
 			goto err_pin_enable;
 		}
 	}
@@ -1157,18 +1102,8 @@ static int bu21150_fb_early_resume(struct device *dev)
 	rc = bu21150_write_register(REG_INT_RUN_ENB, (u16)sizeof(buf), buf);
 	if (rc)
 		dev_err(&ts->client->dev,
-			"%s: failed to write %d to REG_INT_RUN_ENB (%d)\n",
-			__func__, buf[0], rc);
-	msleep(BU21150_REG_INT_RUN_ENB_DELAY1_MS);
-
-	buf[0] = 0x03;
-	rc = bu21150_write_register(REG_INT_RUN_ENB, (u16)sizeof(buf), buf);
-	if (rc)
-		dev_err(&ts->client->dev,
-			"%s: failed to write %d to REG_INT_RUN_ENB (%d)\n",
-			__func__, buf[0], rc);
-	usleep_range(BU21150_REG_INT_RUN_ENB_DELAY2_US,
-		BU21150_REG_INT_RUN_ENB_DELAY2_US + BU21150_HOLD_DURATION_US);
+			"%s: failed to write to REG_INT_RUN_ENB (%d)\n",
+			__func__, rc);
 
 	/* empty list */
 	mutex_lock(&ts->mutex_frame);
@@ -1188,6 +1123,23 @@ err_pin_enable:
 	bu21150_power_enable(ts, false);
 
 	return rc;
+}
+
+static int bu21150_fb_resume(struct device *dev)
+{
+	struct bu21150_data *ts = spi_get_drvdata(g_client_bu21150);
+	int rc;
+	u8 buf[2] = {0x01, 0x00};
+
+	buf[0] = 0x03;
+	rc = bu21150_write_register(REG_INT_RUN_ENB, (u16)sizeof(buf), buf);
+	if (rc)
+		dev_err(&ts->client->dev,
+			"%s: failed to write %d to REG_INT_RUN_ENB (%d)\n",
+			__func__, buf[0], rc);
+	usleep(1000);
+
+	return 0;
 }
 
 static int fb_notifier_callback(struct notifier_block *self,
@@ -1223,6 +1175,9 @@ static int fb_notifier_callback(struct notifier_block *self,
 							FB_BLANK_POWERDOWN) {
 			if (!cont_splash)
 				bu21150_fb_suspend(dev);
+		} else if (event == FB_EVENT_BLANK && *blank ==
+							FB_BLANK_UNBLANK) {
+			bu21150_fb_resume(dev);
 		}
 	}
 
@@ -1276,7 +1231,6 @@ static int bu21150_remove(struct spi_device *client)
 	struct bu21150_data *ts = spi_get_drvdata(client);
 	int i;
 
-	mutex_destroy(&ts->mutex_irq);
 	mutex_destroy(&ts->mutex_wake);
 	if (ts->wake_up)
 		device_init_wakeup(&client->dev, 0);
@@ -1422,7 +1376,7 @@ static long bu21150_ioctl_get_frame(unsigned long arg)
 	if (!ts->irq_enabled) {
 		ret = request_threaded_irq(ts->client->irq, NULL,
 					bu21150_irq_thread,
-					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 					ts->client->dev.driver->name, ts);
 		if (ret) {
 			dev_err(&ts->client->dev, "Failed to register interrupt\n");
@@ -1430,7 +1384,6 @@ static long bu21150_ioctl_get_frame(unsigned long arg)
 		}
 
 		ts->irq_enabled = true;
-		ts->irq_count = 1;
 	}
 
 	if (ts->timeout_enb == 1)
@@ -1501,12 +1454,12 @@ static long bu21150_ioctl_reset(unsigned long reset)
 	}
 
 	if (reset == BU21150_RESET_LOW) {
-		bu21150_disable_irq(ts);
+		disable_irq(ts->client->irq);
 		rc = bu21150_pinctrl_select(ts, false);
 		if (rc) {
 			pr_err("%s: failed to pull low reset line\n",
 								__func__);
-			bu21150_enable_irq(ts);
+			enable_irq(ts->client->irq);
 			return rc;
 		}
 	} else if (reset == BU21150_RESET_HIGH) {
@@ -1516,7 +1469,7 @@ static long bu21150_ioctl_reset(unsigned long reset)
 								__func__);
 			return rc;
 		}
-		bu21150_enable_irq(ts);
+		enable_irq(ts->client->irq);
 	}
 
 reset_exit:
@@ -1645,7 +1598,7 @@ static long bu21150_ioctl_resume(void)
 
 	ts->force_unblock_flag = 0;
 
-	bu21150_enable_irq(ts);
+	enable_irq(ts->client->irq);
 
 	return 0;
 }

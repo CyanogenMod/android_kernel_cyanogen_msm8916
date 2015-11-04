@@ -30,6 +30,7 @@
 #include <linux/atomic.h>
 #include <linux/msm_audio_ion.h>
 #include <linux/mm.h>
+#include <linux/ratelimit.h>
 
 #include <asm/ioctls.h>
 
@@ -957,6 +958,7 @@ struct audio_client *q6asm_audio_client_alloc(app_cb cb, void *priv)
 	int n;
 	int lcnt = 0;
 	int rc = 0;
+	static DEFINE_RATELIMIT_STATE(rl, 5*HZ, 1);
 
 	ac = kzalloc(sizeof(struct audio_client), GFP_KERNEL);
 	if (!ac) {
@@ -985,7 +987,8 @@ struct audio_client *q6asm_audio_client_alloc(app_cb cb, void *priv)
 			ac);
 
 	if (ac->apr == NULL) {
-		pr_err("%s: Registration with APR failed\n", __func__);
+		if (__ratelimit(&rl))
+			pr_err("%s: Registration with APR failed\n", __func__);
 		mutex_unlock(&session_lock);
 		goto fail_apr1;
 	}
@@ -1440,8 +1443,13 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 		pr_err("%s: data NULL\n", __func__);
 		return -EINVAL;
 	}
-	if (ac->session <= 0 || ac->session > 8 ||
-		!q6asm_is_valid_audio_client(ac)) {
+	if (!q6asm_is_valid_audio_client(ac)) {
+		pr_err("%s: audio client pointer is invalid, ac = %p\n",
+				__func__, ac);
+		return -EINVAL;
+	}
+
+	if (ac->session <= 0 || ac->session > 8) {
 		pr_err("%s: Session ID is invalid, session = %d\n", __func__,
 			ac->session);
 		return -EINVAL;

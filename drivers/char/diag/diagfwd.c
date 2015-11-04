@@ -425,13 +425,13 @@ int diag_process_smd_read_data(struct diag_smd_info *smd_info, void *buf,
 	if (write_length > 0) {
 		spin_lock_irqsave(&smd_info->in_busy_lock, flags);
 		*in_busy_ptr = 1;
+		spin_unlock_irqrestore(&smd_info->in_busy_lock, flags);
 		err = diag_mux_write(DIAG_LOCAL_PROC, write_buf, write_length,
 				     ctxt);
 		if (err) {
 			pr_err_ratelimited("diag: In %s, diag_device_write error: %d\n",
 					   __func__, err);
 		}
-		spin_unlock_irqrestore(&smd_info->in_busy_lock, flags);
 	}
 
 	return 0;
@@ -1025,6 +1025,34 @@ int diag_cmd_log_on_demand(unsigned char *src_buf, int src_len,
 	return write_len;
 }
 
+int diag_cmd_get_mobile_id(unsigned char *src_buf, int src_len,
+			   unsigned char *dest_buf, int dest_len)
+{
+	int write_len = 0;
+	struct diag_pkt_header_t *header = NULL;
+	struct diag_cmd_ext_mobile_rsp_t rsp;
+
+	if (!src_buf || src_len != sizeof(*header) || !dest_buf ||
+	    dest_len < sizeof(rsp))
+		return -EIO;
+
+	header = (struct diag_pkt_header_t *)src_buf;
+	rsp.header.cmd_code = header->cmd_code;
+	rsp.header.subsys_id = header->subsys_id;
+	rsp.header.subsys_cmd_code = header->subsys_cmd_code;
+	rsp.version = 2;
+	rsp.padding[0] = 0;
+	rsp.padding[1] = 0;
+	rsp.padding[2] = 0;
+	rsp.family = 0;
+	rsp.chip_id = (uint32_t)socinfo_get_id();
+
+	memcpy(dest_buf, &rsp, sizeof(rsp));
+	write_len += sizeof(rsp);
+
+	return write_len;
+}
+
 int diag_check_common_cmd(struct diag_pkt_header_t *header)
 {
 	int i;
@@ -1187,6 +1215,18 @@ int diag_process_apps_pkt(unsigned char *buf, int len)
 		if (write_len > 0)
 			encode_rsp_and_send(write_len - 1);
 		return 0;
+	}
+	/* Mobile ID Rsp */
+	else if ((*buf == DIAG_CMD_DIAG_SUBSYS) &&
+		(*(buf+1) == DIAG_SS_PARAMS) &&
+		(*(buf+2) == DIAG_EXT_MOBILE_ID) && (*(buf+3) == 0x0)) {
+		write_len = diag_cmd_get_mobile_id(buf, len,
+						   driver->apps_rsp_buf,
+						   APPS_BUF_SIZE);
+		if (write_len > 0) {
+			encode_rsp_and_send(write_len - 1);
+			return 0;
+		}
 	}
 	 /*
 	  * If the apps processor is master and no other
@@ -1523,16 +1563,6 @@ static int diagfwd_mux_write_done(unsigned char *buf, int len, int buf_ctxt,
 		if (peripheral >= 0 && peripheral < NUM_SMD_DATA_CHANNELS) {
 			smd_info = &driver->smd_data[peripheral];
 			diag_smd_reset_buf(smd_info, num);
-			/*
-			 * Flush any work that is currently pending on the data
-			 * channels. This will ensure that the next read is not
-			 * missed.
-			 */
-			if (driver->logging_mode == MEMORY_DEVICE_MODE &&
-					ctxt == DIAG_MEMORY_DEVICE_MODE) {
-				flush_workqueue(smd_info->wq);
-				wake_up(&driver->smd_wait_q);
-			}
 		} else if (peripheral == APPS_DATA) {
 			diagmem_free(driver, (unsigned char *)buf,
 				     POOL_TYPE_HDLC);
