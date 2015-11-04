@@ -1478,25 +1478,14 @@ static ssize_t gsl_sysfs_tpgesture_show(struct device *dev,
 static ssize_t gsl_sysfs_tpgesturet_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct gsl_ts_data *ts = ddata;
-	struct i2c_client *gsl_client = ts->client;
-	int old_gesture_flag;
-
 	mutex_lock(&ddata->hw_lock);
-	old_gesture_flag = gsl_gesture_flag;
 	if(buf[0] == '0'){
 		gsl_gesture_flag = 0;  
-		if (old_gesture_flag)
-			disable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '1'){
 		gsl_gesture_flag = 1;
-		if (!old_gesture_flag)
-			enable_irq_wake(gsl_client->irq);
 	}else if(buf[0] == '2'){
 	//enable character gesture
 		gsl_gesture_flag = 2;
-		if (!old_gesture_flag)
-			enable_irq_wake(gsl_client->irq);
 	}
 	mutex_unlock(&ddata->hw_lock);
 
@@ -2431,6 +2420,57 @@ static const struct i2c_device_id gsl_ts_id[] = {
 	{ }
 };
 
+#ifdef CONFIG_PM
+static int gsl_ts_pm_suspend(struct device *dev)
+{
+	struct gsl_ts_data *ddata = dev_get_drvdata(dev);
+
+#ifdef GSL_GESTURE
+	/* expect the screen to be blanked when suspended */
+	if (WARN_ON(!dozing))
+		return -EAGAIN;
+#endif
+
+	/* there shouldn't be any pending delayed work when dozing */
+	if (WARN_ON(delayed_work_pending(&gsl_timer_check_work)))
+		return -EAGAIN;
+
+	disable_irq(ddata->client->irq);
+
+#ifdef GSL_GESTURE
+	if (gsl_gesture_flag) {
+		dev_dbg(dev, "suspend: wake up enabled\n");
+		enable_irq_wake(ddata->client->irq);
+	} else {
+		dev_dbg(dev, "suspend: wake up disabled\n");
+	}
+#else
+	dev_dbg(dev, "suspend: wake up disabled\n");
+#endif
+
+	return 0;
+}
+
+static int gsl_ts_pm_resume(struct device *dev)
+{
+	struct gsl_ts_data *ddata = dev_get_drvdata(dev);
+
+#ifdef GSL_GESTURE
+	if (gsl_gesture_flag)
+		disable_irq_wake(ddata->client->irq);
+#endif
+
+	enable_irq(ddata->client->irq);
+
+	dev_dbg(dev, "resume\n");
+	return 0;
+}
+
+SIMPLE_DEV_PM_OPS(gsl_ts_pm_ops, gsl_ts_pm_suspend, gsl_ts_pm_resume);
+#else
+#define gsl_ts_pm_ops NULL
+#endif /* CONFIG_PM */
+
 MODULE_DEVICE_TABLE(i2c, gsl_ts_id);
 
 #if defined(CONFIG_FB)
@@ -2447,6 +2487,7 @@ static struct i2c_driver gsl_ts_driver = {
 		.name = GSL_TS_NAME,
         .owner    = THIS_MODULE,
 		.of_match_table = gsl_match_table,
+		.pm = &gsl_ts_pm_ops,
 	},
 	.probe = gsl_ts_probe,
 	.remove = gsl_ts_remove,
