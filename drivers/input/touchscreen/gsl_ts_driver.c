@@ -1796,13 +1796,15 @@ static irqreturn_t gsl_ts_isr(int irq, void *priv)
 				gsl_gesture_c = (char)(tmp_c & 0xff);
 				gsl_gesture_status = GE_WAKEUP;
 				print_info("gsl_obtain_gesture():tmp_c=%c\n",gsl_gesture_c);
+				wake_lock_timeout(&ddata->gesture_wake_lock,
+					GSL_GESTURE_WAKELOCK_DUR);
+
 				//input_report_key(tpd->dev,key_data,1);
 				input_report_key(idev, KEY_POWER,1);
 				input_sync(idev);
 				//input_report_key(tpd->dev,key_data,0);
 				input_report_key(idev,KEY_POWER,0);
 				input_sync(idev);
-				mdelay(50);
 			}
 			goto schedule;
 		}
@@ -2349,6 +2351,8 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 #ifdef GSL_GESTURE
 	set_bit(KEY_POWER, gesture_bmp);
+	wake_lock_init(&ddata->gesture_wake_lock,
+		WAKE_LOCK_SUSPEND, "gsl_ts_gesture");
 #endif
 
 	/* TODO - get IRQ from device tree */
@@ -2372,6 +2376,9 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	return 0;
 
 exit_irq_request_failed:
+#ifdef GSL_GESTURE
+	wake_lock_destroy(&ddata->gesture_wake_lock);
+#endif
 	#if defined(CONFIG_FB)
 	if (fb_unregister_client(&ddata->fb_notif))
 		dev_err(&client->dev,
@@ -2397,6 +2404,9 @@ static int  gsl_ts_remove(struct i2c_client *client)
 
 	print_info("==gslX68X_ts_remove=\n");
 	
+#ifdef GSL_GESTURE
+	wake_lock_destroy(&ddata->gesture_wake_lock);
+#endif
 	if (fb_unregister_client(&ddata->fb_notif))
 			dev_err(&client->dev,"Error occurred while unregistering fb_notifier.\n");
 

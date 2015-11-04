@@ -20,6 +20,7 @@
 #include <linux/gpio.h>
 #include <linux/mutex.h>
 #include <linux/sensors.h>
+#include <linux/wakelock.h>
 
 #if defined(CONFIG_FB)
 #include <linux/notifier.h>
@@ -33,6 +34,7 @@
 //#define GSL_REPORT_POINT_SLOT
 //#define GSL_PROXIMITY_SENSOR //Proximity sensor replaced by touch panel
 #define GSL_GESTURE			 //Resuming the circcity by touch panel
+#define GSL_GESTURE_WAKELOCK_DUR msecs_to_jiffies(200)
 
 /*define i2c addr and device name*/
 #define GSL_TS_ADDR 				0x40
@@ -129,6 +131,9 @@ struct gsl_ts_data{
 	#endif
 
 	struct mutex hw_lock;
+#ifdef GSL_GESTURE
+	struct wake_lock gesture_wake_lock;
+#endif
 };
 
 #ifdef GSL_PROXIMITY_SENSOR
