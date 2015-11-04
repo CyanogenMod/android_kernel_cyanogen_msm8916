@@ -490,6 +490,7 @@ static void gsl_reset_core(struct i2c_client *client)
 	gsl_io_control(client);
 }
 
+#ifdef GSL_GESTURE
 static void gsl_reset_core_without_vddio(struct i2c_client *client)
 {
 	u8 buf[4] = {0x00};
@@ -508,6 +509,8 @@ static void gsl_reset_core_without_vddio(struct i2c_client *client)
 	gsl_write_interface(client,0xbc,buf,4);
 	mdelay(2);
 }
+#endif
+
 static void gsl_clear_reg(struct i2c_client *client)
 {
 	u8 buf[4]={0};
