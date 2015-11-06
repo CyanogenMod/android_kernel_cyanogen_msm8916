@@ -122,6 +122,7 @@ struct gsl_ts_data{
 	struct workqueue_struct	*timer_wq;
 	volatile int gsl_timer_flag;	//0:first test	1:second test 2:doing gsl_load_fw
 	unsigned int gsl_timer_data;		
+	u32 watchdog_counter;
 #endif
 #if GSL_HAVE_TOUCH_KEY
 	int gsl_key_state;

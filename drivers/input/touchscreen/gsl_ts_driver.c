@@ -60,12 +60,9 @@ static struct mutex gsl_i2c_lock;
 /* Timer Function */
 #ifdef GSL_TIMER
 #define GSL_TIMER_CHECK_CIRCLE        200
+#define GSL_TIMER_WATCHDOG_INTERVAL   HZ /* 1 second */
 static struct delayed_work gsl_timer_check_work;
 static struct workqueue_struct *gsl_timer_workqueue = NULL;
-static char int_1st[4] = {0};
-static char int_2nd[4] = {0};
-static char b0_counter = 0;
-static char bc_counter = 0;
 #endif
 
 /* Gesture Resume */
@@ -202,7 +199,20 @@ static int gsl_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 nu
 		err = i2c_master_recv(client,&buf[0],num);
 	}
 	mutex_unlock(&gsl_i2c_lock);
-	return (err == num)?1:-1;
+
+	if (err < 0)
+		return err;
+
+	return (err == num) ? 0 : -EIO;
+}
+
+static int gsl_read32(struct i2c_client *client, u8 reg, u32 *out) {
+	int rc = gsl_read_interface(client, reg, (u8 *) out, 4);
+	if (rc)
+		return rc;
+
+	*out  = le32_to_cpu(*out);
+	return 0;
 }
 
 static int gsl_ito_read_interface(struct i2c_client *client, u8 reg, u8 *buf, u32 num)
@@ -791,101 +801,68 @@ static const struct file_operations gsl_seq_fops = {
 #endif
 
 #ifdef GSL_TIMER
-/** this function checks if the HW hung and resets it */
-static void gsl_timer_check_func(struct work_struct *work)
+static void gsl_watchdog(struct work_struct *work)
 {
 	struct gsl_ts_data *ts = ddata;
 	struct i2c_client *gsl_client = ts->client;
-/*    
-	static int i2c_lock_flag = 0;
-	char read_buf[4]  = {0};
-	char init_chip_flag = 0;
-	int i,flag;
-*/
-	u8 read_buf[4]  = {0};
-	char init_chip_flag = 0;
-
-	print_info("----------------gsl_monitor_worker------i2c_lock==%d-----------\n",i2c_lock_flag);	
+	u32 tmp;
+	int rc;
 
 	if(!mutex_trylock(&ddata->hw_lock))
-		goto queue_monitor_work;
+		goto queue;
 
-	gsl_read_interface(gsl_client, 0xb0, read_buf, 4);
-    	if(read_buf[3] != 0x5a || read_buf[2] != 0x5a || read_buf[1] != 0x5a || read_buf[0] != 0x5a)
-		b0_counter ++;
-	else
-		b0_counter = 0;
-
-      	if(b0_counter > 1)
-	{
-		print_info("======read 0xb0: %x %x %x %x ======\n",read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
-		init_chip_flag = 1;
-		b0_counter = 0;
-		goto queue_monitor_init_chip;
-	}  
-
-       gsl_read_interface(gsl_client, 0xb4, read_buf, 4);
-       int_2nd[3] = int_1st[3];
-	int_2nd[2] = int_1st[2];
-	int_2nd[1] = int_1st[1];
-	int_2nd[0] = int_1st[0];
-	int_1st[3] = read_buf[3];
-	int_1st[2] = read_buf[2];
-	int_1st[1] = read_buf[1];
-	int_1st[0] = read_buf[0];
-
-
-	if (int_1st[3] == int_2nd[3] && int_1st[2] == int_2nd[2] &&int_1st[1] == int_2nd[1] && int_1st[0] == int_2nd[0]) 
-	{
-		print_info("======int_1st: %x %x %x %x , int_2nd: %x %x %x %x ======\n",int_1st[3], int_1st[2], int_1st[1], int_1st[0], int_2nd[3], int_2nd[2],int_2nd[1],int_2nd[0]);
-		init_chip_flag = 1;
-		goto queue_monitor_init_chip;
+	rc = gsl_read32(gsl_client, 0xb0, &tmp);
+	if (rc) {
+		dev_err(&gsl_client->dev,
+			"watchdog: error reading reg#b0: %d\n", rc);
+		goto exit_reinit;
 	}
 
-#if 1 //version 1.4.0 or later than 1.4.0 read 0xbc for esd checking
-       gsl_read_interface(gsl_client, 0xbc, read_buf, 4);
-	if(read_buf[3] != 0 || read_buf[2] != 0 || read_buf[1] != 0 || read_buf[0] != 0)
-		bc_counter++;
-	else
-		bc_counter = 0;
-	if(bc_counter > 1)
-	{
-		print_info("======read 0xbc: %x %x %x %x======\n",read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
-		init_chip_flag = 1;
-		bc_counter = 0;
+	if (tmp != 0x5a5a5a5a) {
+		dev_err(&gsl_client->dev, "watchdog: invalid reg#b0 value = %#08x\n",
+			tmp);
+		goto exit_reinit;
 	}
-#else
-	write_buf[3] = 0x01;
-	write_buf[2] = 0xfe;
-	write_buf[1] = 0x10;
-	write_buf[0] = 0x00;
-	gsl_write_interface(gsl_client, 0xf0, write_buf,4);
-	gsl_read_interface(gsl_client, 0x10, read_buf, 4);
-	gsl_read_interface(gsl_client, 0x10, read_buf, 4);
-	
-	if(read_buf[3] < 10 && read_buf[2] < 10 && read_buf[1] < 10 && read_buf[0] < 10)
-		dac_counter ++;
-	else
-		dac_counter = 0;
 
-	if(dac_counter > 1) 
-	{
-		print_info("======read DAC1_0: %x %x %x %x ======\n",read_buf[3], read_buf[2], read_buf[1], read_buf[0]);
-		init_chip_flag = 1;
-		dac_counter = 0;
+	rc = gsl_read32(gsl_client, 0xb4, &tmp);
+	if (rc) {
+		dev_err(&gsl_client->dev,
+			"watchdog: error reading reg#b4: %d\n", rc);
+		goto exit_reinit;
 	}
-#endif
 
-queue_monitor_init_chip:
-	if(init_chip_flag) {
-		dev_warn(&gsl_client->dev, "fw corruption detected in watchdog task\n");
-		gsl_sw_init(gsl_client);
+	if (tmp == ddata->watchdog_counter) {
+		dev_err(&gsl_client->dev, "watchdog: hang detected. counter stuck at %#08x\n",
+			tmp);
+		goto exit_reinit;
 	}
-	
+	ddata->watchdog_counter = tmp;
+
+	/* version 1.4.0 or later than 1.4.0 read 0xbc for esd checking */
+	rc = gsl_read32(gsl_client, 0xbc, &tmp);
+	if (rc) {
+		dev_err(&gsl_client->dev,
+			"watchdog: error reading reg#bc: %d\n", rc);
+		goto exit_reinit;
+	}
+
+	if (tmp != 0) {
+		dev_err(&gsl_client->dev, "watchdog: unexpected reg#bc value = %#08x\n",
+			tmp);
+		goto exit_reinit;
+	}
+
+	goto exit;
+
+exit_reinit:
+	dev_warn(&gsl_client->dev, "watchdog: full re-init needed\n");
+	gsl_sw_init(gsl_client);
+exit:
 	mutex_unlock(&ddata->hw_lock);
 
-queue_monitor_work:	
-	queue_delayed_work(gsl_timer_workqueue, &gsl_timer_check_work,100);
+queue:
+	queue_delayed_work(gsl_timer_workqueue, &gsl_timer_check_work,
+		GSL_TIMER_WATCHDOG_INTERVAL);
 }
 #endif
 
@@ -2002,6 +1979,7 @@ static void gsl_ts_resume(void)
 #endif
 	
 #ifdef GSL_TIMER
+	ddata->watchdog_counter = 0;
 	queue_delayed_work(gsl_timer_workqueue, &gsl_timer_check_work, 300);
 #endif
 
@@ -2292,7 +2270,7 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 #endif
 	
 #ifdef GSL_TIMER
-	INIT_DELAYED_WORK(&gsl_timer_check_work, gsl_timer_check_func);
+	INIT_DELAYED_WORK(&gsl_timer_check_work, gsl_watchdog);
 	gsl_timer_workqueue = create_workqueue("gsl_timer_check");
 	queue_delayed_work(gsl_timer_workqueue, &gsl_timer_check_work, GSL_TIMER_CHECK_CIRCLE);
 #endif
