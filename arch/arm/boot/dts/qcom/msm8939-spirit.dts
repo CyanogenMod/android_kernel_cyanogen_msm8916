@@ -38,6 +38,7 @@
 		qcom,fg-cc-to-cv-mv = <4330>;
 		qcom,fg-voltage-min-mv = <3200>;
 		qcom,fg-voltage-empty-mv = <3200>;
+		qcom,fg-suspend-voltage-empty-mv = <3400>;
 		qcom,fg-cutoff-voltage-mv = <3450>;
 		qcom,ibatt-standby-ma = <200>;
 		qcom,fg-soc-max = <90>;
