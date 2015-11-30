@@ -133,10 +133,10 @@
 		liteon,irq-gpio = <&msm_gpio 113 0x2002>;
 		liteon,als-ps-persist = <0>;
 		liteon,ps-led = <0x7f>;
-		liteon,ps-pulses = <12>;
+		liteon,ps-pulses = <15>;
 		liteon,wakeup-threshold = <4>;
 		liteon,als-integration-time = <0>;
-		liteon,ps-distance-table = <2047 1200 900 600 400 250 150>;
+		liteon,ps-distance-table = <1700 1200 900 500 320 200 150>;
 		liteon,als-gain = <0>;
 		liteon,als-equation-0 = <4 1 7743 1059 44 1>;
 		liteon,als-equation-1 = <6 1 2785 9548 50 1>;
