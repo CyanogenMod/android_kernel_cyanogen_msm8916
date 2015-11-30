@@ -367,6 +367,9 @@ struct smb1360_chip {
 	int				delta_soc;
 	int				voltage_min_mv;
 	int				voltage_empty_mv;
+#ifdef CONFIG_MACH_SPIRIT
+	int				suspend_voltage_empty_mv;
+#endif
 	int				batt_capacity_mah;
 	int				cc_soc_coeff;
 	int				v_cutoff_mv;
@@ -740,6 +743,27 @@ static int get_usb_charger_type(void)
 				__func__, __LINE__);
 		return 0xDE;
 	}
+}
+
+static int smb1360_set_batt_empty_voltage(struct smb1360_chip *chip, int v)
+{
+	int rc = 0;
+	int temp;
+	u8 reg;
+
+	if (v == -EINVAL)
+		return 0;
+
+	temp = (v - 2500) * MAX_8_BITS;
+	reg = DIV_ROUND_UP(temp, 2500);
+	pr_debug("voltage_empty=%d reg=%x\n",
+			chip->voltage_empty_mv, reg);
+	rc = smb1360_write(chip, VTG_EMPTY_REG, reg);
+	if (rc)
+		dev_err(chip->dev, "Couldn't write to VTG_EMPTY_REG rc=%d\n",
+				rc);
+
+	return rc;
 }
 #endif
 
@@ -4556,6 +4580,13 @@ static int smb_parse_dt(struct smb1360_chip *chip)
 	if (rc < 0)
 		chip->voltage_empty_mv = -EINVAL;
 
+#ifdef CONFIG_MACH_SPIRIT
+	rc = of_property_read_u32(node, "qcom,fg-suspend-voltage-empty-mv",
+					&chip->suspend_voltage_empty_mv);
+	if (rc < 0)
+		chip->suspend_voltage_empty_mv = -EINVAL;
+#endif
+
 	rc = of_property_read_u32(node, "qcom,fg-batt-capacity-mah",
 					&chip->batt_capacity_mah);
 	if (rc < 0)
@@ -4888,6 +4919,13 @@ static int smb1360_suspend(struct device *dev)
 			pr_err("Couldn't save irq cfg regs rc=%d\n", rc);
 	}
 
+#ifdef CONFIG_MACH_SPIRIT
+	rc = smb1360_set_batt_empty_voltage(chip,
+			chip->suspend_voltage_empty_mv);
+	if (rc < 0)
+		pr_err("Couldn't set batt_empty voltage rc=%d\n", rc);
+#endif
+
 	/* enable only important IRQs */
 	rc = smb1360_write(chip, IRQ_CFG_REG, IRQ_DCIN_UV_BIT
 						| IRQ_AICL_DONE_BIT
@@ -4932,6 +4970,12 @@ static int smb1360_resume(struct device *dev)
 	int i, rc;
 	struct i2c_client *client = to_i2c_client(dev);
 	struct smb1360_chip *chip = i2c_get_clientdata(client);
+
+#ifdef CONFIG_MACH_SPIRIT
+	rc = smb1360_set_batt_empty_voltage(chip, chip->voltage_empty_mv);
+	if (rc < 0)
+		pr_err("Couldn't set batt_empty voltage rc=%d\n", rc);
+#endif
 
 	/* Restore the IRQ config */
 	for (i = 0; i < 3; i++) {
