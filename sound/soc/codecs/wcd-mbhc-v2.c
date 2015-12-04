@@ -180,11 +180,6 @@ static void wcd_program_btn_threshold(const struct wcd_mbhc *mbhc, bool micbias)
 		reg_addr++;
 	}
 
-	snd_soc_update_bits(codec, 0x153, 0xFC, 0x20);
-	snd_soc_update_bits(codec, 0x154, 0xFC, 0x40);
-	snd_soc_update_bits(codec, 0x155, 0xFC, 0x68);
-	snd_soc_update_bits(codec, 0x156, 0xFC, 0x78);
-	snd_soc_update_bits(codec, 0x157, 0xFC, 0x88);
 }
 
 static void wcd_enable_curr_micbias(const struct wcd_mbhc *mbhc,
