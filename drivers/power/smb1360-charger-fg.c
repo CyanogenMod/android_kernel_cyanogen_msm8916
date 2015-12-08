@@ -480,7 +480,14 @@ struct smb1360_chip {
 	struct work_struct		jeita_hysteresis_work;
 	int				cold_hysteresis;
 	int				hot_hysteresis;
+#ifdef CONFIG_MACH_SPIRIT
+	bool				limit_call_current;
+#endif
 };
+
+#ifdef CONFIG_MACH_SPIRIT
+static struct smb1360_chip *g_chip = NULL;
+#endif
 
 static int chg_time[] = {
 	192,
@@ -842,6 +849,8 @@ unsigned int float_encode(int64_t float_val)
 }
 
 #ifdef CONFIG_MACH_SPIRIT
+static int smb1360_get_prop_batt_capacity(struct smb1360_chip *);
+
 static int get_usb_charger_type(void)
 {
 	struct power_supply *usb_psy;
@@ -878,6 +887,51 @@ static int smb1360_set_batt_empty_voltage(struct smb1360_chip *chip, int v)
 
 	return rc;
 }
+
+void smb1360_set_call_current(bool active)
+{
+	struct smb1360_chip *chip = g_chip;
+	int rc = 0, charger_type = 0;
+	u8 temp_data = 0;
+
+	charger_type = get_usb_charger_type();
+
+	if ((charger_type != POWER_SUPPLY_TYPE_USB &&
+			charger_type != POWER_SUPPLY_TYPE_USB_DCP) ||
+			smb1360_get_prop_batt_capacity(chip) < 99) {
+		/* Do nothing if not fully charged and unplugged */
+		return;
+	}
+
+	rc = smb1360_read(chip,CMD_IL_REG,&temp_data);
+	if (rc)
+		pr_err("read CMD_IL_REG failed %d\n", rc);
+
+	temp_data = temp_data & 0x03;
+
+	if (active) {
+		if (temp_data != 0x01) {
+			rc = smb1360_masked_write(chip, CMD_IL_REG,
+					USB_CTRL_MASK, USB_100_BIT);
+			if (rc)
+				pr_err("%s: Couldn't configure for 100mA rc=%d\n",
+						__func__, rc);
+		}
+	} else {
+		rc = smb1360_masked_write(chip, CMD_IL_REG,
+				USB_CTRL_MASK,
+				charger_type == POWER_SUPPLY_TYPE_USB ?
+				USB_500_BIT : USB_AC_BIT);
+		if (rc)
+			pr_err("%s: Couldn't configure for %s rc=%d\n",
+					__func__,
+					charger_type == POWER_SUPPLY_TYPE_USB ?
+					"500mA" : "AC", rc);
+	}
+
+	chip->limit_call_current = active;
+}
+EXPORT_SYMBOL(smb1360_set_call_current);
 #endif
 
 /* FG reset could only be done after FG access being granted */
@@ -1696,14 +1750,23 @@ static int smb1360_set_appropriate_usb_current(struct smb1360_chip *chip)
 		current_ma = CURRENT_500_MA;
 	}
 
+#ifdef CONFIG_MACH_SPIRIT
+	if ((current_ma <= CURRENT_100_MA) || (chip->limit_call_current &&
+				smb1360_get_prop_batt_capacity(chip) >= 99)) {
+#else
 	if (current_ma <= CURRENT_100_MA) {
+#endif
 		/* USB 100 */
 		rc = smb1360_masked_write(chip, CMD_IL_REG,
 				USB_CTRL_MASK, USB_100_BIT);
 		if (rc)
 			pr_err("Couldn't configure for USB100 rc=%d\n", rc);
 		pr_debug("Setting USB 100\n");
+#ifdef CONFIG_MACH_SPIRIT
+	} else if ((current_ma <= CURRENT_500_MA) || chip->limit_call_current) {
+#else
 	} else if (current_ma <= CURRENT_500_MA) {
+#endif
 		/* USB 500 */
 		rc = smb1360_masked_write(chip, CMD_IL_REG,
 				USB_CTRL_MASK, USB_500_BIT);
@@ -5283,6 +5346,10 @@ static int smb1360_probe(struct i2c_client *client,
 			smb1360_get_prop_batt_present(chip),
 			chip->usb_present,
 			smb1360_get_prop_batt_capacity(chip));
+
+#ifdef CONFIG_MACH_SPIRIT
+	g_chip = chip;
+#endif
 
 	return 0;
 
