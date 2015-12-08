@@ -43,7 +43,7 @@
 		qcom,ibatt-standby-ma = <200>;
 		qcom,fg-soc-max = <90>;
 		qcom,fg-soc-min = <15>;
-		/delete-property/ qcom,fg-auto-recharge-soc;
+		qcom,fg-auto-recharge-soc = <99>;
 		qcom,fg-delta-soc = <1>;
 		qcom,thermistor-c1-coeff = <0x86C2>;
 		qcom,iterm-ma = <200>;
