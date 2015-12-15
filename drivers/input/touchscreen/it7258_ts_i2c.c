@@ -99,7 +99,7 @@
 #define FW_WRITE_CHUNK_SIZE		128
 #define FW_WRITE_RETRY_COUNT		4
 #define CHIP_FLASH_SIZE			0x8000
-#define DEVICE_READY_MAX_WAIT		10
+#define DEVICE_READY_MAX_WAIT		500
 
 /* result of reading with BUF_QUERY bits */
 #define CMD_STATUS_BITS			0x07
@@ -167,6 +167,7 @@ struct IT7260_ts_platform_data {
 	unsigned int disp_maxy;
 	unsigned num_of_fingers;
 	unsigned int reset_delay;
+	unsigned int avdd_lpm_cur;
 	bool low_reset;
 };
 
@@ -1489,6 +1490,14 @@ static int IT7260_parse_dt(struct device *dev,
 		return rc;
 	}
 
+	rc = of_property_read_u32(np, "ite,avdd-lpm-cur", &temp_val);
+	if (!rc) {
+		pdata->avdd_lpm_cur = temp_val;
+	} else if (rc && (rc != -EINVAL)) {
+		dev_err(dev, "Unable to read avdd lpm current value %d\n", rc);
+		return rc;
+	}
+
 	pdata->low_reset = of_property_read_bool(np, "ite,low-reset");
 
 	rc = IT7260_get_dt_coords(dev, "ite,display-coords", pdata);
@@ -1865,6 +1874,15 @@ static int IT7260_ts_resume(struct device *dev)
 
 	if (device_may_wakeup(dev)) {
 		if (gl_ts->device_needs_wakeup) {
+			/* Set active current for the avdd regulator */
+			if (gl_ts->pdata->avdd_lpm_cur) {
+				retval = reg_set_optimum_mode_check(gl_ts->avdd,
+						IT_I2C_ACTIVE_LOAD_UA);
+				if (retval < 0)
+					dev_err(dev, "Regulator avdd set_opt failed at resume rc=%d\n",
+					retval);
+			}
+
 			gl_ts->device_needs_wakeup = false;
 			disable_irq_wake(gl_ts->client->irq);
 		}
@@ -1902,6 +1920,15 @@ static int IT7260_ts_suspend(struct device *dev)
 		if (!gl_ts->device_needs_wakeup) {
 			/* put the device in low power idle mode */
 			IT7260_ts_chipLowPowerMode(PWR_CTL_LOW_POWER_MODE);
+
+			/* Set lpm current for avdd regulator */
+			if (gl_ts->pdata->avdd_lpm_cur) {
+				retval = reg_set_optimum_mode_check(gl_ts->avdd,
+						gl_ts->pdata->avdd_lpm_cur);
+				if (retval < 0)
+					dev_err(dev, "Regulator avdd set_opt failed at suspend rc=%d\n",
+						retval);
+			}
 
 			gl_ts->device_needs_wakeup = true;
 			enable_irq_wake(gl_ts->client->irq);

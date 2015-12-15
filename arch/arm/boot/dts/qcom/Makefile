@@ -70,7 +70,8 @@ dtb-$(CONFIG_ARCH_MSM8909) += msm8909-sim.dtb \
 	msm8909w-cdp.dtb \
 	apq8009w-wtp.dtb \
 	apq8009w-cdp.dtb \
-	apq8009-mtp-wcd9326.dtb
+	apq8009-mtp-wcd9326.dtb \
+	msm8909-mtp-wcd9326.dtb
 
 ifeq ($(CONFIG_MACH_CKT_MSM8939),y)
 dtb-$(CONFIG_ARCH_MSM8916) += msm8939-spirit.dtb

@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License version 2 and
@@ -2469,6 +2469,7 @@ struct afe_port_cmdrsp_get_param_v2 {
 #define VPM_TX_DM_RFECNS_COPP_TOPOLOGY			0x00010F86
 #define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_DTS_HPX_0		0x00010347
 #define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_DTS_HPX_1		0x00010348
+#define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_AUDIOSPHERE	0x10015003
 
 /* Memory map regions command payload used by the
  * #ASM_CMD_SHARED_MEM_MAP_REGIONS ,#ADM_CMD_SHARED_MEM_MAP_REGIONS
@@ -7208,6 +7209,8 @@ struct asm_dts_eagle_param_get {
 #define LSM_PARAM_ID_OPERATION_MODE			(0x00012C02)
 #define LSM_PARAM_ID_GAIN				(0x00012C03)
 #define LSM_PARAM_ID_CONNECT_TO_PORT			(0x00012C04)
+#define LSM_PARAM_ID_KEYWORD_DETECT_SENSITIVITY		(0x00012C05)
+#define LSM_PARAM_ID_USER_DETECT_SENSITIVITY		(0x00012C06)
 #define LSM_PARAM_ID_FEATURE_COMPENSATION_DATA		(0x00012C07)
 #define LSM_PARAM_ID_MIN_CONFIDENCE_LEVELS		(0x00012C07)
 #define LSM_MODULE_ID_LAB				(0x00012C08)
@@ -7232,6 +7235,7 @@ struct asm_dts_eagle_param_get {
 #define AFE_PARAM_ID_CDC_SLIMBUS_SLAVE_CFG		(0x00010235)
 #define AFE_PARAM_ID_CDC_REG_CFG			(0x00010236)
 #define AFE_PARAM_ID_CDC_REG_CFG_INIT			(0x00010237)
+#define AFE_PARAM_ID_CDC_REG_PAGE_CFG                   (0x00010296)
 
 #define AFE_MAX_CDC_REGISTERS_TO_CONFIG			(20)
 
@@ -7354,6 +7358,7 @@ struct afe_param_id_clip_bank_sel {
 
 /* Supported OSR clock values */
 #define Q6AFE_LPASS_OSR_CLK_12_P288_MHZ		0xBB8000
+#define Q6AFE_LPASS_OSR_CLK_9_P600_MHZ		0x927C00
 #define Q6AFE_LPASS_OSR_CLK_8_P192_MHZ		0x7D0000
 #define Q6AFE_LPASS_OSR_CLK_6_P144_MHZ		0x5DC000
 #define Q6AFE_LPASS_OSR_CLK_4_P096_MHZ		0x3E8000
@@ -7537,6 +7542,7 @@ enum afe_config_type {
 	AFE_AANC_VERSION,
 	AFE_CDC_CLIP_REGISTERS_CONFIG,
 	AFE_CLIP_BANK_SEL,
+	AFE_CDC_REGISTER_PAGE_CONFIG,
 	AFE_MAX_CONFIG_TYPES,
 };
 
@@ -7566,6 +7572,21 @@ struct afe_param_cdc_reg_cfg {
 	uint32_t reg_field_bit_mask;
 	uint16_t reg_bit_width;
 	uint16_t reg_offset_scale;
+} __packed;
+
+#define AFE_API_VERSION_CDC_REG_PAGE_CFG   1
+
+enum {
+	AFE_CDC_REG_PAGE_ASSIGN_PROC_ID_0 = 0,
+	AFE_CDC_REG_PAGE_ASSIGN_PROC_ID_1,
+	AFE_CDC_REG_PAGE_ASSIGN_PROC_ID_2,
+	AFE_CDC_REG_PAGE_ASSIGN_PROC_ID_3,
+};
+
+struct afe_param_cdc_reg_page_cfg {
+	uint32_t minor_version;
+	uint32_t enable;
+	uint32_t proc_id;
 } __packed;
 
 struct afe_param_cdc_reg_cfg_data {
@@ -7847,4 +7868,56 @@ struct adm_set_compressed_device_latency {
 	struct adm_param_data_v5 params;
 	u32    latency;
 } __packed;
+
+#define VOICEPROC_MODULE_ID_GENERIC_TX                      0x00010EF6
+#define VOICEPROC_PARAM_ID_FLUENCE_SOUNDFOCUS               0x00010E37
+#define VOICEPROC_PARAM_ID_FLUENCE_SOURCETRACKING           0x00010E38
+#define MAX_SECTORS                                         8
+#define MAX_NOISE_SOURCE_INDICATORS                         3
+#define MAX_POLAR_ACTIVITY_INDICATORS                       360
+
+struct sound_focus_param {
+	uint16_t start_angle[MAX_SECTORS];
+	uint8_t enable[MAX_SECTORS];
+	uint16_t gain_step;
+} __packed;
+
+struct source_tracking_param {
+	uint8_t vad[MAX_SECTORS];
+	uint16_t doa_speech;
+	uint16_t doa_noise[MAX_NOISE_SOURCE_INDICATORS];
+	uint8_t polar_activity[MAX_POLAR_ACTIVITY_INDICATORS];
+} __packed;
+
+struct adm_param_fluence_soundfocus_t {
+	uint16_t start_angles[MAX_SECTORS];
+	uint8_t enables[MAX_SECTORS];
+	uint16_t gain_step;
+	uint16_t reserved;
+} __packed;
+
+struct adm_set_fluence_soundfocus_param {
+	struct adm_cmd_set_pp_params_v5 params;
+	struct adm_param_data_v5 data;
+	struct adm_param_fluence_soundfocus_t soundfocus_data;
+} __packed;
+
+struct adm_param_fluence_sourcetracking_t {
+	uint8_t vad[MAX_SECTORS];
+	uint16_t doa_speech;
+	uint16_t doa_noise[MAX_NOISE_SOURCE_INDICATORS];
+	uint8_t polar_activity[MAX_POLAR_ACTIVITY_INDICATORS];
+} __packed;
+
+#define AUDPROC_MODULE_ID_AUDIOSPHERE               0x00010916
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_ENABLE         0x00010917
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_STRENGTH       0x00010918
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_CONFIG_MODE    0x00010919
+
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_COEFFS_STEREO_INPUT         0x0001091A
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_COEFFS_MULTICHANNEL_INPUT   0x0001091B
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_DESIGN_STEREO_INPUT         0x0001091C
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_DESIGN_MULTICHANNEL_INPUT   0x0001091D
+
+#define AUDPROC_PARAM_ID_AUDIOSPHERE_OPERATING_INPUT_MEDIA_INFO  0x0001091E
 #endif /*_APR_AUDIO_V2_H_ */
