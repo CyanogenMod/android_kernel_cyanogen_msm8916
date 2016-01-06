@@ -1265,6 +1265,35 @@ limPostMsgApi(tpAniSirGlobal pMac, tSirMsgQ *pMsg)
 
 } /*** end limPostMsgApi() ***/
 
+/**
+ * limPostMsgApiHighPri()
+ *
+ * FUNCTION:
+ * This function is called from other thread while posting a
+ * message to LIM message Queue gSirLimMsgQ.
+ *
+ * LOGIC:
+ * NA
+ *
+ * ASSUMPTIONS:
+ * NA
+ *
+ * NOTE:
+ * NA
+ *
+ * @param  pMac - Pointer to Global MAC structure
+ * @param  pMsg - Pointer to the message structure
+ * @return None
+ */
+
+tANI_U32
+limPostMsgApiHighPri(tpAniSirGlobal pMac, tSirMsgQ *pMsg)
+{
+    return  vos_mq_post_message_high_pri(VOS_MQ_ID_PE, (vos_msg_t *) pMsg);
+
+
+} /*** end limPostMsgApi() ***/
+
 
 /*--------------------------------------------------------------------------
 
@@ -2182,6 +2211,13 @@ void limUpdateLostLinkParams(tpAniSirGlobal pMac,
     }
     pSmeLostLinkParams =
     (tpSirSmeLostLinkParamsInd)vos_mem_malloc(sizeof(tSirSmeLostLinkParamsInd));
+
+    if (pSmeLostLinkParams == NULL)
+    {
+        limLog(pMac, LOGE,
+          FL("pSmeLostLinkParams is NULL"));
+        return;
+    }
     vos_mem_set(pSmeLostLinkParams, sizeof(tSirSmeLostLinkParamsInd), 0);
     pSmeLostLinkParams->messageType = eWNI_SME_LOST_LINK_PARAMS_IND;
     pSmeLostLinkParams->length = sizeof(tSirSmeLostLinkParamsInd);

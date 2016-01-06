@@ -3395,7 +3395,19 @@ REG_VARIABLE( CFG_EXTSCAN_ENABLE, WLAN_PARAM_Integer,
                  CFG_OPTIMIZE_CA_EVENT_DEFAULT,
                  CFG_OPTIMIZE_CA_EVENT_DISABLE,
                  CFG_OPTIMIZE_CA_EVENT_ENABLE ),
+   REG_VARIABLE( CFG_ENABLE_CRASH_INJECT, WLAN_PARAM_Integer,
+                 hdd_config_t, crash_inject_enabled,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                 CFG_ENABLE_CRASH_INJECT_DEFAULT,
+                 CFG_ENABLE_CRASH_INJECT_MIN,
+                 CFG_ENABLE_CRASH_INJECT_MAX),
 
+    REG_VARIABLE( CFG_RPS_CPU_MAP_NAME, WLAN_PARAM_HexInteger,
+                 hdd_config_t, rps_mask,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                 CFG_RPS_CPU_MAP_DEFAULT,
+                 CFG_RPS_CPU_MAP_MIN,
+                 CFG_RPS_CPU_MAP_MAX),
 };
 
 /*
@@ -3819,6 +3831,7 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gDxeReplenishRXTimerVal] Value = [%u] ", pHddCtx->cfg_ini->dxeReplenishRXTimerVal);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gDxeSSREnable] Value = [%u] ", pHddCtx->cfg_ini->dxeSSREnable);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [toggleArpBDRates] Value = [%u] ", pHddCtx->cfg_ini->toggleArpBDRates);
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gEnableForceTargetAssert] Value = [%u] ", pHddCtx->cfg_ini->crash_inject_enabled);
 }
 
 
@@ -5378,6 +5391,14 @@ v_BOOL_t hdd_update_config_dat( hdd_context_t *pHddCtx )
    {
       fStatus = FALSE;
       hddLog(LOGE, "Could not pass on WNI_CFG_OPTIMIZE_CA_EVENT ");
+   }
+
+   if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_ENABLE_MAC_ADDR_SPOOFING,
+                    pConfig->enableMacSpoofing, NULL,
+                    eANI_BOOLEAN_FALSE) == eHAL_STATUS_FAILURE)
+   {
+      fStatus = FALSE;
+      hddLog(LOGE, "Could not pass on WNI_CFG_ENABLE_MAC_ADDR_SPOOFING ");
    }
 
    return fStatus;

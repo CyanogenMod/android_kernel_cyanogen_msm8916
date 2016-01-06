@@ -1174,7 +1174,12 @@ void __hdd_tx_timeout(struct net_device *dev)
                 "%s: Request firmware for recovery",__func__);
       WLANTL_TLDebugMessage(WLANTL_DEBUG_FW_CLEANUP);
    }
-
+   /*
+    * This function is getting called in softirq context, So don't hold
+    * any mutex.
+    * There is no harm here in not holding the mutex as long as we are
+    * not accessing the pRemainChanCtx contents.
+    */
    pRemainChanCtx = hdd_get_remain_on_channel_ctx(pHddCtx);
    if (!pRemainChanCtx)
    {
@@ -1191,6 +1196,7 @@ void __hdd_tx_timeout(struct net_device *dev)
    }
    else
    {
+       mutex_unlock(&pHddCtx->roc_lock);
       VOS_TRACE(VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_ERROR,
                 "Remain on channel in progress");
       /* The supplicant can retry "P2P Invitation Request" for 120 times
