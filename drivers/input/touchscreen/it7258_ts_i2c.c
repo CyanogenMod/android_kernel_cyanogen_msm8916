@@ -100,6 +100,7 @@
 #define FW_WRITE_RETRY_COUNT		4
 #define CHIP_FLASH_SIZE			0x8000
 #define DEVICE_READY_MAX_WAIT		500
+#define DEVICE_READY_WAIT_10		10
 
 /* result of reading with BUF_QUERY bits */
 #define CMD_STATUS_BITS			0x07
@@ -128,6 +129,7 @@
 #define IT_I2C_VTG_MIN_UV	2600000
 #define IT_I2C_VTG_MAX_UV	3300000
 #define IT_I2C_ACTIVE_LOAD_UA	10000
+#define DELAY_VTG_REG_EN	170
 
 #define PINCTRL_STATE_ACTIVE	"pmx_ts_active"
 #define PINCTRL_STATE_SUSPEND	"pmx_ts_suspend"
@@ -283,7 +285,10 @@ static bool IT7260_i2cWriteNoReadyCheck(uint8_t buf_index,
 static bool IT7260_waitDeviceReady(bool forever, bool slowly)
 {
 	uint8_t query;
-	uint32_t count = DEVICE_READY_MAX_WAIT;
+	uint32_t count = DEVICE_READY_WAIT_10;
+
+	if (gl_ts->fw_cfg_uploading || forever)
+		count = DEVICE_READY_MAX_WAIT;
 
 	do {
 		if (!IT7260_i2cReadNoReadyCheck(BUF_QUERY, &query,
@@ -292,10 +297,7 @@ static bool IT7260_waitDeviceReady(bool forever, bool slowly)
 
 		if (slowly)
 			msleep(IT_I2C_WAIT);
-		if (!forever)
-			count--;
-
-	} while ((query & CMD_STATUS_BUSY) && count);
+	} while ((query & CMD_STATUS_BUSY) && --count);
 
 	return !query;
 }
@@ -1627,6 +1629,12 @@ static int IT7260_ts_probe(struct i2c_client *client,
 		dev_err(&client->dev, "Failed to power on\n");
 		goto err_power_device;
 	}
+
+	/*
+	 * After enabling regulators, controller needs a delay to come to
+	 * an active state.
+	 */
+	msleep(DELAY_VTG_REG_EN);
 
 	ret = IT7260_ts_pinctrl_init(gl_ts);
 	if (!ret && gl_ts->ts_pinctrl) {

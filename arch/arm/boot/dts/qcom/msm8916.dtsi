@@ -332,6 +332,14 @@
 			< 1094400000 6>,
 			< 1152000000 7>;
 
+		qcom,speed3-bin-v0 =
+			<          0 0>,
+			<  200000000 1>,
+			<  400000000 2>,
+			<  533333000 3>,
+			<  800000000 4>,
+			<  998400000 5>;
+
 		qcom,speed0-bin-v1 =
 			<          0 0>,
 			<  200000000 1>,
@@ -354,6 +362,14 @@
 			< 1152000000 7>,
 			< 1209600000 8>,
 			< 1363200000 9>;
+
+		qcom,speed3-bin-v1 =
+			<          0 0>,
+			<  200000000 1>,
+			<  400000000 2>,
+			<  533333000 3>,
+			<  800000000 4>,
+			<  998400000 5>;
 	};
 
 	cpubw: qcom,cpubw {
@@ -1348,7 +1364,7 @@
 		interrupts = <0 145 0 0 146 0>;
 		interrupt-names = "wcnss_wlantx_irq", "wcnss_wlanrx_irq";
 
-		qcom,pronto-vddmx-supply = <&pm8916_l3>;
+		qcom,pronto-vddmx-supply = <&pm8916_l3_corner_ao>;
 		qcom,pronto-vddcx-supply = <&pm8916_s1_corner>;
 		qcom,pronto-vddpx-supply = <&pm8916_l7>;
 		qcom,iris-vddxo-supply   = <&pm8916_l7>;
