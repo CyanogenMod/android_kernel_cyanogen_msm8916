@@ -33,11 +33,13 @@
 #include <linux/input.h>
 #include <linux/kernel.h>
 #include <linux/kobject.h>
+#include <linux/kthread.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
+#include <linux/sched.h>
 #include <linux/sensors.h>
 #include <linux/version.h>
 #include <linux/delay.h>
@@ -391,13 +393,19 @@ struct lsm6dx0_status {
 	struct lsm6dx0_gyr_platform_data *pdata_gyr;
 
 	struct mutex lock;
-	struct work_struct input_work_acc;
-	struct work_struct input_work_gyr;
+	struct task_struct *task_acc;
+	struct task_struct *task_gyr;
 
 	struct hrtimer hr_timer_acc;
 	ktime_t ktime_acc;
+	bool wkp_flag_acc;
+	bool delay_change_acc;
+	wait_queue_head_t wq_acc;
 	struct hrtimer hr_timer_gyr;
 	ktime_t ktime_gyr;
+	bool wkp_flag_gyr;
+	bool delay_change_gyr;
+	wait_queue_head_t wq_gyr;
 
 	struct input_dev *input_dev_acc;
 	struct input_dev *input_dev_gyr;
@@ -794,7 +802,6 @@ static int32_t lsm6dx0_gyr_device_power_off(struct lsm6dx0_status *stat)
 static int32_t lsm6dx0_gyr_disable(struct lsm6dx0_status *stat)
 {
 	if (atomic_cmpxchg(&stat->enabled_gyr, 1, 0)) {
-		cancel_work_sync(&stat->input_work_gyr);
 		hrtimer_cancel(&stat->hr_timer_gyr);
 		lsm6dx0_gyr_device_power_off(stat);
 	}
@@ -810,7 +817,6 @@ static int32_t lsm6dx0_acc_disable(struct lsm6dx0_status *stat)
 			lsm6dx0_gyr_disable(stat);
 		*/
 
-		cancel_work_sync(&stat->input_work_acc);
 		hrtimer_cancel(&stat->hr_timer_acc);
 		lsm6dx0_acc_device_power_off(stat);
 	}
@@ -834,24 +840,28 @@ enum hrtimer_restart poll_function_read_acc(struct hrtimer *timer)
 {
 	struct lsm6dx0_status *stat;
 
-
 	stat = container_of((struct hrtimer *)timer,
 				struct lsm6dx0_status, hr_timer_acc);
 
-	queue_work(lsm6dx0_workqueue, &stat->input_work_acc);
-	return HRTIMER_NORESTART;
+	stat->wkp_flag_acc = true;
+	wake_up_interruptible(&stat->wq_acc);
+	hrtimer_forward_now(&stat->hr_timer_acc, stat->ktime_acc);
+
+	return HRTIMER_RESTART;
 }
 
 enum hrtimer_restart poll_function_read_gyr(struct hrtimer *timer)
 {
 	struct lsm6dx0_status *stat;
 
-
 	stat = container_of((struct hrtimer *)timer,
 				struct lsm6dx0_status, hr_timer_gyr);
 
-	queue_work(lsm6dx0_workqueue, &stat->input_work_gyr);
-	return HRTIMER_NORESTART;
+	stat->wkp_flag_gyr = true;
+	wake_up_interruptible(&stat->wq_gyr);
+	hrtimer_forward_now(&stat->hr_timer_gyr, stat->ktime_gyr);
+
+	return HRTIMER_RESTART;
 }
 
 static void lsm6dx0_validate_polling(uint32_t *min_interval,
@@ -1549,6 +1559,7 @@ static int lsm6d_acc_cdev_set_poll_delay(
 	struct lsm6dx0_status *stat =
 		container_of(sensors_cdev, struct lsm6dx0_status, acc_cdev);
 
+	stat->delay_change_acc = true;
 	stat->ktime_acc = ktime_set(0, MS_TO_NS(msecs));
 
 	return 0;
@@ -1672,6 +1683,7 @@ static int lsm6d_gyr_cdev_set_poll_delay(
 	struct lsm6dx0_status *stat =
 		container_of(sensors_cdev, struct lsm6dx0_status, gyr_cdev);
 
+	stat->delay_change_gyr = true;
 	stat->ktime_gyr = ktime_set(0, MS_TO_NS(msecs));
 
 	return 0;
@@ -2428,58 +2440,98 @@ static void remove_sysfs_interfaces(struct device *dev)
 	kobject_put(gyr_kobj);
 }
 
-static void poll_function_work_acc(struct work_struct *input_work_acc)
+static int poll_thread_acc(void *data)
 {
-	struct lsm6dx0_status *stat;
+	struct lsm6dx0_status *stat = data;
 	int32_t xyz[3] = {0}, err = -1;
+	ktime_t poll_100hz;
 
-	stat = container_of((struct work_struct *)input_work_acc,
-			struct lsm6dx0_status, input_work_acc);
+	poll_100hz = ktime_set(0, MS_TO_NS(10));
 
-	err = lsm6dx0_acc_get_data(stat, xyz);
-	if (err < 0)
-		dev_err(&stat->client->dev, "get accelerometer data failed\n");
-	else {
-		mutex_lock(&stat->lock);
-		if (stat->acc_discard_samples > 0) {
-			stat->acc_discard_samples--;
-			mutex_unlock(&stat->lock);
+	while (1) {
+		wait_event_interruptible(stat->wq_acc,
+				((stat->wkp_flag_acc) ||
+				 kthread_should_stop()));
+		stat->wkp_flag_acc = false;
+
+		if (kthread_should_stop())
+			break;
+
+		if (stat->delay_change_acc) {
+			if (ktime_compare(stat->ktime_acc, poll_100hz) <= 0) {
+				set_wake_up_idle(true);
+			} else {
+				set_wake_up_idle(false);
+			}
+			stat->delay_change_acc = false;
+		}
+
+		err = lsm6dx0_acc_get_data(stat, xyz);
+		if (err < 0) {
+			dev_err(&stat->client->dev,
+					"get accelerometer data failed\n");
 		} else {
-			mutex_unlock(&stat->lock);
-			lsm6dx0_acc_report_values(stat, xyz);
+			mutex_lock(&stat->lock);
+			if (stat->acc_discard_samples > 0) {
+				stat->acc_discard_samples--;
+				mutex_unlock(&stat->lock);
+			} else {
+				mutex_unlock(&stat->lock);
+				lsm6dx0_acc_report_values(stat, xyz);
+			}
 		}
 	}
 
-	hrtimer_start(&stat->hr_timer_acc, stat->ktime_acc, HRTIMER_MODE_REL);
+	return 0;
 }
 
-static void poll_function_work_gyr(struct work_struct *input_work_gyr)
+static int poll_thread_gyr(void *data)
 {
-	struct lsm6dx0_status *stat;
+	struct lsm6dx0_status *stat = data;
 	int32_t xyz[3] = { 0 }, err = -1;
+	ktime_t poll_100hz;
 
-	stat = container_of((struct work_struct *)input_work_gyr,
-			struct lsm6dx0_status, input_work_gyr);
+	poll_100hz = ktime_set(0, MS_TO_NS(10));
 
-	err = lsm6dx0_gyr_get_data(stat, xyz);
-	if (err < 0)
-		dev_err(&stat->client->dev, "get gyroscope data failed.\n");
-	else {
-#ifdef CONFIG_INPUT_LSM6DX0_LP
-		mutex_lock(&stat->lock);
-		if (stat->gyr_discard_samples > 0) {
-			stat->gyr_discard_samples--;
-			mutex_unlock(&stat->lock);
-		} else {
-			mutex_unlock(&stat->lock);
-			lsm6dx0_gyr_report_values(stat, xyz);
+	while (1) {
+		wait_event_interruptible(stat->wq_gyr,
+				((stat->wkp_flag_gyr) ||
+				 kthread_should_stop()));
+		stat->wkp_flag_gyr = false;
+
+		if (kthread_should_stop())
+			break;
+
+		if (stat->delay_change_gyr) {
+			if (ktime_compare(stat->ktime_gyr, poll_100hz) <= 0) {
+				set_wake_up_idle(true);
+			} else {
+				set_wake_up_idle(false);
+			}
+			stat->delay_change_gyr = false;
 		}
+
+		err = lsm6dx0_gyr_get_data(stat, xyz);
+		if (err < 0) {
+			dev_err(&stat->client->dev,
+					"get gyroscope data failed.\n");
+		} else {
+#ifdef CONFIG_INPUT_LSM6DX0_LP
+			mutex_lock(&stat->lock);
+			if (stat->gyr_discard_samples > 0) {
+				stat->gyr_discard_samples--;
+				mutex_unlock(&stat->lock);
+			} else {
+				mutex_unlock(&stat->lock);
+				lsm6dx0_gyr_report_values(stat, xyz);
+			}
 #else
-		lsm6dx0_gyr_report_values(stat, xyz);
+			lsm6dx0_gyr_report_values(stat, xyz);
 #endif
+		}
 	}
 
-	hrtimer_start(&stat->hr_timer_gyr, stat->ktime_gyr, HRTIMER_MODE_REL);
+	return 0;
 }
 
 #ifdef CONFIG_INPUT_LSM6DX0_SW_COMP
@@ -2721,10 +2773,16 @@ static int32_t lsm6dx0_acc_gyr_probe(struct i2c_client *client,
 	if(lsm6dx0_workqueue == 0)
 		lsm6dx0_workqueue = create_workqueue("lsm6dx0_workqueue");
 
+	init_waitqueue_head(&stat->wq_acc);
 	hrtimer_init(&stat->hr_timer_acc, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	stat->hr_timer_acc.function = &poll_function_read_acc;
+	stat->task_acc = kthread_run(poll_thread_acc, stat, "lsm_acc");
+	stat->wkp_flag_acc = false;
+	init_waitqueue_head(&stat->wq_gyr);
 	hrtimer_init(&stat->hr_timer_gyr, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	stat->hr_timer_gyr.function = &poll_function_read_gyr;
+	stat->task_gyr = kthread_run(poll_thread_gyr, stat, "lsm_gyr");
+	stat->wkp_flag_gyr = false;
 
 	mutex_init(&stat->lock);
 
@@ -2934,9 +2992,6 @@ static int32_t lsm6dx0_acc_gyr_probe(struct i2c_client *client,
 	lsm6dx0_acc_device_power_off(stat);
 	lsm6dx0_gyr_device_power_off(stat);
 
-	INIT_WORK(&stat->input_work_acc, poll_function_work_acc);
-	INIT_WORK(&stat->input_work_gyr, poll_function_work_gyr);
-
 	dev_info(&client->dev, "%s: probed sucess!\n", LSM6DX0_ACC_GYR_DEV_NAME);
 	return 0;
 
@@ -2966,6 +3021,8 @@ err_memory_alloc:
 		flush_workqueue(lsm6dx0_workqueue);
 		destroy_workqueue(lsm6dx0_workqueue);
 	}
+	kthread_stop(stat->task_gyr);
+	kthread_stop(stat->task_acc);
 exit_check_functionality_failed:
 	dev_err(&stat->client->dev,"%s: Driver Init failed\n",
 						LSM6DX0_ACC_GYR_DEV_NAME);
@@ -2997,6 +3054,12 @@ static int32_t lsm6dx0_acc_gyr_remove(struct i2c_client *client)
 		flush_workqueue(lsm6dx0_workqueue);
 		destroy_workqueue(lsm6dx0_workqueue);
 	}
+
+	hrtimer_try_to_cancel(&stat->hr_timer_gyr);
+	hrtimer_try_to_cancel(&stat->hr_timer_acc);
+
+	kthread_stop(stat->task_gyr);
+	kthread_stop(stat->task_acc);
 
 	kfree(stat->pdata_acc);
 	kfree(stat->pdata_gyr);
