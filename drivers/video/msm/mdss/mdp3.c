@@ -489,7 +489,8 @@ int mdp3_clk_set_rate(int clk_type, unsigned long clk_rate,
 			if (ret)
 				pr_err("clk_set_rate failed ret=%d\n", ret);
 			else
-				pr_debug("mdp clk rate=%lu\n", rounded_rate);
+				pr_debug("mdp clk rate=%lu, client = %d\n",
+					rounded_rate, client);
 		}
 		mutex_unlock(&mdp3_res->res_mutex);
 	} else {

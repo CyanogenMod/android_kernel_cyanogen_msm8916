@@ -238,13 +238,13 @@ static void msm_restart_prepare(const char *cmd)
 			strcmp(cmd, "rtc")))
 			need_warm_reset = true;
 	} else {
-#ifdef CONFIG_MSM_PRESERVE_MEM
-		need_warm_reset = true;
-#else
 		need_warm_reset = (get_dload_mode() ||
 				(cmd != NULL && cmd[0] != '\0'));
-#endif
 	}
+
+#ifdef CONFIG_MSM_PRESERVE_MEM
+	need_warm_reset = true;
+#endif
 
 	/* Hard reset the PMIC unless memory contents must be maintained. */
 	if (need_warm_reset) {
