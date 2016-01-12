@@ -29,7 +29,6 @@
 #include <sound/soc.h>
 #include <sound/jack.h>
 #include "wcd-mbhc-v2.h"
-#include "msm8x16_wcd_registers.h"
 #include "wcdcal-hwdep.h"
 
 #define WCD_MBHC_JACK_MASK (SND_JACK_HEADSET | SND_JACK_OC_HPHL | \
@@ -1859,7 +1858,6 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	wcd_program_hs_vref(mbhc);
 
 	wcd_program_btn_threshold(mbhc, false);
-	snd_soc_update_bits(codec, MSM8X16_WCD_A_ANALOG_MBHC_BTN3_CTL, 0x03, 0x03);
 
 	INIT_WORK(&mbhc->correct_plug_swch, wcd_correct_swch_plug);
 
