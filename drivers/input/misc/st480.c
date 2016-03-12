@@ -362,14 +362,20 @@ static void st480_work_func(void)
 static void st480_input_func(struct work_struct *work)
 {
 	struct st480_data *st480 = container_of((struct delayed_work *)work, struct st480_data, work);
+	ktime_t ts;
 
 	SENODIAFUNC("st480_input_func");
 	st480_work_func();
 
 	if (atomic_read(&st480->m_flag) || atomic_read(&mv_flag) || atomic_read(&rm_flag) || atomic_read(&mrv_flag)) {
+		ts = ktime_get_boottime();
 		input_report_abs(st480->input_dev, ABS_X, mag.mag_x);
 		input_report_abs(st480->input_dev, ABS_Y, mag.mag_y);
 		input_report_abs(st480->input_dev, ABS_Z, mag.mag_z);
+		input_event(st480->input_dev, EV_SYN, SYN_TIME_SEC,
+				ktime_to_timespec(ts).tv_sec);
+		input_event(st480->input_dev, EV_SYN, SYN_TIME_NSEC,
+				ktime_to_timespec(ts).tv_nsec);
 		input_sync(st480->input_dev);
 	}
 
