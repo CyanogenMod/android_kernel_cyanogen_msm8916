@@ -1849,18 +1849,28 @@ static int32_t lsm6dx0_gyr_get_data(struct lsm6dx0_status *stat, int32_t *xyz)
 static void lsm6dx0_acc_report_values(struct lsm6dx0_status *stat,
 								int32_t *xyz)
 {
+	ktime_t ts = ktime_get_boottime();
 	input_report_abs(stat->input_dev_acc, ABS_X, xyz[0] + stat->accel_cali[0]);
 	input_report_abs(stat->input_dev_acc, ABS_Y, xyz[1] + stat->accel_cali[1]);
 	input_report_abs(stat->input_dev_acc, ABS_Z, xyz[2] + stat->accel_cali[2]);
+	input_event(stat->input_dev_acc, EV_SYN, SYN_TIME_SEC,
+			ktime_to_timespec(ts).tv_sec);
+	input_event(stat->input_dev_acc, EV_SYN, SYN_TIME_NSEC,
+			ktime_to_timespec(ts).tv_nsec);
 	input_sync(stat->input_dev_acc);
 }
 
 static void lsm6dx0_gyr_report_values(struct lsm6dx0_status *stat,
 								int32_t *xyz)
 {
+	ktime_t ts = ktime_get_boottime();
 	input_report_abs(stat->input_dev_gyr, ABS_RX, xyz[0] + stat->gyr_cali[0]);
 	input_report_abs(stat->input_dev_gyr, ABS_RY, xyz[1] + stat->gyr_cali[1]);
 	input_report_abs(stat->input_dev_gyr, ABS_RZ, xyz[2] + stat->gyr_cali[2]);
+	input_event(stat->input_dev_acc, EV_SYN, SYN_TIME_SEC,
+			ktime_to_timespec(ts).tv_sec);
+	input_event(stat->input_dev_acc, EV_SYN, SYN_TIME_NSEC,
+			ktime_to_timespec(ts).tv_nsec);
 	input_sync(stat->input_dev_gyr);
 }
 
