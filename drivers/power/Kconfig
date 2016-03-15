@@ -536,6 +536,17 @@ config QPNP_LINEAR_CHARGER
 	  detection and charging. The driver also offers relevant information
 	  to userspace via the power supply framework.
 
+config QPNP_LINEAR_CHARGER_HQ
+	tristate "QPNP Linear Charger (Huaqin variant) driver"
+	depends on SPMI
+	depends on OF_SPMI
+	depends on MSM_QPNP_INT
+	depends on THERMAL_QPNP_ADC_TM
+	help
+	  Say Y here to enable the Linear battery charger which supports USB
+	  detection and charging. The driver also offers relevant information
+	  to userspace via the power supply framework.
+
 config MSM_BCL_CTL
 	bool "BCL Framework driver"
 	help
