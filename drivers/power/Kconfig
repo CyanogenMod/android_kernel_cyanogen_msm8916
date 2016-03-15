@@ -506,6 +506,16 @@ config QPNP_VM_BMS
 	  readings from the battery to calculate the State of
 	  Charge.
 
+config QPNP_VM_BMS_HQ
+	tristate "QPNP Voltage-Mode Battery Monitoring System (Huaqin variant) driver"
+	depends on SPMI
+	depends on MSM_QPNP_INT
+	help
+	  Say Y here to enable support for QPNP chip vm-bms device.
+	  The voltage-mode (vm) BMS driver uses periodic VBATT
+	  readings from the battery to calculate the State of
+	  Charge.
+
 config QPNP_BMS
 	tristate "QPNP Battery Monitoring System driver"
 	depends on SPMI
