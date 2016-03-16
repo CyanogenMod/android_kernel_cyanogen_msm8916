@@ -153,7 +153,6 @@ static inline u32 mdss_mdp_align_latency_buf_bytes(
  * @ mdss_mdp_calc_latency_buf_bytes() -
  *                             Get the number of bytes for the
  *                             latency lines.
- * @is_yuv - true if format is yuv
  * @is_bwc - true if BWC is enabled
  * @is_tile - true if it is Tile format
  * @src_w - source rectangle width
@@ -175,42 +174,28 @@ static inline u32 mdss_mdp_align_latency_buf_bytes(
  *		for the latency lines without any
  *		extra bytes.
  */
-u32 mdss_mdp_calc_latency_buf_bytes(bool is_yuv, bool is_bwc,
+u32 mdss_mdp_calc_latency_buf_bytes(bool is_bwc,
 	bool is_tile, u32 src_w, u32 bpp, bool use_latency_buf_percentage,
 	u32 smp_bytes)
 {
 	u32 latency_lines, latency_buf_bytes;
 	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
 
-	if (is_yuv) {
-		if (is_bwc) {
-			latency_lines = 4;
-			latency_buf_bytes = src_w * bpp *
-				latency_lines;
-		} else {
-			latency_lines = 2;
-			/* multiply * 2 for the two YUV planes */
-			latency_buf_bytes = mdss_mdp_align_latency_buf_bytes(
-				src_w * bpp * latency_lines,
-				use_latency_buf_percentage ?
-				mdata->latency_buff_per : 0, smp_bytes) * 2;
-		}
+
+	if (is_bwc) {
+		latency_lines = 4;
+		latency_buf_bytes = src_w * bpp *
+			latency_lines;
+	} else if (is_tile) {
+		latency_lines = 8;
+		latency_buf_bytes = src_w * bpp *
+			latency_lines;
 	} else {
-		if (is_tile) {
-			latency_lines = 8;
-			latency_buf_bytes = src_w * bpp *
-				latency_lines;
-		} else if (is_bwc) {
-			latency_lines = 4;
-			latency_buf_bytes = src_w * bpp *
-				latency_lines;
-		} else {
-			latency_lines = 2;
-			latency_buf_bytes = mdss_mdp_align_latency_buf_bytes(
-				src_w * bpp * latency_lines,
-				use_latency_buf_percentage ?
-				mdata->latency_buff_per : 0, smp_bytes);
-		}
+		latency_lines = 2;
+		latency_buf_bytes = mdss_mdp_align_latency_buf_bytes(
+			src_w * bpp * latency_lines,
+			use_latency_buf_percentage ?
+			mdata->latency_buff_per : 0, smp_bytes);
 	}
 
 	return latency_buf_bytes;
@@ -242,8 +227,8 @@ static u32 mdss_mdp_perf_calc_pipe_prefill_video(struct mdss_mdp_prefill_params
 
 	prefill_bytes = prefill->ot_bytes;
 
-	latency_buf_bytes = mdss_mdp_calc_latency_buf_bytes(params->is_yuv,
-		params->is_bwc, params->is_tile, params->src_w, params->bpp,
+	latency_buf_bytes = mdss_mdp_calc_latency_buf_bytes(params->is_bwc,
+		params->is_tile, params->src_w, params->bpp,
 		true, params->smp_bytes);
 	prefill_bytes += latency_buf_bytes;
 	pr_debug("latency_buf_bytes bw_calc=%d actual=%d\n", latency_buf_bytes,
@@ -328,8 +313,8 @@ static u32 mdss_mdp_perf_calc_pipe_prefill_cmd(struct mdss_mdp_prefill_params
 		prefill_bytes += ot_bytes;
 
 		latency_buf_bytes = mdss_mdp_calc_latency_buf_bytes(
-			params->is_yuv, params->is_bwc, params->is_tile,
-			params->src_w, params->bpp, true, params->smp_bytes);
+			params->is_bwc, params->is_tile, params->src_w,
+			params->bpp, true, params->smp_bytes);
 		prefill_bytes += latency_buf_bytes;
 
 		if (params->is_yuv)
@@ -399,7 +384,7 @@ u32 mdss_mdp_perf_calc_smp_size(struct mdss_mdp_pipe *pipe,
 		return 0;
 
 	/* Get allocated or fixed smp bytes */
-	smp_bytes = mdss_mdp_smp_get_size(pipe);
+	smp_bytes = mdss_mdp_smp_get_size(pipe, MAX_PLANES);
 
 	/*
 	 * We need to calculate the SMP size for scenarios where
@@ -929,8 +914,7 @@ int mdss_mdp_perf_bw_check(struct mdss_mdp_ctl *ctl,
 {
 	struct mdss_data_type *mdata = ctl->mdata;
 	struct mdss_mdp_perf_params perf;
-	u32 bw, threshold, i;
-	u64 bw_sum_of_intfs = 0;
+	u32 bw, threshold;
 
 	/* we only need bandwidth check on real-time clients (interfaces) */
 	if (ctl->intf_type == MDSS_MDP_NO_INTF)
@@ -939,18 +923,9 @@ int mdss_mdp_perf_bw_check(struct mdss_mdp_ctl *ctl,
 	__mdss_mdp_perf_calc_ctl_helper(ctl, &perf,
 			left_plist, left_cnt, right_plist, right_cnt,
 			PERF_CALC_PIPE_CALC_SMP_SIZE);
-	ctl->bw_pending = perf.bw_ctl;
-
-	for (i = 0; i < mdata->nctl; i++) {
-		struct mdss_mdp_ctl *temp = mdata->ctl_off + i;
-		if (temp->power_state == MDSS_PANEL_POWER_ON) {
-			bw_sum_of_intfs += temp->bw_pending;
-			temp->bw_pending = 0;
-		}
-	}
 
 	/* convert bandwidth to kb */
-	bw = DIV_ROUND_UP_ULL(bw_sum_of_intfs, 1000);
+	bw = DIV_ROUND_UP_ULL(perf.bw_ctl, 1000);
 	pr_debug("calculated bandwidth=%uk\n", bw);
 
 	threshold = ctl->is_video_mode ? mdata->max_bw_low : mdata->max_bw_high;
