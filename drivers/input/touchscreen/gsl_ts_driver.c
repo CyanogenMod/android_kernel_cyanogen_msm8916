@@ -1751,7 +1751,7 @@ static irqreturn_t gsl_ts_isr(int irq, void *priv)
 				key_data = KEY_S;
 				break;
 			case (int)'*':	
-				key_data = KEY_POWER;
+				key_data = KEY_WAKEUP;
 				break;/* double click */
 				case (int)0xa1fa:
 				key_data = KEY_F1;
@@ -1781,10 +1781,10 @@ static irqreturn_t gsl_ts_isr(int irq, void *priv)
 					GSL_GESTURE_WAKELOCK_DUR);
 
 				//input_report_key(tpd->dev,key_data,1);
-				input_report_key(idev, KEY_POWER,1);
+				input_report_key(idev, KEY_WAKEUP, 1);
 				input_sync(idev);
 				//input_report_key(tpd->dev,key_data,0);
-				input_report_key(idev,KEY_POWER,0);
+				input_report_key(idev, KEY_WAKEUP, 0);
 				input_sync(idev);
 			}
 			goto schedule;
@@ -2277,7 +2277,7 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	ret = sysfs_create_group(&client->dev.kobj,&gsl_attr_group);
 
 #ifdef GSL_GESTURE
-		input_set_capability(ddata->idev, EV_KEY, KEY_POWER);//б┴бщ2иви║?ии?б┴ио?ж╠ик3
+		input_set_capability(ddata->idev, EV_KEY, KEY_WAKEUP);//б┴бщ2иви║?ии?б┴ио?ж╠ик3
 		input_set_capability(ddata->idev, EV_KEY, KEY_C);
 		input_set_capability(ddata->idev, EV_KEY, KEY_E);
 		input_set_capability(ddata->idev, EV_KEY, KEY_O);
@@ -2332,7 +2332,7 @@ static int gsl_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	//end
 
 #ifdef GSL_GESTURE
-	set_bit(KEY_POWER, gesture_bmp);
+	set_bit(KEY_WAKEUP, gesture_bmp);
 	wake_lock_init(&ddata->gesture_wake_lock,
 		WAKE_LOCK_SUSPEND, "gsl_ts_gesture");
 #endif
