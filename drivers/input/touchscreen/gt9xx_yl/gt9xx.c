@@ -713,8 +713,8 @@ static void goodix_ts_work_func(struct work_struct *work)
         }
 
         if (doze_status == DOZE_WAKEUP) {
-             input_report_key(ts->input_dev, KEY_POWER, 1);
-             input_report_key(ts->input_dev, KEY_POWER, 0);
+             input_report_key(ts->input_dev, KEY_WAKEUP, 1);
+             input_report_key(ts->input_dev, KEY_WAKEUP, 0);
              input_sync(ts->input_dev);
 
              // clear 0x814B
@@ -1608,7 +1608,7 @@ static s8 gtp_request_input_dev(struct goodix_ts_data *ts)
 
 #if GTP_SLIDE_WAKEUP
     set_bit(EV_KEY, ts->input_dev->evbit);
-    set_bit(KEY_POWER, ts->input_dev->keybit);
+    set_bit(KEY_WAKEUP, ts->input_dev->keybit);
 #endif 
 #if GTP_CHANGE_X2Y
     GTP_SWAP(ts->abs_x_max, ts->abs_y_max);
