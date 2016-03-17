@@ -2007,7 +2007,7 @@ static int msm_compr_get_codec_caps(struct snd_compr_stream *cstream,
 	case SND_AUDIOCODEC_MP3:
 		codec->num_descriptors = 2;
 		codec->descriptor[0].max_ch = 2;
-		codec->descriptor[0].sample_rates = SNDRV_PCM_RATE_8000_48000;
+		codec->descriptor[0].sample_rates[0] = SNDRV_PCM_RATE_8000_48000;
 		codec->descriptor[0].bit_rate[0] = 320; /* 320kbps */
 		codec->descriptor[0].bit_rate[1] = 128;
 		codec->descriptor[0].num_bitrates = 2;
@@ -2018,7 +2018,7 @@ static int msm_compr_get_codec_caps(struct snd_compr_stream *cstream,
 	case SND_AUDIOCODEC_AAC:
 		codec->num_descriptors = 2;
 		codec->descriptor[1].max_ch = 2;
-		codec->descriptor[1].sample_rates = SNDRV_PCM_RATE_8000_48000;
+		codec->descriptor[1].sample_rates[0] = SNDRV_PCM_RATE_8000_48000;
 		codec->descriptor[1].bit_rate[0] = 320; /* 320kbps */
 		codec->descriptor[1].bit_rate[1] = 128;
 		codec->descriptor[1].num_bitrates = 2;
