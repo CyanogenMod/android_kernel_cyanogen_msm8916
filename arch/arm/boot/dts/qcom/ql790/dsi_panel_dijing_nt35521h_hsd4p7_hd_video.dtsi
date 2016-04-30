@@ -265,10 +265,6 @@
 		qcom,mdss-dsi-bl-pmic-pwm-frequency = <270>;
 		qcom,mdss-dsi-pwm-gpio = <&pm8916_gpios 6 0>;
 		qcom,mdss-dsi-reset-sequence = <1 10>, <0 10>, <1 120>;
-		qcom,mdss-dsi-pan-enable-dynamic-fps;
-		qcom,mdss-dsi-pan-fps-update = "dfps_immediate_porch_mode";
-		qcom,mdss-dsi-min-refresh-rate = <30>;
-		qcom,mdss-dsi-idle-refresh-rate = <48>;
 	};
 };
 
