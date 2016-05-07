@@ -257,18 +257,10 @@
 		cm,mdss-livedisplay-cabc-cmd = [
 			29 01 00 00 00 00 02 55 00
 		];
-		cm,mdss-livedisplay-cabc-ui-value = <91>;
-		cm,mdss-livedisplay-cabc-image-value = <93>;
-		cm,mdss-livedisplay-cabc-video-value = <92>;
-/*
-		// Disabled, since it interferes with CABC
-		cm,mdss-livedisplay-color-enhance-on = [
-			29 01 00 00 00 00 02 55 B1
-		];
-		cm,mdss-livedisplay-color-enhance-off = [
-			29 01 00 00 00 00 02 55 00
-		];
-*/
+		cm,mdss-livedisplay-cabc-ui-value = <0x01>;
+		cm,mdss-livedisplay-cabc-image-value = <0x02>;
+		cm,mdss-livedisplay-cabc-video-value = <0x03>;
+		cm,mdss-livedisplay-cabc-ce-value = <0x80>;
 		cm,mdss-livedisplay-post-cmd = [
 			05 01 00 00 00 00 02 29 00
 		];
