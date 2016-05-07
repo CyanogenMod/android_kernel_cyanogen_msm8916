@@ -1552,6 +1552,7 @@ static eHalStatus hdd_AssociationCompletionHandler( hdd_adapter_t *pAdapter, tCs
 #endif
     int status;
     v_BOOL_t hddDisconInProgress = FALSE;
+    tANI_U16 reason_code;
 
     /* HDD has initiated disconnect, do not send connect result indication
      * to kernel as it will be handled by __cfg80211_disconnect.
@@ -1640,9 +1641,6 @@ static eHalStatus hdd_AssociationCompletionHandler( hdd_adapter_t *pAdapter, tCs
         else
             hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Wrong Staid: %d", __func__, pRoamInfo->staId);
 
-#ifdef FEATURE_WLAN_TDLS
-        wlan_hdd_tdls_connection_callback(pAdapter);
-#endif
         //For reassoc, the station is already registered, all we need is to change the state
         //of the STA in TL.
         //If authentication is required (WPA/WPA2/DWEP), change TL to CONNECTED instead of AUTHENTICATED
@@ -1879,6 +1877,9 @@ static eHalStatus hdd_AssociationCompletionHandler( hdd_adapter_t *pAdapter, tCs
         {
             vos_record_roam_event(e_HDD_ENABLE_TX_QUEUE, NULL, 0);
         }
+#ifdef FEATURE_WLAN_TDLS
+        wlan_hdd_tdls_connection_callback(pAdapter);
+#endif
     }
     else
     {
@@ -1995,38 +1996,13 @@ static eHalStatus hdd_AssociationCompletionHandler( hdd_adapter_t *pAdapter, tCs
             }
             else
             {
-                if (pRoamInfo){
-                    eCsrAuthType authType =
-                        pWextState->roamProfile.AuthType.authType[0];
-                    eCsrEncryptionType encryptionType =
-                     pWextState->roamProfile.EncryptionType.encryptionType[0];
-                    v_BOOL_t isWep =
-                         (((authType == eCSR_AUTH_TYPE_OPEN_SYSTEM) ||
-                           (authType == eCSR_AUTH_TYPE_SHARED_KEY)) &&
-                           ((encryptionType == eCSR_ENCRYPT_TYPE_WEP40) ||
-                            (encryptionType == eCSR_ENCRYPT_TYPE_WEP104) ||
-                            (encryptionType ==
-                                     eCSR_ENCRYPT_TYPE_WEP40_STATICKEY) ||
-                            (encryptionType ==
-                                     eCSR_ENCRYPT_TYPE_WEP104_STATICKEY)));
+                reason_code = WLAN_STATUS_UNSPECIFIED_FAILURE;
 
+                if (pRoamInfo && pRoamInfo->reasonCode)
+                    reason_code = (tANI_U16)pRoamInfo->reasonCode;
 
-                     /* In case of OPEN-WEP or SHARED-WEP authentication,
-                     * send exact protocol reason code. This enables user
-                     * applications to reconnect the station with correct
-                     * configuration.
-                     */
-                    cfg80211_connect_result ( dev, pRoamInfo->bssid,
-                        NULL, 0, NULL, 0,
-                        (isWep && pRoamInfo->reasonCode) ?
-                        pRoamInfo->reasonCode :
-                        WLAN_STATUS_UNSPECIFIED_FAILURE,
-                        GFP_KERNEL );
-              } else
-                    cfg80211_connect_result ( dev, pWextState->req_bssId,
-                        NULL, 0, NULL, 0,
-                        WLAN_STATUS_UNSPECIFIED_FAILURE,
-                        GFP_KERNEL );
+                cfg80211_connect_result(dev, pWextState->req_bssId,
+                    NULL, 0, NULL, 0, reason_code, GFP_KERNEL);
             }
             /*Clear the roam profile*/
             hdd_clearRoamProfileIe( pAdapter );
@@ -3053,7 +3029,9 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_WARN,
                                    ("HDD: del STA IDX = %x"), pRoamInfo->staId) ;
 
-                    curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac, TRUE);
+                    mutex_lock(&pHddCtx->tdls_lock);
+                    curr_peer = wlan_hdd_tdls_find_peer(pAdapter,
+                                                  pRoamInfo->peerMac, FALSE);
                     if (NULL != curr_peer)
                     {
                        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
@@ -3062,10 +3040,17 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                        if (TDLS_IS_CONNECTED(curr_peer) ||
                           (eTDLS_LINK_CONNECTING == curr_peer->link_status))
                        {
+                           mutex_unlock(&pHddCtx->tdls_lock);
                            hdd_roamDeregisterTDLSSTA ( pAdapter, pRoamInfo->staId );
                        }
+                       else
+                           mutex_unlock(&pHddCtx->tdls_lock);
+
                        wlan_hdd_tdls_decrement_peer_count(pAdapter);
                     }
+                    else
+                        mutex_unlock(&pHddCtx->tdls_lock);
+
                     wlan_hdd_tdls_reset_peer(pAdapter, pRoamInfo->peerMac);
 
                     pHddCtx->tdlsConnInfo[staIdx].staId = 0 ;
@@ -3088,8 +3073,11 @@ eHalStatus hdd_RoamTdlsStatusUpdateHandler(hdd_adapter_t *pAdapter,
                        __func__, pRoamInfo->reasonCode);
 
 #ifdef CONFIG_TDLS_IMPLICIT
-            curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac, TRUE);
+            mutex_lock(&pHddCtx->tdls_lock);
+            curr_peer = wlan_hdd_tdls_find_peer(pAdapter, pRoamInfo->peerMac,
+                                                FALSE);
             wlan_hdd_tdls_indicate_teardown(pAdapter, curr_peer, pRoamInfo->reasonCode);
+            mutex_unlock(&pHddCtx->tdls_lock);
 #endif
             status = eHAL_STATUS_SUCCESS ;
             break ;
