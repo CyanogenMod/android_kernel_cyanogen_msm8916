@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -90,6 +90,13 @@ const v_U8_t hdd_QdiscAcToTlAC[] = {
 #define HDD_TX_STALL_SSR_THRESHOLD        5
 #define HDD_TX_STALL_SSR_THRESHOLD_HIGH   13
 #define HDD_TX_STALL_RECOVERY_THRESHOLD HDD_TX_STALL_SSR_THRESHOLD - 2
+#define HDD_TX_STALL_KICKDXE_THRESHOLD  HDD_TX_STALL_SSR_THRESHOLD - 4
+#define HDD_TX_STALL_FATAL_EVENT_THRESHOLD 2
+#define EAPOL_MASK 0x8013
+#define EAPOL_M1_BIT_MASK 0x8000
+#define EAPOL_M2_BIT_MASK 0x0001
+#define EAPOL_M3_BIT_MASK 0x8013
+#define EAPOL_M4_BIT_MASK 0x0003
 
 int gRatefromIdx[] = {
  10,20,55,100,
@@ -1166,6 +1173,13 @@ void __hdd_tx_timeout(struct net_device *dev)
                 FL("TL is not in authenticated state so skipping SSR"));
       pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount = 0;
       goto print_log;
+   }
+   if (pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount ==
+          HDD_TX_STALL_KICKDXE_THRESHOLD)
+   {
+      VOS_TRACE(VOS_MODULE_ID_HDD_SAP_DATA, VOS_TRACE_LEVEL_ERROR,
+                "%s: Request Kick DXE for recovery",__func__);
+      WLANTL_TLDebugMessage(WLANTL_DEBUG_KICKDXE);
    }
    if (pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount ==
           HDD_TX_STALL_RECOVERY_THRESHOLD)
@@ -2365,7 +2379,7 @@ static void hdd_mon_add_rx_radiotap_hdr (struct sk_buff *skb,
     if( rateIdx >= 218 && rateIdx <= 225 )
        rateIdx-=210;
 
-    if(rateIdx > (sizeof(gRatefromIdx)/ sizeof(int))) {
+    if(rateIdx >= (sizeof(gRatefromIdx)/ sizeof(int))) {
        VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_ERROR,
                   "%s: invalid rateIdx %d make it 0", __func__, rateIdx);
        rateIdx = 0;
