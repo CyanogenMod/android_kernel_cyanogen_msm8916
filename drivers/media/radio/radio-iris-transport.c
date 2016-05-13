@@ -201,9 +201,11 @@ static int radio_hci_smd_register_dev(struct radio_data *hsmd)
 
 static void radio_hci_smd_deregister(void)
 {
-	radio_hci_unregister_dev(hs.hdev);
-	kfree(hs.hdev);
-	hs.hdev = NULL;
+	if (hs.hdev != NULL) {
+		radio_hci_unregister_dev(hs.hdev);
+		kfree(hs.hdev);
+		hs.hdev = NULL;
+	}
 
 	smd_close(hs.fm_channel);
 	hs.fm_channel = 0;
