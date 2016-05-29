@@ -84,7 +84,7 @@ struct fan5405_chip {
     /*add irq work for  vbus irq */  
 	struct work_struct irq_handler_work;
 	/* add alarm for batt info report */
-	struct wake_lock          batt_info_alarm_wlock;
+	struct wakeup_source          batt_info_alarm_wlock;
 	struct work_struct batt_info_alarm_work;
 	struct alarm report_batt_info_alarm;
 
@@ -94,7 +94,6 @@ struct fan5405_chip {
 	struct power_supply     *usb_psy;
 	struct power_supply     batt_psy;
 	
-	//struct wake_lock          fan5405_wlock;
 	struct workqueue_struct *fan5405_wq;
 	struct delayed_work     update_t32s_work;
 	struct delayed_work     update_heartbeat_work;
@@ -106,10 +105,10 @@ struct fan5405_chip {
 	struct pinctrl_state *int_state_active;
 	struct pinctrl_state *int_state_suspend;
 	/* added for reporting batt info in suspend */
-	struct wake_lock wait_report_info_lock;
+	struct wakeup_source wait_report_info_lock;
         /* add by sunxiaogang@yulong.com
            no suspend during charging  2014.12.09*/
-        struct wake_lock charging_wlock;
+	struct wakeup_source charging_wlock;
 };
 
 static struct fan5405_chip *this_chip;
@@ -973,7 +972,7 @@ static enum alarmtimer_restart batt_info_alarm_callback(struct alarm *alarm, kti
 	struct fan5405_chip *chip = container_of(alarm, struct fan5405_chip, report_batt_info_alarm);
 
 	pr_debug("battery alarm is coming\n");
-	wake_lock_timeout(&chip->batt_info_alarm_wlock,2*HZ);
+	__pm_wakeup_event(&chip->batt_info_alarm_wlock, 2000); /* 2 sec */
 	queue_work(chip->fan5405_wq, &chip->batt_info_alarm_work);
 	
 	return ALARMTIMER_NORESTART;
@@ -1280,11 +1279,11 @@ void fan5405_set_wake_lock(struct fan5405_chip *chip)
 {
         if ((chip->set_ivbus_max <= 2) || chip->charging_disabled)
         {
-            wake_unlock(&chip->charging_wlock);
+            __pm_relax(&chip->charging_wlock);
         }
         else
         {
-            wake_lock(&chip->charging_wlock);
+            __pm_stay_awake(&chip->charging_wlock);
         }
 }
 /*add end*/
@@ -1360,7 +1359,7 @@ static void fan5405_set_charged(struct power_supply *psy)
 	struct fan5405_chip *chip = container_of(psy,
 				struct fan5405_chip, batt_psy);
 	
-	wake_lock_timeout(&chip->wait_report_info_lock, (2*HZ));
+	__pm_wakeup_event(&chip->wait_report_info_lock, 2000); /* 2 sec */
 	queue_work(chip->fan5405_wq, &chip->irq_handler_work);
 }
 
@@ -1626,9 +1625,9 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
 					POWER_SUPPLY_PROP_CAPACITY, &ret);
 	chip->batt_capa = ret.intval;
 
-	wake_lock_init(&chip->wait_report_info_lock, WAKE_LOCK_SUSPEND, "fan5405-report-info");
+	wakeup_source_init(&chip->wait_report_info_lock, "fan5405-report-info");
         /*add by sunxiaogang@yulong.com no suspend on charging 2014.12.09*/
-        wake_lock_init(&chip->charging_wlock, WAKE_LOCK_SUSPEND, "fan5405-charging-wlock");
+	wakeup_source_init(&chip->charging_wlock, "fan5405-charging-wlock");
 	
 	/* register battery power supply */
 	chip->batt_psy.name		= chip->batt_psy_name;
@@ -1693,7 +1692,7 @@ static int fan5405_probe(struct i2c_client *client, const struct i2c_device_id *
         queue_delayed_work(chip->fan5405_wq, &chip->update_t32s_work,
                 msecs_to_jiffies(UPDATE_T32S_PERIOD_MS));
 /*add end by sunxiaogang@yulong.com*/
-	wake_lock_init(&chip->batt_info_alarm_wlock, WAKE_LOCK_SUSPEND, "batt_info_alarm");
+	wakeup_source_init(&chip->batt_info_alarm_wlock, "batt_info_alarm");
 	INIT_WORK(&chip->batt_info_alarm_work, batt_info_alarm_work);
 	alarm_init(&chip->report_batt_info_alarm, ALARM_REALTIME,
 			batt_info_alarm_callback);
@@ -1709,9 +1708,9 @@ unregister_batt_psy:
 	power_supply_unregister(&chip->batt_psy);
 	gpio_free(chip->en_gpio);	
 fail_hw_init:
-	wake_lock_destroy(&chip->wait_report_info_lock);
+	wakeup_source_trash(&chip->wait_report_info_lock);
         /*add by sunxiaogang@yulong.com no suspend on charging 2014.12.09*/
-        wake_lock_destroy(&chip->charging_wlock);
+	wakeup_source_trash(&chip->charging_wlock);
 		
 	return rc;
 }
@@ -1730,7 +1729,7 @@ static int fan5405_remove(struct i2c_client *client)
 	cancel_work_sync(&chip->irq_handler_work);
 	alarm_cancel(&chip->report_batt_info_alarm);
 	cancel_work_sync(&chip->batt_info_alarm_work);
-	wake_lock_destroy(&chip->batt_info_alarm_wlock);
+	wakeup_source_trash(&chip->batt_info_alarm_wlock);
 	gpio_free(chip->en_gpio);
 	destroy_workqueue(chip->fan5405_wq);
 	
