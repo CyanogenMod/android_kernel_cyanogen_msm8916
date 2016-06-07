@@ -443,7 +443,6 @@ tSirRetStatus dphDeleteHashEntry(tpAniSirGlobal pMac, tSirMacAddr staAddr, tANI_
 #ifdef WLAN_FEATURE_11W
       ptr->last_assoc_received_time = 0;
 #endif
-
       ptr->next = 0;
     }
   else
