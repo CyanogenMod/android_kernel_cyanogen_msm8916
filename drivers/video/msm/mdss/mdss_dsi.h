@@ -98,6 +98,9 @@ enum dsi_panel_status_mode {
 	ESD_REG,
 	ESD_REG_NT35596,
 	ESD_TE,
+#ifdef CONFIG_MACH_CP8675
+	ESD_REG_YL,
+#endif
 	ESD_MAX,
 };
 
@@ -252,6 +255,19 @@ struct dsi_panel_cmds {
 	int link_state;
 };
 
+#ifdef CONFIG_MACH_CP8675
+struct status_reg {
+	u8 reg;
+	u8 num_vals;
+	u8 *vals;
+};
+
+struct dsi_panel_status_regs {
+	size_t num_regs;
+	struct status_reg *regs;
+};
+#endif
+
 struct dsi_kickoff_action {
 	struct list_head act_entry;
 	void (*action) (void *);
@@ -375,6 +391,9 @@ struct mdss_dsi_ctrl_pdata {
 	struct dsi_panel_cmds post_panel_on_cmds;
 	struct dsi_panel_cmds off_cmds;
 	struct dsi_panel_cmds status_cmds;
+#ifdef CONFIG_MACH_CP8675
+	struct dsi_panel_status_regs status_regs;
+#endif
 	u32 status_cmds_rlen;
 	u32 status_value;
 	u32 status_error_count;

@@ -39,7 +39,7 @@
 struct snd_compressed_buffer {
 	__u32 fragment_size;
 	__u32 fragments;
-};
+} __attribute__((packed, aligned(4)));
 
 /**
  * struct snd_compr_params: compressed stream params
@@ -51,7 +51,7 @@ struct snd_compr_params {
 	struct snd_compressed_buffer buffer;
 	struct snd_codec codec;
 	__u8 no_wake_mode;
-};
+} __attribute__((packed, aligned(4)));
 
 /**
  * struct snd_compr_tstamp: timestamp descriptor
@@ -71,7 +71,7 @@ struct snd_compr_tstamp {
 	__u32 pcm_io_frames;
 	__u32 sampling_rate;
 	uint64_t timestamp;
-};
+} __attribute__((packed, aligned(4)));
 
 /**
  * struct snd_compr_avail: avail descriptor
@@ -81,7 +81,7 @@ struct snd_compr_tstamp {
 struct snd_compr_avail {
 	__u64 avail;
 	struct snd_compr_tstamp tstamp;
-} __attribute__((packed));
+} __attribute__((packed, aligned(4)));
 
 enum snd_compr_direction {
 	SND_COMPRESS_PLAYBACK = 0,
@@ -108,7 +108,7 @@ struct snd_compr_caps {
 	__u32 max_fragments;
 	__u32 codecs[MAX_NUM_CODECS];
 	__u32 reserved[11];
-};
+} __attribute__((packed, aligned(4)));
 
 /**
  * struct snd_compr_codec_caps: query capability of codec
@@ -120,7 +120,7 @@ struct snd_compr_codec_caps {
 	__u32 codec;
 	__u32 num_descriptors;
 	struct snd_codec_desc descriptor[MAX_NUM_CODEC_DESCRIPTORS];
-};
+} __attribute__((packed, aligned(4)));
 
 /**
  * struct snd_compr_audio_info: compressed input audio information
@@ -153,7 +153,7 @@ enum {
 struct snd_compr_metadata {
 	 __u32 key;
 	 __u32 value[8];
-};
+} __attribute__((packed, aligned(4)));
 
 /**
  * compress path ioctl definitions

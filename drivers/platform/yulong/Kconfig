@@ -1,0 +1,33 @@
+# Yulong/Coolpad configuration options
+
+config MACH_YULONG
+	bool "Yulong device"
+	depends on ARCH_MSM
+	help
+	  Support for Yulong products
+
+config MACH_YULONG_MSM8939
+	bool "Yulong MSM8939"
+	depends on ARCH_MSM8916
+	select MACH_YULONG
+	help
+	  Support for MSM8939 Yulong variants
+
+menu "Yulong board selection"
+
+config MACH_CP8675
+	bool "CP8675_I01 board"
+	select MACH_YULONG_MSM8939
+	help
+	  Support for Yulong CP8675_I01 variant
+
+endmenu
+
+menu "Yulong features"
+
+config YL_POWEROFF_ALARM
+	bool "Support Yulong power-off alarm"
+	help
+	  Use Yulong implementation of RTC wakeup alarms.
+
+endmenu

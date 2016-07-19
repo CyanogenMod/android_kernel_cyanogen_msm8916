@@ -71,6 +71,10 @@ static int mdss_dsi_regulator_init(struct platform_device *pdev)
 	return rc;
 }
 
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+extern void tps65132_config_set_to_tablet_mode(void);
+extern void tps65132_config_proc(void);
+#endif
 static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 {
 	int ret = 0;
@@ -174,11 +178,18 @@ static int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 		!pdata->panel_info.mipi.lp11_init) {
 		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
 			pr_debug("reset enable: pinctrl not enabled\n");
-
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (pdata->panel_info.mipi.has_tps65132)
+			tps65132_config_set_to_tablet_mode();
+#endif
 		ret = mdss_dsi_panel_reset(pdata, 1);
 		if (ret)
 			pr_err("%s: Panel reset failed. rc=%d\n",
 					__func__, ret);
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (pdata->panel_info.mipi.has_tps65132)
+			tps65132_config_proc();
+#endif
 	}
 
 error:
@@ -472,6 +483,12 @@ static int mdss_dsi_off(struct mdss_panel_data *pdata, int power_state)
 
 	panel_info = &ctrl_pdata->panel_data.panel_info;
 
+#if defined(CONFIG_MACH_CP8675)
+	/*add set reset low by liujianfeng3@yulong.com for yashi nt35596 lcd error display*/
+	gpio_set_value((ctrl_pdata->rst_gpio), 0);
+	usleep(100 * 1000);
+#endif
+
 	pr_debug("%s+: ctrl=%p ndx=%d power_state=%d\n",
 		__func__, ctrl_pdata, ctrl_pdata->ndx, power_state);
 
@@ -613,7 +630,15 @@ int mdss_dsi_on(struct mdss_panel_data *pdata)
 	if (mipi->lp11_init) {
 		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
 			pr_debug("reset enable: pinctrl not enabled\n");
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (mipi->has_tps65132)
+			tps65132_config_set_to_tablet_mode();
+#endif
 		mdss_dsi_panel_reset(pdata, 1);
+#if defined(CONFIG_MACH_YULONG) && defined(CONFIG_REGULATOR_YL_TPS65132)
+		if (mipi->has_tps65132)
+			tps65132_config_proc();
+#endif
 	}
 
 	if (mipi->init_delay)
@@ -1927,6 +1952,9 @@ int dsi_panel_device_register(struct device_node *pan_node,
 	ctrl_pdata->panel_data.event_handler = mdss_dsi_event_handler;
 
 	if (ctrl_pdata->status_mode == ESD_REG ||
+#ifdef CONFIG_MACH_YULONG
+			ctrl_pdata->status_mode == ESD_REG_YL ||
+#endif
 			ctrl_pdata->status_mode == ESD_REG_NT35596)
 		ctrl_pdata->check_status = mdss_dsi_reg_status_check;
 	else if (ctrl_pdata->status_mode == ESD_BTA)

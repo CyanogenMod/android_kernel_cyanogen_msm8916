@@ -942,5 +942,34 @@ config SENSORS_ST480
 	  If you say yes here you get support for Senodia
 	  magnetic sensors ST480.
 
+config SENSORS_MPU6880
+	tristate "Invensense MPU6880 support"
+	depends on I2C
+	default n
+	select INPUT_POLLDEV
+	help
+	  If you say yes here you get support for Invensense's MPU6880.
+
+config SENSORS_PA12200001
+	tristate "TXC_PA12200001 proximity/light sensor support"
+	depends on I2C
+	default n
+	help
+	  If you say yes here you get support for TXC's PA12200001 proximity
+	  and light sensor.
+
+config SENSORS_YL_HALL
+	tristate "Yulong/Coolpad Hall sensor support"
+	default n
+	help
+	  If you say yes here you get support for Yulong/Coolpad's Hall sensor.
+
+config SENSORS_YL_PARAMS
+	tristate "Yulong sensor parameter support"
+	default n
+	help
+	  If you say yes here you get support for Yulong/Coolpad's sensor
+	  calibration parameter driver.
+
 endif
 

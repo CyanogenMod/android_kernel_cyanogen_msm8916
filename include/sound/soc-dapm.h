@@ -104,6 +104,9 @@ struct device;
 {	.id = snd_soc_dapm_value_mux, .name = wname, .reg = wreg, \
 	.shift = wshift, .invert = winvert, .kcontrol_news = wcontrols, \
 	.num_kcontrols = 1}
+#define SND_SOC_DAPM_DEMUX(wname, wreg, wshift, winvert, wcontrols) \
+{	.id = snd_soc_dapm_demux, .name = wname, .reg = wreg, .shift = wshift, \
+	.invert = winvert, .kcontrol_news = wcontrols, .num_kcontrols = 1}
 
 /* Simplified versions of above macros, assuming wncontrols = ARRAY_SIZE(wcontrols) */
 #define SOC_PGA_ARRAY(wname, wreg, wshift, winvert,\
@@ -154,6 +157,11 @@ struct device;
 #define SND_SOC_DAPM_VIRT_MUX_E(wname, wreg, wshift, winvert, wcontrols, \
 	wevent, wflags) \
 {	.id = snd_soc_dapm_virt_mux, .name = wname, .reg = wreg, .shift = wshift, \
+	.invert = winvert, .kcontrol_news = wcontrols, .num_kcontrols = 1, \
+	.event = wevent, .event_flags = wflags}
+#define SND_SOC_DAPM_DEMUX_E(wname, wreg, wshift, winvert, wcontrols, wevent, \
+	wflags) \
+{	.id = snd_soc_dapm_demux, .name = wname, .reg = wreg, .shift = wshift, \
 	.invert = winvert, .kcontrol_news = wcontrols, .num_kcontrols = 1, \
 	.event = wevent, .event_flags = wflags}
 
@@ -432,6 +440,7 @@ enum snd_soc_dapm_type {
 	snd_soc_dapm_mux,			/* selects 1 analog signal from many inputs */
 	snd_soc_dapm_virt_mux,			/* virtual version of snd_soc_dapm_mux */
 	snd_soc_dapm_value_mux,			/* selects 1 analog signal from many inputs */
+	snd_soc_dapm_demux,			/* connects the input to one of multiple outputs */
 	snd_soc_dapm_mixer,			/* mixes several analog signals together */
 	snd_soc_dapm_mixer_named_ctl,		/* mixer with named controls */
 	snd_soc_dapm_pga,			/* programmable gain/attenuation (volume) */
@@ -500,6 +509,7 @@ struct snd_soc_dapm_path {
 
 	struct list_head list_source;
 	struct list_head list_sink;
+	struct list_head list_kcontrol;
 	struct list_head list;
 };
 
@@ -568,6 +578,10 @@ struct snd_soc_dapm_update {
 	int val;
 };
 
+struct snd_soc_dapm_wcache {
+	struct snd_soc_dapm_widget *widget;
+};
+
 /* DAPM context */
 struct snd_soc_dapm_context {
 	enum snd_soc_bias_level bias_level;
@@ -590,6 +604,9 @@ struct snd_soc_dapm_context {
 	struct list_head list;
 
 	int (*stream_event)(struct snd_soc_dapm_context *dapm, int event);
+
+	struct snd_soc_dapm_wcache path_sink_cache;
+	struct snd_soc_dapm_wcache path_source_cache;
 
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs_dapm;
