@@ -149,7 +149,7 @@
 			interrupts = <96 0x2002>;
 			vdd-supply = <&pm8916_l17>;
 			vio-supply = <&pm8916_l6>;
-			bosch,place = <5>;
+			bosch,place = <7>;
 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
 		};
 

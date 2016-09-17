@@ -230,6 +230,12 @@ enum BMI_FIFO_DATA_SELECT_T {
 * Bst sensor common definition,
 * please give parameters in BSP file.
 */
+struct bmi160_platform_data {
+        int gpio_pin;
+        unsigned int int_flag;
+        s8 place;
+};
+
 struct bosch_sensor_specific {
 	char *name;
 	/* 0 to 7 */
@@ -343,14 +349,13 @@ struct bmi_client_data {
 
 	unsigned char *fifo_data;
 	u8 stc_enable;
-	uint16_t gpio_pin;
 	u8 std;
 	u8 sig_flag;
 	unsigned char calib_status;
 	struct mutex mutex_op_mode;
 	struct mutex mutex_enable;
 	struct mutex mutex_ring_buf;
-	struct bosch_sensor_specific *bst_pd;
+	struct bmi160_platform_data *pdata;
 	bool power_enabled;
 	int IRQ;
 #ifdef CONFIG_HAS_EARLYSUSPEND

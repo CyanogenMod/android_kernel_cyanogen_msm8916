@@ -38,6 +38,11 @@ static unsigned char g_fifo_data_arr[2048];/*1024 + 12*4*/
 #define BMI160_VIO_MIN_UV       1200000
 #define BMI160_VIO_MAX_UV       3600000
 
+/* Polling delay in msecs */
+#define POLL_INTERVAL_MIN_MS    10
+#define POLL_INTERVAL_MAX_MS    4000
+
+
 static struct sensors_classdev accel_cdev = {
 	.name = "bmi160-accel",
 	.vendor = "Bosch Corporation",
@@ -45,9 +50,10 @@ static struct sensors_classdev accel_cdev = {
 	.handle = SENSORS_ACCELERATION_HANDLE,
 	.type = SENSOR_TYPE_ACCELEROMETER,
 	.max_range = "156.8",
-	.resolution = "0.00781",
+	.resolution = "0.153125",
 	.sensor_power = "0.13",
-	.min_delay = 1000,
+	.min_delay = POLL_INTERVAL_MIN_MS * 1000, /* in microseconds */
+	.max_delay = POLL_INTERVAL_MAX_MS,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
 	.enabled = 0,
@@ -68,7 +74,8 @@ static struct sensors_classdev gyro_cdev = {
 	.max_range = "35",
 	.resolution = "0.06",
 	.sensor_power = "0.13",
-	.min_delay = 2000,
+	.min_delay = POLL_INTERVAL_MIN_MS * 1000, /* in microseconds */
+	.max_delay = POLL_INTERVAL_MAX_MS,
 	.fifo_reserved_event_count = 0,
 	.fifo_max_event_count = 0,
 	.enabled = 0,
@@ -571,9 +578,9 @@ static void bmi_remap_sensor_data(struct bmi160_axis_data_t *val,
 {
 	struct bosch_sensor_data bsd;
 
-	if ((NULL == client_data->bst_pd) ||
+	if ((NULL == client_data->pdata) ||
 			(BOSCH_SENSOR_PLACE_UNKNOWN
-			 == client_data->bst_pd->place))
+			 == client_data->pdata->place))
 		return;
 
 	bsd.x = val->x;
@@ -581,7 +588,7 @@ static void bmi_remap_sensor_data(struct bmi160_axis_data_t *val,
 	bsd.z = val->z;
 
 	bst_remap_sensor_data_dft_tab(&bsd,
-			client_data->bst_pd->place);
+			client_data->pdata->place);
 
 	val->x = bsd.x;
 	val->y = bsd.y;
@@ -594,9 +601,9 @@ static void bmi_remap_data_acc(struct bmi_client_data *client_data,
 {
 	struct bosch_sensor_data bsd;
 
-	if ((NULL == client_data->bst_pd) ||
+	if ((NULL == client_data->pdata) ||
 			(BOSCH_SENSOR_PLACE_UNKNOWN
-			 == client_data->bst_pd->place))
+			 == client_data->pdata->place))
 		return;
 
 	bsd.x = acc_frame->x;
@@ -604,7 +611,7 @@ static void bmi_remap_data_acc(struct bmi_client_data *client_data,
 	bsd.z = acc_frame->z;
 
 	bst_remap_sensor_data_dft_tab(&bsd,
-			client_data->bst_pd->place);
+			client_data->pdata->place);
 
 	acc_frame->x = bsd.x;
 	acc_frame->y = bsd.y;
@@ -618,9 +625,9 @@ static void bmi_remap_data_gyro(struct bmi_client_data *client_data,
 {
 	struct bosch_sensor_data bsd;
 
-	if ((NULL == client_data->bst_pd) ||
+	if ((NULL == client_data->pdata) ||
 			(BOSCH_SENSOR_PLACE_UNKNOWN
-			 == client_data->bst_pd->place))
+			 == client_data->pdata->place))
 		return;
 
 	bsd.x = gyro_frame->x;
@@ -628,7 +635,7 @@ static void bmi_remap_data_gyro(struct bmi_client_data *client_data,
 	bsd.z = gyro_frame->z;
 
 	bst_remap_sensor_data_dft_tab(&bsd,
-			client_data->bst_pd->place);
+			client_data->pdata->place);
 
 	gyro_frame->x = bsd.x;
 	gyro_frame->y = bsd.y;
@@ -2137,8 +2144,8 @@ static ssize_t bmi160_place_show(struct device *dev,
 	struct bmi_client_data *client_data = dev_get_drvdata(dev);
 	int place = BOSCH_SENSOR_PLACE_UNKNOWN;
 
-	if (NULL != client_data->bst_pd)
-		place = client_data->bst_pd->place;
+	if (NULL != client_data->pdata)
+		place = client_data->pdata->place;
 
 	return sprintf(buf, "%d\n", place);
 }
@@ -2222,7 +2229,7 @@ static ssize_t bmi160_enable_store(struct device *dev,
 			cancel_delayed_work_sync(&client_data->work);
 			atomic_set(&client_data->wkqueue_en, 0);
 			if (bmi160_power_ctl(client_data, false)) {
-				dev_err(dev, "power up sensor failed.\n");
+				dev_err(dev, "power down sensor failed.\n");
 				goto mutex_exit;
 			}
 		}
@@ -4704,7 +4711,7 @@ static void bmi160_set_acc_enable(struct device *dev, unsigned int enable)
 			gyro_current_enable = atomic_read(&client_data->gyro_en);
 			if (!gyro_current_enable) {
 				if (bmi160_power_ctl(client_data, false)) {
-					dev_err(dev, "power up sensor failed.\n");
+					dev_err(dev, "power down sensor failed.\n");
 					goto mutex_exit;
 				}
 			}
@@ -4748,7 +4755,7 @@ static void bmi160_set_gyro_enable(struct device *dev, unsigned int enable)
 			acc_current_enable = atomic_read(&client_data->wkqueue_en);
 			if (!acc_current_enable) {
 				if (bmi160_power_ctl(client_data, false)) {
-					dev_err(dev, "power up sensor failed.\n");
+					dev_err(dev, "power down sensor failed.\n");
 					goto mutex_exit;
 				}
 			}
@@ -4772,32 +4779,54 @@ static int bmi160_self_calibration_xyz(struct sensors_classdev *sensors_cdev,
 
 	struct bmi_client_data *client_data = container_of(sensors_cdev,
 				struct bmi_client_data, accel_cdev);
+	int acc_pre_enable = atomic_read(&client_data->wkqueue_en);
+	if (acc_pre_enable)
+		bmi160_set_acc_enable(&client_data->i2c->dev, 0);
 
+	err = bmi160_power_ctl(client_data, true);
+	if (err) {
+		dev_err(&client_data->i2c->dev, "power up sensor failed.\n");
+		err = -EINVAL;
+		goto exit;
+	}
 	err = BMI_CALL_API(set_accel_foc_trigger)(X_AXIS,
 				 1, &accel_offset_x);
 	if (!err)
 		client_data->calib_status |=
 			BMI_FAST_CALI_TRUE << BMI_ACC_X_FAST_CALI_RDY;
-	else
-		return -EIO;
-
+	else {
+		err = -EIO;
+		goto exit;
+	}
 	err = BMI_CALL_API(set_accel_foc_trigger)(Y_AXIS,
 				 1, &accel_offset_y);
 	if (!err)
 		client_data->calib_status |=
 			BMI_FAST_CALI_TRUE << BMI_ACC_Y_FAST_CALI_RDY;
-	else
-		return -EIO;
-
+	else {
+		err = -EIO;
+		goto exit;
+	}
 	err = BMI_CALL_API(set_accel_foc_trigger)(Z_AXIS,
 					 1, &accel_offset_z);
 	if (!err)
 		client_data->calib_status |=
 			BMI_FAST_CALI_TRUE << BMI_ACC_Z_FAST_CALI_RDY;
-	else
-		return -EIO;
+	else {
+		err = -EIO;
+		goto exit;
+	}
+	err = bmi160_power_ctl(client_data, false);
+	if (err) {
+		dev_err(&client_data->i2c->dev, "power down sensor failed.\n");
+		err = -EINVAL;
+		goto exit;
+	}
+exit:
+	if (acc_pre_enable)
+		bmi160_set_acc_enable(&client_data->i2c->dev, 1);
 
-	return 0;
+	return err;
 }
 
 static int bmi160_accel_poll_delay(struct sensors_classdev *sensors_cdev,
@@ -4806,10 +4835,10 @@ static int bmi160_accel_poll_delay(struct sensors_classdev *sensors_cdev,
 	struct bmi_client_data *data = container_of(sensors_cdev,
 					struct bmi_client_data, accel_cdev);
 
-	if (delay_ms < 10)
-		delay_ms = 10;
-	if (delay_ms > 10)
-		delay_ms = 10;
+	if (delay_ms < POLL_INTERVAL_MIN_MS)
+		delay_ms = POLL_INTERVAL_MIN_MS;
+	if (delay_ms > POLL_INTERVAL_MAX_MS)
+		delay_ms = POLL_INTERVAL_MAX_MS;
 	atomic_set(&data->delay, (unsigned int) delay_ms);
 	return 0;
 }
@@ -4829,10 +4858,10 @@ static int bmi160_gyro_poll_delay(struct sensors_classdev *sensors_cdev,
 	struct bmi_client_data *data = container_of(sensors_cdev,
 					struct bmi_client_data, gyro_cdev);
 
-	if (delay_ms < 10)
-		delay_ms = 10;
-	if (delay_ms > 10)
-		delay_ms = 10;
+	if (delay_ms < POLL_INTERVAL_MIN_MS)
+		delay_ms = POLL_INTERVAL_MIN_MS;
+	if (delay_ms > POLL_INTERVAL_MAX_MS)
+		delay_ms = POLL_INTERVAL_MAX_MS;
 	atomic_set(&data->delay, (unsigned int) delay_ms);
 	return 0;
 }
@@ -4848,20 +4877,55 @@ static int bmi160_cdev_enable_gyro(struct sensors_classdev *sensors_cdev,
 }
 
 
+
+static int bmi160_parse_dt(struct device *dev,
+                        struct bmi160_platform_data *pdata)
+{
+        struct device_node *np = dev->of_node;
+        u32 temp_val;
+        int rc;
+
+        rc = of_property_read_u32(np, "bosch,place", &temp_val);
+        if (rc && (rc != -EINVAL)) {
+                dev_err(dev, "Unable to read sensor place paramater\n");
+                return rc;
+        }
+        if (temp_val > 7 || temp_val < 0) {
+                dev_err(dev, "Invalid place parameter, use default value 0\n");
+                pdata->place = 0;
+        } else {
+                pdata->place = temp_val;
+        }
+#ifdef BMI160_ENABLE_INT1
+        pdata->gpio_pin = of_get_named_gpio_flags(dev->of_node,
+                                "bosch,gpio-int1", 0, &pdata->int_flag);
+#endif
+#ifdef BMI160_ENABLE_INT2
+        pdata->gpio_pin = of_get_named_gpio_flags(dev->of_node,
+                                "bosch,gpio-int2", 0, &pdata->int_flag);
+#endif
+        return 0;
+}
+
+
+
+
 int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 {
 	int err = 0;
+	struct bmi160_platform_data *pdata;
 #ifdef BMI160_MAG_INTERFACE_SUPPORT
 	u8 mag_dev_addr;
 	u8 mag_urst_len;
 	u8 mag_op_mode;
 #endif
+
 	err = bmi160_power_init(client_data);
 	if (err) {
 		dev_err(&client_data->i2c->dev,
 			 "Failed to get sensor regulators\n");
 		err = -EINVAL;
-		goto exit_err_clean;
+		goto exit;
 	}
 	err = bmi160_power_ctl(client_data, true);
 	if (err) {
@@ -4871,10 +4935,36 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 		goto deinit_power_exit;
 	}
 
+	if (client_data->i2c->dev.of_node) {
+		pdata = devm_kzalloc(&client_data->i2c->dev,
+				sizeof(*pdata), GFP_KERNEL);
+		if (!pdata) {
+			dev_err(dev, "Failed to allcated memory\n");
+			err = -ENOMEM;
+			goto disable_power_exit;
+		}
+		err = bmi160_parse_dt(&client_data->i2c->dev, pdata);
+		if (err) {
+			dev_err(dev, "Failed to parse device tree\n");
+			err = -EINVAL;
+			goto pdata_free_exit;
+		}
+	} else {
+		pdata = client_data->i2c->dev.platform_data;
+		dev_err(dev, "Use platform data\n");
+	}
+
+	if (!pdata) {
+		dev_err(&client_data->i2c->dev, "Cannot get device platform data\n");
+		err = -EINVAL;
+		goto exit;
+	}
+	client_data->pdata = pdata;
+
 	/* check chip id */
 	err = bmi_check_chip_id(client_data);
 	if (err)
-		goto disable_power_exit;
+		goto exit;
 
 	dev_set_drvdata(dev, client_data);
 	client_data->dev = dev;
@@ -4886,7 +4976,7 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 	/* input device init */
 	err = bmi_input_init(client_data);
 	if (err < 0)
-		goto disable_power_exit;
+		goto free_i2c_clientdata_exit;
 
 	/* sysfs node creation */
 	err = sysfs_create_group(&client_data->i2c->dev.kobj,
@@ -4897,6 +4987,8 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 
 	/*to do*/
 	client_data->accel_cdev = accel_cdev;
+	client_data->accel_cdev.min_delay = POLL_INTERVAL_MIN_MS * 1000;
+	client_data->accel_cdev.delay_msec = 200;
 	client_data->accel_cdev.sensors_enable = bmi160_cdev_enable_accel;
 	client_data->accel_cdev.sensors_poll_delay = bmi160_accel_poll_delay;
 	client_data->accel_cdev.sensors_calibrate = bmi160_self_calibration_xyz;
@@ -4908,6 +5000,8 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 	}
 
 	client_data->gyro_cdev = gyro_cdev;
+	client_data->gyro_cdev.min_delay = POLL_INTERVAL_MIN_MS * 1000;
+	client_data->gyro_cdev.delay_msec = 200;
 	client_data->gyro_cdev.sensors_enable = bmi160_cdev_enable_gyro;
 	client_data->gyro_cdev.sensors_poll_delay = bmi160_gyro_poll_delay;
 	err = sensors_classdev_register(&client_data->input_gyro->dev,
@@ -4915,27 +5009,6 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 	if (err) {
 		dev_err(&client_data->i2c->dev, "sensors class register failed.\n");
 		return err;
-	}
-
-	if (NULL != dev->platform_data) {
-		client_data->bst_pd = kzalloc(sizeof(*client_data->bst_pd),
-				GFP_KERNEL);
-
-		if (NULL != client_data->bst_pd) {
-			memcpy(client_data->bst_pd, dev->platform_data,
-					sizeof(*client_data->bst_pd));
-			dev_notice(dev, "%s sensor driver set place: p%d\n",
-					client_data->bst_pd->name,
-					client_data->bst_pd->place);
-		}
-	}
-
-	if (NULL != client_data->bst_pd) {
-		memcpy(client_data->bst_pd, dev->platform_data,
-				sizeof(*client_data->bst_pd));
-		dev_notice(dev, "%s sensor driver set place: p%d\n",
-				client_data->bst_pd->name,
-				client_data->bst_pd->place);
 	}
 
 	/* workqueue init */
@@ -5008,20 +5081,21 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 	if (err < 0)
 		goto exit_err_sysfs;
 
-#ifdef BMI160_ENABLE_INT1
-	client_data->gpio_pin = of_get_named_gpio_flags(dev->of_node,
-				"bosch,gpio-int1", 0, NULL);
-	dev_info(client_data->dev, "BMI160 qpio number:%d\n",
-				client_data->gpio_pin);
-	err += gpio_request_one(client_data->gpio_pin,
+	err = gpio_request_one(client_data->pdata->gpio_pin,
 				GPIOF_IN, "bmi160_int");
-	err += gpio_direction_input(client_data->gpio_pin);
-	client_data->IRQ = gpio_to_irq(client_data->gpio_pin);
+	if (err < 0) {
+		dev_err(client_data->dev,
+		       "failed to request gpio %d, error %d\n",
+                       client_data->pdata->gpio_pin, err);
+        }
+	client_data->IRQ = gpio_to_irq(client_data->pdata->gpio_pin);
 	if (err) {
 		dev_err(client_data->dev,
 			"can not request gpio to irq number\n");
-		client_data->gpio_pin = 0;
+		client_data->pdata->gpio_pin = 0;
 	}
+
+#ifdef BMI160_ENABLE_INT1
 	/* maps interrupt to INT1/InT2 pin */
 	BMI_CALL_API(set_intr_any_motion)(BMI_INT0, ENABLE);
 	BMI_CALL_API(set_intr_fifo_wm)(BMI_INT0, ENABLE);
@@ -5042,19 +5116,6 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 #endif
 
 #ifdef BMI160_ENABLE_INT2
-	client_data->gpio_pin = of_get_named_gpio_flags(dev->of_node,
-				"bosch,gpio-int2", 0, NULL);
-	dev_info(client_data->dev, "BMI160 qpio number:%d\n",
-				client_data->gpio_pin);
-	err += gpio_request_one(client_data->gpio_pin,
-					GPIOF_IN, "bmi160_int");
-	err += gpio_direction_input(client_data->gpio_pin);
-	client_data->IRQ = gpio_to_irq(client_data->gpio_pin);
-	if (err) {
-		dev_err(client_data->dev,
-			"can not request gpio to irq number\n");
-		client_data->gpio_pin = 0;
-	}
 	/* maps interrupt to INT1/InT2 pin */
 	BMI_CALL_API(set_intr_any_motion)(BMI_INT1, ENABLE);
 	BMI_CALL_API(set_intr_fifo_wm)(BMI_INT1, ENABLE);
@@ -5078,6 +5139,7 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 	if (err)
 		dev_err(client_data->dev, "could not request irq\n");
 	INIT_WORK(&client_data->irq_work, bmi_irq_work_func);
+	disable_irq(client_data->IRQ);
 
 	client_data->selftest = 0;
 
@@ -5108,20 +5170,18 @@ int bmi_probe(struct bmi_client_data *client_data, struct device *dev)
 exit_err_sysfs:
 	if (err)
 		bmi_input_destroy(client_data);
+free_i2c_clientdata_exit:
+	dev_set_drvdata(dev, NULL);
+pdata_free_exit:
+        if (pdata && (&client_data->i2c->dev.of_node))
+                devm_kfree(&client_data->i2c->dev, pdata);
+        client_data->pdata = NULL;
 disable_power_exit:
 	bmi160_power_ctl(client_data, false);
 deinit_power_exit:
 	bmi160_power_deinit(client_data);
-exit_err_clean:
-	if (err) {
-		if (client_data != NULL) {
-			if (NULL != client_data->bst_pd) {
-				kfree(client_data->bst_pd);
-				client_data->bst_pd = NULL;
-			}
-		}
-	}
-
+exit:
+	kfree(client_data);
 	return err;
 }
 EXPORT_SYMBOL(bmi_probe);
@@ -5148,6 +5208,7 @@ int bmi_remove(struct device *dev)
 			BMI_GYRO_PM_NORMAL == client_data->pw.gyro_pm ||
 				BMI_MAG_PM_NORMAL == client_data->pw.mag_pm) {
 			cancel_delayed_work_sync(&client_data->work);
+			cancel_delayed_work_sync(&client_data->gyro_work);
 		}
 		mutex_unlock(&client_data->mutex_enable);
 
@@ -5159,9 +5220,9 @@ int bmi_remove(struct device *dev)
 				&bmi160_attribute_group);
 		bmi_input_destroy(client_data);
 
-		if (NULL != client_data->bst_pd) {
-			kfree(client_data->bst_pd);
-			client_data->bst_pd = NULL;
+		if (NULL != client_data->pdata) {
+			kfree(client_data->pdata);
+			client_data->pdata = NULL;
 		}
 	kfree(client_data);
 	}
@@ -5181,6 +5242,13 @@ static int bmi_post_resume(struct bmi_client_data *client_data)
 				msecs_to_jiffies(
 					atomic_read(&client_data->delay)));
 	}
+
+	if (atomic_read(&client_data->gyro_en) == 1) {
+		bmi160_set_gyro_op_mode(client_data, BMI_GYRO_PM_NORMAL);
+		schedule_delayed_work(&client_data->gyro_work,
+				msecs_to_jiffies(
+					atomic_read(&client_data->delay)));
+        }
 	mutex_unlock(&client_data->mutex_enable);
 	if (client_data->is_timer_running) {
 		hrtimer_start(&client_data->timer,
@@ -5199,8 +5267,6 @@ int bmi_suspend(struct device *dev)
 {
 	int err = 0;
 	struct bmi_client_data *client_data = dev_get_drvdata(dev);
-	unsigned char stc_enable;
-	unsigned char std_enable;
 	dev_err(client_data->dev, "bmi suspend function entrance");
 
 	if (client_data->is_timer_running) {
@@ -5214,33 +5280,10 @@ int bmi_suspend(struct device *dev)
 		bmi160_set_acc_op_mode(client_data, BMI_ACC_PM_SUSPEND);
 		cancel_delayed_work_sync(&client_data->work);
 	}
-	BMI_CALL_API(get_step_counter_enable)(&stc_enable);
-	BMI_CALL_API(get_step_detector_enable)(&std_enable);
-	if (client_data->pw.acc_pm != BMI_ACC_PM_SUSPEND &&
-		(stc_enable != 1) && (std_enable != 1) &&
-		(client_data->sig_flag != 1)) {
-		err += BMI_CALL_API(set_command_register)
-				(bmi_pmu_cmd_acc_arr[BMI_ACC_PM_SUSPEND]);
-		/*client_data->pw.acc_pm = BMI_ACC_PM_SUSPEND;*/
-		mdelay(3);
-	}
-	if (client_data->pw.gyro_pm != BMI_GYRO_PM_SUSPEND) {
-		err += BMI_CALL_API(set_command_register)
-				(bmi_pmu_cmd_gyro_arr[BMI_GYRO_PM_SUSPEND]);
-		/*client_data->pw.gyro_pm = BMI_GYRO_PM_SUSPEND;*/
-		mdelay(3);
-	}
 
-	if (client_data->pw.mag_pm != BMI_MAG_PM_SUSPEND) {
-#ifdef BMI160_AKM09912_SUPPORT
-		err += bmi160_set_bst_akm_and_secondary_if_powermode
-					(BMI160_MAG_SUSPEND_MODE);
-#else
-		err += bmi160_set_bmm150_mag_and_secondary_if_power_mode
-					(BMI160_MAG_SUSPEND_MODE);
-#endif
-		/*client_data->pw.gyro_pm = BMI160_MAG_SUSPEND_MODE;*/
-		mdelay(3);
+	if (atomic_read(&client_data->gyro_en) == 1) {
+		bmi160_set_gyro_op_mode(client_data, BMI_GYRO_PM_SUSPEND);
+		cancel_delayed_work_sync(&client_data->gyro_work);
 	}
 
 	return err;
@@ -5251,6 +5294,8 @@ int bmi_resume(struct device *dev)
 {
 	int err = 0;
 	struct bmi_client_data *client_data = dev_get_drvdata(dev);
+	dev_err(client_data->dev, "bmi resume function entrance");
+
 	if (client_data->pw.acc_pm != BMI_ACC_PM_SUSPEND) {
 		err += BMI_CALL_API(set_command_register)
 				(bmi_pmu_cmd_acc_arr[BMI_ACC_PM_NORMAL]);
