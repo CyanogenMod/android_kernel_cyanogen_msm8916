@@ -1,0 +1,70 @@
+Himax touch controller
+
+The himax controller is connected to host processor
+via i2c. The controller generates interrupts when the
+user touches the panel. The host controller is expected
+to read the touch coordinates over i2c and pass the coordinates
+to the rest of the system.
+
+Required properties:
+
+ - compatible		: should be "himax,852xes"
+ - reg			: i2c slave address of the device
+ - interrupt-parent	: parent of interrupt
+ - interrupts		: touch sample interrupt to indicate presense or release
+				of fingers on the panel.
+ - vdd-ana-supply		: Power supply needed to power up the device
+ - vcc_i2c-supply	: Power source required to power up i2c bus
+ - himax,irq-gpio	: irq gpio which is to provide interrupts to host,
+				same as "interrupts" node. It will also
+				contain active low or active high information.
+ - himax,rst-gpio	: reset gpio to control the reset of chip
+ - himax,display-coords : display coords in pixels. It is a four
+				tuple consisting of min x, min y, max x and
+				max y values
+ - pinctrl-names : This should be defined if a target uses pinctrl framework.
+			See "pinctrl" in Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt.
+			Specify the names of the configs that pinctrl can install in driver.
+			Following are the pinctrl configs that can be installed:
+			"pmx_ts_active" : Active configuration of pins, this should specify active
+			config defined in pin groups of interrupt and reset gpio.
+			"pmx_ts_suspend" : Disabled configuration of pins, this should specify sleep
+			config defined in pin groups of interrupt and reset gpio.
+			"pmx_ts_release" : Release configuration of pins, this should specify
+			release config defined in pin groups of interrupt and reset gpio.
+ - himax,num-max-touches: It defines the maximum number of touch supported by the controller.
+ - himax,hard-reset-delay-ms : hard reset delay in ms
+ - himax,post-hard-reset-delay-ms : post hard reset delay in ms
+ - report_type : the protocol type when TP reports, 0 means TYPE A, 1 means type B.
+
+Optional properties:
+
+ - himax,button-map : button map of key codes. It is a three tuple consisting of key codes.
+ - himax,panel-coords : panel coords for the chip in pixels.
+				It is a four tuple consisting of min x,
+				min y, max x and max y values
+ - himax,ic-type : It defines the ic-type of the controller. Values are as folows:
+
+Example:
+	i2c@78b9000 { /* BLSP1 QUP5 */
+		himax@4a {
+			compatible = "himax,852xes";
+			reg = <0x4a>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2008>;
+			himax,irq-gpio = <&msm_gpio 13 0x00000001>;
+			himax,rst-gpio = <&msm_gpio 12 0x0>;
+			vdd-ana-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			himax,display-coords = <0 0 480 854>;
+			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+			himax,button-map = <172 139 158>;
+			himax,ic-type = <2>;
+			himax,num_max_touches = <2>;
+			himax,hard-reset-delay-ms = <100>;
+			himax,post-hard-reset-delay-ms = <100>;
+			report_type             = <1>;
+		};
+	};
