@@ -181,6 +181,23 @@
 			stk,use-fir;
 		};
 	};
+
+	i2c@78b9000 {
+		status = "ok";
+		himax-ts@48 {
+			compatible = "himax,852xes";
+			reg  = <0x48>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2>;
+			vdd_ana-supply = <&pm8916_l17>;
+			vcc_i2c-supply = <&pm8916_l6>;
+			himax,panel-coords = <0 720 0 1280>;
+			himax,display-coords = <0 720 0 1280>;
+			himax,irq-gpio  = <&msm_gpio 13 0x00>;
+			himax,rst-gpio  = <&msm_gpio 12 0x00>;
+			report_type = <1>;
+		};
+	};
 };
 
 &pm8916_mpps {
