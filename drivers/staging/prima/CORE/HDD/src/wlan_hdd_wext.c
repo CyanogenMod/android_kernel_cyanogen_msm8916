@@ -2558,16 +2558,21 @@ static int __iw_get_genie(struct net_device *dev,
                                    pAdapter->sessionId,
                                    &length,
                                    genIeBytes);
-    length = VOS_MIN((u_int16_t) length, DOT11F_IE_RSN_MAX_LEN);
-    if (wrqu->data.length < length)
-    {
-        hddLog(LOG1, "%s: failed to copy data to user buffer", __func__);
+    if (eHAL_STATUS_SUCCESS != status) {
+        hddLog(LOGE, FL("failed to get WPA-RSN IE data"));
         return -EFAULT;
     }
-    vos_mem_copy( extra, (v_VOID_t*)genIeBytes, length);
-    wrqu->data.length = length;
 
-    hddLog(LOG1,"%s: RSN IE of %d bytes returned", __func__, wrqu->data.length );
+    wrqu->data.length = length;
+    if (length > DOT11F_IE_RSN_MAX_LEN) {
+        hddLog(LOGE,
+               FL("invalid buffer length length:%d"), length);
+        return -E2BIG;
+    }
+
+    vos_mem_copy( extra, (v_VOID_t*)genIeBytes, length);
+
+    hddLog(LOG1, FL("RSN IE of %d bytes returned"), wrqu->data.length );
 
     EXIT();
 
@@ -4176,15 +4181,15 @@ static int __iw_set_priv(struct net_device *dev,
     }
     else if (strcasecmp(cmd, "scan-active") == 0)
     {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                   FL("making default scan to active"));
+        hddLog(LOG1,
+                FL("making default scan to active"));
         pHddCtx->scan_info.scan_mode = eSIR_ACTIVE_SCAN;
         ret = snprintf(cmd, cmd_len, "OK");
     }
     else if (strcasecmp(cmd, "scan-passive") == 0)
     {
-        hddLog(VOS_TRACE_LEVEL_ERROR,
-                   FL("making default scan to passive"));
+        hddLog(LOG1,
+               FL("making default scan to passive"));
         pHddCtx->scan_info.scan_mode = eSIR_PASSIVE_SCAN;
         ret = snprintf(cmd, cmd_len, "OK");
     }
@@ -4195,41 +4200,6 @@ static int __iw_set_priv(struct net_device *dev,
     else if( strcasecmp(cmd, "linkspeed") == 0 )
     {
         ret = iw_get_linkspeed(dev, info, wrqu, cmd);
-    }
-    else if( strncasecmp(cmd, "COUNTRY", 7) == 0 ) {
-        char *country_code;
-        long lrc;
-        eHalStatus eHal_status;
-
-        country_code =  cmd + 8;
-
-        init_completion(&pAdapter->change_country_code);
-
-        eHal_status = sme_ChangeCountryCode(pHddCtx->hHal,
-                                            (void *)(tSmeChangeCountryCallback)wlan_hdd_change_country_code_callback,
-                                            country_code,
-                                            pAdapter,
-                                            pHddCtx->pvosContext,
-                                            eSIR_TRUE,
-                                            eSIR_TRUE);
-
-        /* Wait for completion */
-        lrc = wait_for_completion_interruptible_timeout(&pAdapter->change_country_code,
-                                    msecs_to_jiffies(WLAN_WAIT_TIME_STATS));
-
-        if (lrc <= 0)
-        {
-            hddLog(VOS_TRACE_LEVEL_ERROR,"%s: SME %s while setting country code ",
-                   __func__, "Timed out");
-        }
-
-        if (eHAL_STATUS_SUCCESS != eHal_status)
-        {
-            VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-                       "%s: SME Change Country code fail", __func__);
-            kfree(cmd);
-            return -EIO;
-        }
     }
     else if( strncasecmp(cmd, "rssi", 4) == 0 )
     {

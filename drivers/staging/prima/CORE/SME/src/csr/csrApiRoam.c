@@ -1963,6 +1963,8 @@ eHalStatus csrChangeDefaultConfigParam(tpAniSirGlobal pMac, tCsrConfigParam *pPa
         pMac->roam.configParam.apHT40_24GEnabled = pParam->apHT40_24GEnabled;
 #endif
         pMac->roam.configParam.roamDelayStatsEnabled = pParam->roamDelayStatsEnabled;
+        pMac->roam.configParam.max_chan_for_dwell_time_cfg =
+                               pParam->max_chan_for_dwell_time_cfg;
     }
     
     return status;
@@ -2115,6 +2117,8 @@ eHalStatus csrGetConfigParam(tpAniSirGlobal pMac, tCsrConfigParam *pParam)
 #ifdef WLAN_FEATURE_AP_HT40_24G
         pParam->apHT40_24GEnabled = pMac->roam.configParam.apHT40_24GEnabled;
 #endif
+        pParam->max_chan_for_dwell_time_cfg =
+                            pMac->roam.configParam.max_chan_for_dwell_time_cfg;
 
         status = eHAL_STATUS_SUCCESS;
     }
@@ -10490,6 +10494,7 @@ void csrRoamCheckForLinkStatusChange( tpAniSirGlobal pMac, tSirSmeRsp *pSirMsg )
                                    "command failed(%d) PeerMac "MAC_ADDRESS_STR,
                                    pRsp->statusCode, MAC_ADDR_ARRAY(pRsp->peerMacAddr));
                         }
+                        roamInfo.is11rAssoc = csrRoamIs11rAssoc(pMac);
                         csrRoamCallCallback(pMac, sessionId, &roamInfo, pCommand->u.setKeyCmd.roamId, 
                                             eCSR_ROAM_SET_KEY_COMPLETE, result);
                         // Indicate SME_QOS that the SET_KEY is completed, so that SME_QOS

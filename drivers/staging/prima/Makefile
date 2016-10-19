@@ -553,15 +553,7 @@ endif
 #normally, TDLS negative behavior is not needed
 ifeq ($(CONFIG_QCOM_TDLS),y)
 CDEFINES += -DFEATURE_WLAN_TDLS
-ifeq ($(BUILD_DEBUG_VERSION),1)
-CDEFINES += -DWLAN_FEATURE_TDLS_DEBUG
-endif
 CDEFINES += -DCONFIG_TDLS_IMPLICIT
-#CDEFINES += -DFEATURE_WLAN_TDLS_NEGATIVE
-#Code under FEATURE_WLAN_TDLS_INTERNAL is ported from volans, This code
-#is not tested only verifed that it compiles. This is not required for
-#supplicant based implementation
-#CDEFINES += -DFEATURE_WLAN_TDLS_INTERNAL
 endif
 
 ifeq ($(CONFIG_PRIMA_WLAN_BTAMP),y)
