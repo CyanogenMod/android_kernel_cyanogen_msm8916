@@ -447,7 +447,6 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
 
 0: try to continue operation.
 
-1: panic immediately.
 
 ==============================================================
 

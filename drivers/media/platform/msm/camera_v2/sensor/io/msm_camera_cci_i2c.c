@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2014, 2016 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -72,7 +72,7 @@ int32_t msm_camera_cci_i2c_read_seq(struct msm_camera_i2c_client *client,
 		return rc;
 
 	if (num_byte > I2C_REG_DATA_MAX) {
-			pr_err("%s: Error num_byte:0x%x exceeds 8K max supported:0x%x\n",
+		pr_err("%s: Error num_byte:0x%x exceeds 8K max supported:0x%x\n",
 			__func__, num_byte, I2C_REG_DATA_MAX);
 		return rc;
 	}
