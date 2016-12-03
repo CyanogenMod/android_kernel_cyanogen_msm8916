@@ -2097,14 +2097,14 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 		} else if (channel_mode == 4) {
 			open.dev_channel_mapping[0] = PCM_CHANNEL_FL;
 			open.dev_channel_mapping[1] = PCM_CHANNEL_FR;
-			open.dev_channel_mapping[2] = PCM_CHANNEL_RB;
-			open.dev_channel_mapping[3] = PCM_CHANNEL_LB;
+			open.dev_channel_mapping[2] = PCM_CHANNEL_LS;
+			open.dev_channel_mapping[3] = PCM_CHANNEL_RS;
 		} else if (channel_mode == 5) {
 			open.dev_channel_mapping[0] = PCM_CHANNEL_FL;
 			open.dev_channel_mapping[1] = PCM_CHANNEL_FR;
 			open.dev_channel_mapping[2] = PCM_CHANNEL_FC;
-			open.dev_channel_mapping[3] = PCM_CHANNEL_LB;
-			open.dev_channel_mapping[4] = PCM_CHANNEL_RB;
+			open.dev_channel_mapping[3] = PCM_CHANNEL_LS;
+			open.dev_channel_mapping[4] = PCM_CHANNEL_RS;
 		} else if (channel_mode == 6) {
 			open.dev_channel_mapping[0] = PCM_CHANNEL_FL;
 			open.dev_channel_mapping[1] = PCM_CHANNEL_FR;
@@ -2117,10 +2117,10 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			open.dev_channel_mapping[1] = PCM_CHANNEL_FR;
 			open.dev_channel_mapping[2] = PCM_CHANNEL_LFE;
 			open.dev_channel_mapping[3] = PCM_CHANNEL_FC;
-			open.dev_channel_mapping[4] = PCM_CHANNEL_LB;
-			open.dev_channel_mapping[5] = PCM_CHANNEL_RB;
-			open.dev_channel_mapping[6] = PCM_CHANNEL_FLC;
-			open.dev_channel_mapping[7] = PCM_CHANNEL_FRC;
+			open.dev_channel_mapping[4] = PCM_CHANNEL_LS;
+			open.dev_channel_mapping[5] = PCM_CHANNEL_RS;
+			open.dev_channel_mapping[6] = PCM_CHANNEL_LB;
+			open.dev_channel_mapping[7] = PCM_CHANNEL_RB;
 		} else {
 			pr_err("%s: invalid num_chan %d\n", __func__,
 					channel_mode);
@@ -2135,8 +2135,8 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			__func__, open.endpoint_id_1, open.sample_rate,
 			open.topology_id);
 
-		if (open.topology_id == VPM_TX_LEC_STEREO_REF ||
-			open.topology_id == VPM_TX_LEC_MONO_REF) {
+		if ((this_adm.ec_ref_cfg.channel != 0) && (path != 1) &&
+			(open.endpoint_id_2 != 0xFFFF)) {
 			int ref_end_channel_mode = this_adm.ec_ref_cfg.channel;
 			use_open_v6 = true;
 			/* overwrite open opcode and pkt size here to use

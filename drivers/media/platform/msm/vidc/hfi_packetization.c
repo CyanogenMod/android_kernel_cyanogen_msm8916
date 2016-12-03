@@ -176,6 +176,16 @@ static inline u32 get_hfi_codec(enum hal_video_codec hal_codec)
 	return hfi_codec;
 }
 
+static void create_pkt_enable(void *pkt, u32 type, bool enable)
+{
+         u32 *pkt_header = pkt;
+         u32 *pkt_type = &pkt_header[0];
+         struct hfi_enable *hfi_enable = (struct hfi_enable *)&pkt_header[1];
+
+         *pkt_type = type;
+         hfi_enable->enable = enable;
+}
+
 int create_pkt_cmd_sys_init(struct hfi_cmd_sys_init_packet *pkt,
 			   u32 arch_type)
 {
@@ -482,6 +492,19 @@ static int get_hfi_extradata_index(enum hal_extradata_id index)
 		break;
 	case HAL_EXTRADATA_METADATA_MBI:
 		ret = HFI_PROPERTY_PARAM_VENC_MBI_DUMPING;
+		break;
+	case HAL_EXTRADATA_MASTERING_DISPLAY_COLOUR_SEI:
+		ret =
+		HFI_PROPERTY_PARAM_VDEC_MASTERING_DISPLAY_COLOUR_SEI_EXTRADATA;
+		break;
+	case HAL_EXTRADATA_CONTENT_LIGHT_LEVEL_SEI:
+		ret = HFI_PROPERTY_PARAM_VDEC_CONTENT_LIGHT_LEVEL_SEI_EXTRADATA;
+		break;
+	case HAL_EXTRADATA_VUI_DISPLAY_INFO:
+		ret = HFI_PROPERTY_PARAM_VUI_DISPLAY_INFO_EXTRADATA;
+		break;
+	case HAL_EXTRADATA_VPX_COLORSPACE:
+		ret = HFI_PROPERTY_PARAM_VDEC_VPX_COLORSPACE_EXTRADATA;
 		break;
 	default:
 		dprintk(VIDC_WARN, "Extradata index not found: %d\n", index);
@@ -1896,6 +1919,34 @@ int create_pkt_cmd_session_set_property(
 			((struct hfi_hybrid_hierp *)pdata)->layers;
 		pkt->size += sizeof(u32) +
 			sizeof(struct hfi_hybrid_hierp);
+		break;
+	}
+	case HAL_PARAM_VENC_VIDEO_SIGNAL_INFO:
+	{
+		struct hal_video_signal_info *hal = pdata;
+		struct hfi_video_signal_metadata *signal_info =
+			(struct hfi_video_signal_metadata *)
+			&pkt->rg_property_data[1];
+
+		signal_info->enable = true;
+		signal_info->video_format = MSM_VIDC_NTSC;
+		signal_info->video_full_range = hal->full_range;
+		signal_info->color_description = MSM_VIDC_COLOR_DESC_PRESENT;
+		signal_info->color_primaries = hal->color_space;
+		signal_info->transfer_characteristics = hal->transfer_chars;
+		signal_info->matrix_coeffs = hal->matrix_coeffs;
+
+		pkt->rg_property_data[0] =
+			HFI_PROPERTY_PARAM_VENC_VIDEO_SIGNAL_INFO;
+		pkt->size += sizeof(u32) + sizeof(*signal_info);
+		break;
+	}
+	case HAL_PARAM_VENC_CONSTRAINED_INTRA_PRED:
+	{
+		create_pkt_enable(pkt->rg_property_data,
+			HFI_PROPERTY_PARAM_VENC_CONSTRAINED_INTRA_PRED,
+			((struct hal_enable *)pdata)->enable);
+		pkt->size += sizeof(u32) + sizeof(struct hfi_enable);
 		break;
 	}
 	/* FOLLOWING PROPERTIES ARE NOT IMPLEMENTED IN CORE YET */
