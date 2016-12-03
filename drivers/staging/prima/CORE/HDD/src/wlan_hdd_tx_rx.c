@@ -98,6 +98,7 @@ const v_U8_t hdd_QdiscAcToTlAC[] = {
 #define EAPOL_M3_BIT_MASK 0x8013
 #define EAPOL_M4_BIT_MASK 0x0003
 
+
 int gRatefromIdx[] = {
  10,20,55,100,
  10,20,55,110,
@@ -792,7 +793,7 @@ void hdd_dump_dhcp_pkt(struct sk_buff *skb, int path)
  }
 
 /**============================================================================
-  @brief hdd_hard_start_xmit() - Function registered with the Linux OS for
+  @brief __hdd_hard_start_xmit() - Function registered with the Linux OS for
   transmitting packets. There are 2 versions of this function. One that uses
   locked queue and other that uses lockless queues. Both have been retained to
   do some performance testing
@@ -803,7 +804,7 @@ void hdd_dump_dhcp_pkt(struct sk_buff *skb, int path)
   @return         : NET_XMIT_DROP if packets are dropped
                   : NET_XMIT_SUCCESS if packet is enqueued succesfully
   ===========================================================================*/
-int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+int __hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
    VOS_STATUS status;
    WLANTL_ACEnumType qid, ac;
@@ -1038,6 +1039,15 @@ int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
    return NETDEV_TX_OK;
 }
 
+int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+{
+	int ret;
+	vos_ssr_protect(__func__);
+	ret = __hdd_hard_start_xmit(skb, dev);
+	vos_ssr_unprotect(__func__);
+	return ret;
+}
+
 /**============================================================================
   @brief hdd_Ibss_GetStaId() - Get the StationID using the Peer Mac address
 
@@ -1188,6 +1198,7 @@ void __hdd_tx_timeout(struct net_device *dev)
                 "%s: Request firmware for recovery",__func__);
       WLANTL_TLDebugMessage(WLANTL_DEBUG_FW_CLEANUP);
    }
+
    /*
     * This function is getting called in softirq context, So don't hold
     * any mutex.
@@ -1205,12 +1216,13 @@ void __hdd_tx_timeout(struct net_device *dev)
                     "%s: Cannot recover from Data stall Issue SSR",
                       __func__);
           WLANTL_FatalError();
+          // reset count after issuing the SSR
+          pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount = 0;
           return;
       }
    }
    else
    {
-       mutex_unlock(&pHddCtx->roc_lock);
       VOS_TRACE(VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_ERROR,
                 "Remain on channel in progress");
       /* The supplicant can retry "P2P Invitation Request" for 120 times
@@ -1244,7 +1256,15 @@ print_log:
       hdd_wmm_tx_snapshot(pAdapter);
       WLANTL_TLDebugMessage(WLANTL_DEBUG_TX_SNAPSHOT);
    }
-
+   /* Call fatal event if data stall is for
+    * HDD_TX_STALL_FATAL_EVENT_THRESHOLD times
+    */
+   if (HDD_TX_STALL_FATAL_EVENT_THRESHOLD ==
+       pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount)
+      vos_fatal_event_logs_req(WLAN_LOG_TYPE_FATAL,
+                   WLAN_LOG_INDICATOR_HOST_DRIVER,
+                   WLAN_LOG_REASON_DATA_STALL,
+                   FALSE, TRUE);
 }
 
 /**============================================================================
@@ -2085,30 +2105,7 @@ VOS_STATUS hdd_tx_fetch_packet_cbk( v_VOID_t *vosContext,
 
 #endif
 
-#ifdef FEATURE_WLAN_TDLS
-    if (eTDLS_SUPPORT_ENABLED == pHddCtx->tdls_mode)
-    {
-        hdd_station_ctx_t *pHddStaCtx = &pAdapter->sessionCtx.station;
-        u8 mac[6];
-
-        wlan_hdd_tdls_extract_da(skb, mac);
-
-        if (vos_is_macaddr_group((v_MACADDR_t *)mac)) {
-            VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_INFO_MED,
-                      "broadcast packet, not adding to peer list");
-        } else if (memcmp(pHddStaCtx->conn_info.bssId,
-                            mac, 6) != 0) {
-            VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_INFO_MED,
-                      "extract mac: " MAC_ADDRESS_STR,
-                      MAC_ADDR_ARRAY(mac) );
-
-            wlan_hdd_tdls_increment_pkt_count(pAdapter, mac, 1);
-        } else {
-            VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_INFO_MED,
-                       "packet da is bssid, not adding to peer list");
-        }
-    }
-#endif
+   wlan_hdd_tdls_notify_packet(pAdapter, skb);
 
    //Return VOS packet to TL;
    *ppVosPacket = pVosPacket;
@@ -2366,13 +2363,18 @@ VOS_STATUS hdd_tx_low_resource_cbk( vos_pkt_t *pVosPacket,
 static void hdd_mon_add_rx_radiotap_hdr (struct sk_buff *skb,
              int rtap_len,  v_PVOID_t  pRxPacket, hdd_mon_ctx_t *pMonCtx)
 {
-    u8 rtap_temp[20] = {0};
+    u8 rtap_temp[28] = {0};
     struct ieee80211_radiotap_header *rthdr;
     unsigned char *pos;
+    u32 mac_time;
     u16 rx_flags = 0;
     u16 rateIdx;
-    s8        currentRSSI, currentRSSI0, currentRSSI1;
+    u16 channel_flags = 0;
+    u8 rfBand;
+    s8 currentRSSI, currentRSSI0, currentRSSI1;
+    s8 noise;
 
+    mac_time = WDA_GET_RX_TIMESTAMP(pRxPacket);
     rateIdx = WDA_GET_RX_MAC_RATE_IDX(pRxPacket);
     if( rateIdx >= 210 && rateIdx <= 217)
        rateIdx-=202;
@@ -2384,37 +2386,54 @@ static void hdd_mon_add_rx_radiotap_hdr (struct sk_buff *skb,
                   "%s: invalid rateIdx %d make it 0", __func__, rateIdx);
        rateIdx = 0;
     }
+    rfBand = WDA_GET_RX_RFBAND(pRxPacket);
+    if (IS_5G_BAND(rfBand))
+        channel_flags |= IEEE80211_CHAN_5GHZ;
+    else
+        channel_flags |= IEEE80211_CHAN_2GHZ;
     currentRSSI0 = WDA_GETRSSI0(pRxPacket) - 100;
     currentRSSI1 = WDA_GETRSSI1(pRxPacket) - 100;
     currentRSSI  = (currentRSSI0 > currentRSSI1) ? currentRSSI0 : currentRSSI1;
+    noise = WDA_GET_RX_SNR(pRxPacket);
 
     rthdr = (struct ieee80211_radiotap_header *)(&rtap_temp[0]);
 
     /* radiotap header, set always present flags */
-    rthdr->it_present = cpu_to_le32((1 << IEEE80211_RADIOTAP_FLAGS)   |
+    rthdr->it_present = cpu_to_le32((1 << IEEE80211_RADIOTAP_TSFT) |
+                                    (1 << IEEE80211_RADIOTAP_FLAGS) |
                                     (1 << IEEE80211_RADIOTAP_CHANNEL) |
+                                    (1 << IEEE80211_RADIOTAP_RATE) |
+                                    (1 << IEEE80211_RADIOTAP_DBM_ANTSIGNAL) |
+                                    (1 << IEEE80211_RADIOTAP_DBM_ANTNOISE) |
                                     (1 << IEEE80211_RADIOTAP_RX_FLAGS));
     rthdr->it_len = cpu_to_le16(rtap_len);
 
     pos = (unsigned char *) (rthdr + 1);
+
+    /* IEEE80211_RADIOTAP_TSFT */
+    put_unaligned_le64(mac_time, pos);
+    pos += 8;
 
     /* IEEE80211_RADIOTAP_FLAGS */
     *pos = 0;
     pos++;
 
     /* IEEE80211_RADIOTAP_RATE */
-    rthdr->it_present |= cpu_to_le32(1 << IEEE80211_RADIOTAP_RATE);
     *pos = gRatefromIdx[rateIdx]/5;
-
     pos++;
 
     /* IEEE80211_RADIOTAP_CHANNEL */
     put_unaligned_le16(pMonCtx->ChannelNo, pos);
-    pos += 4;
+    pos += 2;
+    put_unaligned_le16(channel_flags, pos);
+    pos += 2;
 
     /* IEEE80211_RADIOTAP_DBM_ANTSIGNAL */
     *pos = currentRSSI;
-    rthdr->it_present |=cpu_to_le32(1 << IEEE80211_RADIOTAP_DBM_ANTSIGNAL);
+    pos++;
+
+    /* IEEE80211_RADIOTAP_DBM_ANTNOISE */
+    *pos = noise;
     pos++;
 
     if ((pos - (u8 *)rthdr) & 1)
@@ -2490,7 +2509,7 @@ VOS_STATUS  hdd_rx_packet_monitor_cbk(v_VOID_t *vosContext,vos_pkt_t *pVosPacket
     if(!conversion)
     {
          pMonCtx = WLAN_HDD_GET_MONITOR_CTX_PTR(pAdapter);
-         needed_headroom = sizeof(struct ieee80211_radiotap_header) + 10;
+         needed_headroom = sizeof(struct ieee80211_radiotap_header) + 18;
          hdd_mon_add_rx_radiotap_hdr( skb, needed_headroom, pvBDHeader, pMonCtx );
     }
 
@@ -2682,7 +2701,15 @@ VOS_STATUS hdd_rx_packet_cbk( v_VOID_t *vosContext,
                           HDD_WAKE_LOCK_DURATION,
                           WIFI_POWER_EVENT_WAKELOCK_HOLD_RX);
 #endif
-      rxstat = netif_rx_ni(skb);
+      if (pNextVosPacket)
+      {
+          rxstat = netif_rx(skb);
+      }
+      else
+      {
+          rxstat = netif_rx_ni(skb);
+      }
+
       if (NET_RX_SUCCESS == rxstat)
       {
          ++pAdapter->hdd_stats.hddTxRxStats.rxDelivered;
@@ -2833,7 +2860,7 @@ void hdd_tx_rx_pkt_cnt_stat_timer_handler( void *phddctx)
      */
     if ((pHddCtx->isTdlsScanCoexistence == FALSE) && (pHddCtx->issplitscan_enabled))
     {
-       VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_ERROR,
+       VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_INFO,
                         "%s: Disable split scan", __func__);
        pHddCtx->issplitscan_enabled = FALSE;
        sme_enable_disable_split_scan(
@@ -2939,8 +2966,31 @@ void wlan_hdd_log_eapol(struct sk_buff *skb,
 
     wlan_hdd_get_eapol_params(skb, &eapol_params, event_type);
     wlan_hdd_event_eapol_log(eapol_params);
-    VOS_TRACE( VOS_MODULE_ID_HDD_DATA, VOS_TRACE_LEVEL_INFO,
-               "Eapol subtype is %d and key info is %d\n",
-               eapol_params.event_sub_type,eapol_params.eapol_key_info);
+
+    if ((eapol_params.eapol_key_info & EAPOL_MASK )== EAPOL_M1_BIT_MASK)
+    {
+        hddLog(LOG1, FL("%s: M1 packet"),eapol_params.event_sub_type ==
+               WIFI_EVENT_DRIVER_EAPOL_FRAME_RECEIVED ? "RX" : "TX");
+    }
+    else if ((eapol_params.eapol_key_info & EAPOL_MASK )== EAPOL_M2_BIT_MASK)
+    {
+        hddLog(LOG1, FL("%s: M2 packet"),eapol_params.event_sub_type ==
+               WIFI_EVENT_DRIVER_EAPOL_FRAME_RECEIVED ? "RX" : "TX");
+
+    }
+
+    else if ((eapol_params.eapol_key_info & EAPOL_MASK )== EAPOL_M3_BIT_MASK)
+    {
+        hddLog(LOG1, FL("%s: M3 packet"),eapol_params.event_sub_type ==
+               WIFI_EVENT_DRIVER_EAPOL_FRAME_RECEIVED ? "RX" : "TX");
+    }
+
+    else if ((eapol_params.eapol_key_info & EAPOL_MASK )== EAPOL_M4_BIT_MASK)
+    {
+        hddLog(LOG1, FL("%s: M4 packet"),eapol_params.event_sub_type ==
+               WIFI_EVENT_DRIVER_EAPOL_FRAME_RECEIVED ? "RX" : "TX");
+
+    }
+
 }
 #endif /* FEATURE_WLAN_DIAG_SUPPORT */

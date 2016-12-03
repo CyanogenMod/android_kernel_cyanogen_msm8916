@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -381,6 +381,10 @@ typedef void (*pWDATxRxCompFunc)( v_PVOID_t pContext, void *pData );
 //parameter 2 - txComplete status : 1- success, 0 - failure.
 typedef eHalStatus (*pWDAAckFnTxComp)(tpAniSirGlobal, void *pData);
 
+#ifdef WLAN_FEATURE_RMC
+typedef void (*WDA_txFailIndCallback)(tANI_U8 *, tANI_U8);
+#endif /* WLAN_FEATURE_RMC */
+
 typedef struct
 {
    tANI_U16 ucValidStaIndex ;
@@ -432,6 +436,16 @@ typedef struct
 } tWDA_AddSelfStaDebugParams;
 
 #define BMPS_IMPS_FAILURE_REPORT_THRESHOLD    10
+
+/* Continous Response failure counts */
+typedef struct
+{
+   wpt_uint8            enterBmpsFailureCount;
+   wpt_uint8            exitBmpsFailureCount;
+   wpt_uint8            enterImpsFailureCount;
+   wpt_uint8            exitImpsFailureCount;
+} tWDA_RespFailureCounts;
+
 
 typedef struct
 {
@@ -501,7 +515,14 @@ typedef struct
    vos_event_t          ftmStopDoneEvent;
 
    tWDA_AddSelfStaDebugParams wdaAddSelfStaParams;
+
+#ifdef WLAN_FEATURE_RMC
+   WDA_txFailIndCallback txFailIndCallback;
+#endif /* WLAN_FEATURE_RMC */
+   tWDA_RespFailureCounts  failureCounts;
    wpt_uint8  mgmtTxfailureCnt;
+   uint8_t  mgmt_pktfree_fail;
+   vos_lock_t mgmt_pkt_lock;
 
 } tWDA_CbContext ; 
 
@@ -789,6 +810,7 @@ tBssSystemRole wdaGetGlobalSystemRole(tpAniSirGlobal pMac);
 #  define WDA_GET_OFFLOADSCANLEARN(pRxMeta) (((WDI_DS_RxMetaInfoType*)(pRxMeta))->offloadScanLearn)
 /* WDA_GET_ROAMCANDIDATEIND **************************************************/
 #  define WDA_GET_ROAMCANDIDATEIND(pRxMeta) (((WDI_DS_RxMetaInfoType*)(pRxMeta))->roamCandidateInd)
+#  define WDA_IF_PER_ROAMCANDIDATEIND(pRxMeta) (((WDI_DS_RxMetaInfoType*)(pRxMeta))->perRoamCndInd)
 #endif
 #ifdef WLAN_FEATURE_EXTSCAN
 #define WDA_GET_EXTSCANFULLSCANRESIND(pRxMeta) (((WDI_DS_RxMetaInfoType*)(pRxMeta))->extscanBuffer)
@@ -796,11 +818,7 @@ tBssSystemRole wdaGetGlobalSystemRole(tpAniSirGlobal pMac);
 /* WDA_GET_RX_RSSI_DB ********************************************************/
 // Volans RF
 #  define WDA_RSSI_OFFSET             100
-#  define WDA_GET_RSSI0_DB(rssi0)     (rssi0 - WDA_RSSI_OFFSET)
-#  define WDA_GET_RSSI1_DB(rssi0)     (0 - WDA_RSSI_OFFSET)
-#  define WDA_MAX_OF_TWO(val1, val2)  ( ((val1) > (val2)) ? (val1) : (val2))
-#  define WDA_GET_RSSI_DB(rssi0)  \
-                WDA_MAX_OF_TWO(WDA_GET_RSSI0_DB(rssi0), WDA_GET_RSSI1_DB(rssi0))
+#  define WDA_GET_RSSI_DB(rssi0)     ((int)rssi0 - WDA_RSSI_OFFSET)
 #  define WDA_GET_RX_RSSI_DB(pRxMeta) \
                        WDA_GET_RSSI_DB((((WDI_DS_RxMetaInfoType*)(pRxMeta))->rssi0))
 
@@ -1164,6 +1182,10 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
 #define WDA_ROAM_SCAN_OFFLOAD_REQ   SIR_HAL_ROAM_SCAN_OFFLOAD_REQ
 #define WDA_ROAM_SCAN_OFFLOAD_RSP   SIR_HAL_ROAM_SCAN_OFFLOAD_RSP
+#define WDA_PER_ROAM_SCAN_OFFLOAD_REQ   SIR_HAL_PER_ROAM_SCAN_OFFLOAD_REQ
+#define WDA_PER_ROAM_SCAN_OFFLOAD_RSP   SIR_HAL_PER_ROAM_SCAN_OFFLOAD_RSP
+#define WDA_PER_ROAM_SCAN_TRIGGER_REQ   SIR_HAL_PER_ROAM_SCAN_TRIGGER_REQ
+#define WDA_PER_ROAM_SCAN_TRIGGER_RSP   SIR_HAL_PER_ROAM_SCAN_TRIGGER_RSP
 #endif
 
 #ifdef WLAN_WAKEUP_EVENTS
@@ -1181,6 +1203,10 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_SET_POWER_PARAMS_REQ   SIR_HAL_SET_POWER_PARAMS_REQ
 #define WDA_DHCP_START_IND              SIR_HAL_DHCP_START_IND
 #define WDA_DHCP_STOP_IND               SIR_HAL_DHCP_STOP_IND
+
+#ifdef WLAN_FEATURE_RMC
+#define WDA_TX_FAIL_MONITOR_IND         SIR_HAL_TX_FAIL_MONITOR_IND
+#endif /* WLAN_FEATURE_RMC */
 
 
 #ifdef WLAN_FEATURE_GTK_OFFLOAD
@@ -1217,14 +1243,24 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_ADD_PERIODIC_TX_PTRN_IND    SIR_HAL_ADD_PERIODIC_TX_PTRN_IND
 #define WDA_DEL_PERIODIC_TX_PTRN_IND    SIR_HAL_DEL_PERIODIC_TX_PTRN_IND
 
+#define WDA_RATE_UPDATE_IND         SIR_HAL_RATE_UPDATE_IND
+
+#ifdef WLAN_FEATURE_RMC
+#define WDA_RMC_BECOME_RULER       SIR_HAL_RMC_BECOME_RULER
+#define WDA_RMC_RULER_SELECT_RESP  SIR_HAL_RMC_RULER_SELECT_RESP
+#define WDA_RMC_RULER_REQ          SIR_HAL_RMC_RULER_REQ
+#define WDA_RMC_UPDATE_IND          SIR_HAL_RMC_UPDATE_IND
+/* IBSS peer info related message */
+#define WDA_GET_IBSS_PEER_INFO_REQ  SIR_HAL_IBSS_PEER_INFO_REQ
+#define WDA_GET_IBSS_PEER_INFO_RSP  SIR_HAL_IBSS_PEER_INFO_RSP
+#endif /* WLAN_FEATURE_RMC */
+
 #ifdef FEATURE_WLAN_BATCH_SCAN
 #define WDA_SET_BATCH_SCAN_REQ            SIR_HAL_SET_BATCH_SCAN_REQ
 #define WDA_SET_BATCH_SCAN_RSP            SIR_HAL_SET_BATCH_SCAN_RSP
 #define WDA_STOP_BATCH_SCAN_IND           SIR_HAL_STOP_BATCH_SCAN_IND
 #define WDA_TRIGGER_BATCH_SCAN_RESULT_IND SIR_HAL_TRIGGER_BATCH_SCAN_RESULT_IND
 #endif
-#define WDA_RATE_UPDATE_IND         SIR_HAL_RATE_UPDATE_IND
-
 
 #define WDA_HT40_OBSS_SCAN_IND   SIR_HAL_HT40_OBSS_SCAN_IND
 #define WDA_HT40_OBSS_STOP_SCAN_IND SIR_HAL_HT40_OBSS_STOP_SCAN_IND
@@ -1250,6 +1286,8 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_SET_RTS_CTS_HTVHT                   SIR_HAL_SET_RTS_CTS_HTVHT
 #define WDA_MON_START_REQ                      SIR_HAL_MON_START_REQ
 #define WDA_MON_STOP_REQ                       SIR_HAL_MON_STOP_REQ
+#define WDA_START_RSSI_MONITOR_REQ             SIR_HAL_RSSI_MON_START_REQ
+#define WDA_STOP_RSSI_MONITOR_REQ              SIR_HAL_RSSI_MON_STOP_REQ
 
 tSirRetStatus wdaPostCtrlMsg(tpAniSirGlobal pMac, tSirMsgQ *pMsg);
 
@@ -1267,10 +1305,11 @@ eHalStatus WDA_SetRegDomain(void * clientCtxt, v_REGDOMAIN_t regId,
 #define WDA_EXTSCAN_SET_BSSID_HOTLIST_RSP      SIR_HAL_EXTSCAN_SET_BSS_HOTLIST_RSP
 #define WDA_EXTSCAN_RESET_BSSID_HOTLIST_REQ    SIR_HAL_EXTSCAN_RESET_BSS_HOTLIST_REQ
 #define WDA_EXTSCAN_RESET_BSSID_HOTLIST_RSP    SIR_HAL_EXTSCAN_RESET_BSS_HOTLIST_RSP
-#define WDA_EXTSCAN_SET_SIGNF_RSSI_CHANGE_REQ  SIR_HAL_EXTSCAN_SET_SIGNF_RSSI_CHANGE_REQ
-#define WDA_EXTSCAN_SET_SIGNF_RSSI_CHANGE_RSP  SIR_HAL_EXTSCAN_SET_SIGNF_RSSI_CHANGE_RSP
-#define WDA_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_REQ  SIR_HAL_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_REQ
-#define WDA_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_RSP  SIR_HAL_EXTSCAN_RESET_SIGNF_RSSI_CHANGE_RSP
+#define WDA_EXTSCAN_SET_SSID_HOTLIST_REQ       SIR_HAL_EXTSCAN_SET_SSID_HOTLIST_REQ
+#define WDA_EXTSCAN_SET_SSID_HOTLIST_RSP       SIR_HAL_EXTSCAN_SET_SSID_HOTLIST_RSP
+#define WDA_EXTSCAN_RESET_SSID_HOTLIST_REQ     SIR_HAL_EXTSCAN_RESET_SSID_HOTLIST_REQ
+#define WDA_EXTSCAN_RESET_SSID_HOTLIST_RSP     SIR_HAL_EXTSCAN_RESET_SSID_HOTLIST_RSP
+
 #define WDA_EXTSCAN_GET_CACHED_RESULTS_REQ    SIR_HAL_EXTSCAN_GET_CACHED_RESULTS_REQ
 #define WDA_EXTSCAN_GET_CACHED_RESULTS_RSP    SIR_HAL_EXTSCAN_GET_CACHED_RESULTS_RSP
 
@@ -1278,7 +1317,7 @@ eHalStatus WDA_SetRegDomain(void * clientCtxt, v_REGDOMAIN_t regId,
 #define WDA_EXTSCAN_SCAN_AVAILABLE_IND      SIR_HAL_EXTSCAN_SCAN_AVAILABLE_IND
 #define WDA_EXTSCAN_SCAN_RESULT_IND         SIR_HAL_EXTSCAN_SCAN_RESULT_IND
 #define WDA_EXTSCAN_BSSID_HOTLIST_RESULT_IND SIR_HAL_EXTSCAN_HOTLIST_MATCH_IND
-#define WDA_EXTSCAN_SIGNF_RSSI_RESULT_IND    SIR_HAL_EXTSCAN_SIGNF_WIFI_CHANGE_IND
+#define WDA_EXTSCAN_SSID_HOTLIST_RESULT_IND  SIR_HAL_EXTSCAN_SSID_HOTLIST_MATCH_IND
 #endif /* WLAN_FEATURE_EXTSCAN */
 
 #define WDA_SPOOF_MAC_ADDR_REQ               SIR_HAL_SPOOF_MAC_ADDR_REQ
@@ -1292,6 +1331,24 @@ eHalStatus WDA_SetRegDomain(void * clientCtxt, v_REGDOMAIN_t regId,
 
 #define WDA_SEND_FREQ_RANGE_CONTROL_IND        SIR_HAL_SEND_FREQ_RANGE_CONTROL_IND
 
+#ifdef WLAN_FEATURE_EXTSCAN
+#define WDA_HIGH_PRIORITY_DATA_INFO_IND         SIR_HAL_HIGH_PRIORITY_DATA_INFO_IND
+#endif /* WLAN_FEATURE_EXTSCAN */
+
+#define WDA_FW_MEM_DUMP_REQ                  SIR_HAL_FW_MEM_DUMP_REQ
+
+#define WDA_WIFI_CONFIG_REQ                    SIR_HAL_WIFI_CONFIG_PARAMS
+
+#define WDA_ANTENNA_DIVERSITY_SELECTION_REQ    SIR_HAL_ANTENNA_DIVERSITY_SELECTION_REQ
+#ifdef FEATURE_OEM_DATA_SUPPORT
+#define WDA_START_OEM_DATA_REQ_IND_NEW         SIR_HAL_START_OEM_DATA_REQ_IND_NEW
+#define WDA_START_OEM_DATA_RSP_IND_NEW         SIR_HAL_START_OEM_DATA_RSP_IND_NEW
+#endif
+
+#define WDA_MODIFY_ROAM_PARAMS_IND             SIR_HAL_MODIFY_ROAM_PARAMS_IND
+#define WDA_SET_ALLOWED_ACTION_FRAMES_IND      SIR_HAL_SET_ALLOWED_ACTION_FRAMES
+
+#define WDA_PAUSE_TL_IND                       SIR_HAL_PAUSE_TL_IND
 
 #define HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME 0x40 // Bit 6 will be used to control BD rate for Management frames
 
@@ -2108,5 +2165,8 @@ void WDA_TrafficStatsTimerActivate(wpt_boolean activate);
 void WDA_SetEnableSSR(v_BOOL_t enableSSR);
 
 
-void WDA_FWLoggingDXEdoneInd(void);
+void WDA_FWLoggingDXEdoneInd(v_U32_t logType);
+
+void WDA_SetMgmtPktViaWQ5(v_BOOL_t sendMgmtPktViaWQ5);
+
 #endif

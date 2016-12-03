@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -96,6 +96,8 @@ extern void hdd_set_wlan_suspend_mode(bool suspend);
 #define HDD_SAP_TX_TIMEOUT_RATELIMIT_BURST    1
 #define HDD_SAP_TX_STALL_SSR_THRESHOLD        5
 #define HDD_SAP_TX_STALL_RECOVERY_THRESHOLD HDD_SAP_TX_STALL_SSR_THRESHOLD - 2
+#define HDD_SAP_TX_STALL_FATAL_EVENT_THRESHOLD    2
+
 
 static DEFINE_RATELIMIT_STATE(hdd_softap_tx_timeout_rs,                 \
                               HDD_SAP_TX_TIMEOUT_RATELIMIT_INTERVAL,    \
@@ -276,11 +278,46 @@ static VOS_STATUS hdd_softap_flush_tx_queues( hdd_adapter_t *pAdapter )
    return status;
 }
 
+/**
+ * hdd_softap_get_connected_sta() -  provide number of connected STA
+ * @pHostapdAdapter: pAdapter for SAP
+ *
+ * This function is invoked for SAP mode to get connected STA.
+ *
+ * Return:  Total number of connected STA to SAP.
+ */
+v_U8_t hdd_softap_get_connected_sta(hdd_adapter_t *pHostapdAdapter)
+{
+    v_U8_t i, sta_ct = 0;
+    v_CONTEXT_t pVosContext = NULL;
+    ptSapContext pSapCtx = NULL;
+
+    pVosContext = (WLAN_HDD_GET_CTX(pHostapdAdapter))->pvosContext;
+    pSapCtx = VOS_GET_SAP_CB(pVosContext);
+    if (pSapCtx == NULL) {
+        VOS_TRACE(VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO,
+                 FL("psapCtx is NULL"));
+        goto error;
+    }
+
+    spin_lock_bh(&pSapCtx->staInfo_lock);
+    // get stations associated with SAP
+    for (i = 0; i < WLAN_MAX_STA_COUNT; i++) {
+        if (pSapCtx->aStaInfo[i].isUsed &&
+                  (!vos_is_macaddr_broadcast(&pSapCtx->aStaInfo[i].macAddrSTA)))
+               sta_ct++;
+    }
+    spin_unlock_bh( &pSapCtx->staInfo_lock );
+
+error:
+    return sta_ct;
+}
+
 /**============================================================================
-  @brief hdd_softap_hard_start_xmit() - Function registered with the Linux OS for 
-  transmitting packets. There are 2 versions of this function. One that uses
-  locked queue and other that uses lockless queues. Both have been retained to
-  do some performance testing
+  @brief __hdd_softap_hard_start_xmit() - Function registered with the Linux OS
+  for transmitting packets. There are 2 versions of this function. One that
+  uses locked queue and other that uses lockless queues. Both have been
+  retained to do some performance testing
 
   @param skb      : [in]  pointer to OS packet (sk_buff)
   @param dev      : [in] pointer to Libra network device
@@ -288,7 +325,7 @@ static VOS_STATUS hdd_softap_flush_tx_queues( hdd_adapter_t *pAdapter )
   @return         : NET_XMIT_DROP if packets are dropped
                   : NET_XMIT_SUCCESS if packet is enqueued succesfully
   ===========================================================================*/
-int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+int __hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
    VOS_STATUS status;
    WLANTL_ACEnumType ac = WLANTL_AC_BE;
@@ -416,6 +453,8 @@ int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
     {
        VOS_TRACE( VOS_MODULE_ID_HDD_SAP_DATA, VOS_TRACE_LEVEL_WARN,
             "%s: station %d ac %d queue over limit %d", __func__, STAId, ac, pktListSize);
+       ++pAdapter->hdd_stats.hddTxRxStats.txXmitBackPressured;
+       ++pAdapter->hdd_stats.hddTxRxStats.txXmitBackPressuredAC[ac];
        pSapCtx->aStaInfo[STAId].txSuspended[ac] = VOS_TRUE;
        netif_stop_subqueue(dev, skb_get_queue_mapping(skb));
        txSuspended = VOS_TRUE;
@@ -521,6 +560,15 @@ int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 xmit_done:
    spin_unlock_bh( &pSapCtx->staInfo_lock );
    return os_status;
+}
+
+int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+{
+	int ret;
+	vos_ssr_protect(__func__);
+	ret = __hdd_softap_hard_start_xmit(skb, dev);
+	vos_ssr_unprotect(__func__);
+	return ret;
 }
 
 /**============================================================================
@@ -734,6 +782,8 @@ void __hdd_softap_tx_timeout(struct net_device *dev)
                 "%s: Cannot recover from Data stall Issue SSR",
                 __func__);
       WLANTL_FatalError();
+      // reset count after issuing the SSR
+      pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount = 0;
       return;
    }
 
@@ -748,7 +798,15 @@ void __hdd_softap_tx_timeout(struct net_device *dev)
       hdd_wmm_tx_snapshot(pAdapter);
       WLANTL_TLDebugMessage(WLANTL_DEBUG_TX_SNAPSHOT);
    }
-
+   /* Call fatal event if data stall is for
+    * HDD_TX_STALL_FATAL_EVENT_THRESHOLD times
+    */
+   if (HDD_SAP_TX_STALL_FATAL_EVENT_THRESHOLD ==
+       pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount)
+      vos_fatal_event_logs_req(WLAN_LOG_TYPE_FATAL,
+                   WLAN_LOG_INDICATOR_HOST_DRIVER,
+                   WLAN_LOG_REASON_DATA_STALL,
+                   FALSE, TRUE);
 } 
 
 void hdd_softap_tx_timeout(struct net_device *dev)

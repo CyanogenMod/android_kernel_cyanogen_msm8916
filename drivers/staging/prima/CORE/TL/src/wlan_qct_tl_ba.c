@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -1204,6 +1204,9 @@ VOS_STATUS WLANTL_MSDUReorder
          }
          if(VOS_STATUS_E_RESOURCES == status)
          {
+            MTRACE(vos_trace(VOS_MODULE_ID_TL, TRACE_CODE_TL_QUEUE_CURRENT,
+                    currentReorderInfo->sessionID , ucOpCode ));
+
             /* This is the case slot index is already cycle one route, route all the frames Qed */
             vosPktIdx = NULL;
             status = WLANTL_ChainFrontPkts(ucFwdIdx,
@@ -1332,6 +1335,9 @@ VOS_STATUS WLANTL_MSDUReorder
            }
          if(VOS_STATUS_E_RESOURCES == status)
          {
+            MTRACE(vos_trace(VOS_MODULE_ID_TL, TRACE_CODE_TL_QUEUE_CURRENT,
+                                  currentReorderInfo->sessionID , ucOpCode ));
+
             /* This is the case slot index is already cycle one route, route all the frames Qed */
             vosPktIdx = NULL;
             status = WLANTL_ChainFrontPkts(ucFwdIdx,
@@ -1393,6 +1399,9 @@ VOS_STATUS WLANTL_MSDUReorder
            }
          if(VOS_STATUS_E_RESOURCES == status)
          {
+            MTRACE(vos_trace(VOS_MODULE_ID_TL, TRACE_CODE_TL_QUEUE_CURRENT,
+                                   currentReorderInfo->sessionID , ucOpCode ));
+
             vos_pkt_return_packet(vosPktIdx); 
             /* This is the case slot index is already cycle one route, route all the frames Qed */
             vosPktIdx = NULL;
@@ -1526,6 +1535,13 @@ VOS_STATUS WLANTL_MSDUReorder
                WLANTL_FillReplayCounter(currentReorderInfo,
                                  ullreplayCounter, ucSlotIdx);
            }
+
+         if(VOS_STATUS_E_RESOURCES == status)
+         {
+             MTRACE(vos_trace(VOS_MODULE_ID_TL, TRACE_CODE_TL_QUEUE_CURRENT,
+                                   currentReorderInfo->sessionID , ucOpCode ));
+         }
+
          if(!VOS_IS_STATUS_SUCCESS(status))
          {
             TLLOGE(VOS_TRACE(VOS_MODULE_ID_TL, VOS_TRACE_LEVEL_ERROR,"Q Current frame fail %d",
@@ -1717,7 +1733,10 @@ VOS_STATUS WLANTL_QueueCurrent
       MTRACE(vos_trace(VOS_MODULE_ID_TL, TRACE_CODE_TL_QUEUE_CURRENT,
                       pwBaReorder->sessionID , pwBaReorder->pendingFramesCount ));
 
-      TLLOGE(VOS_TRACE(VOS_MODULE_ID_TL, VOS_TRACE_LEVEL_ERROR,"One Cycle rounded, lost many frames already, not in Q %d",
+      MTRACE(vos_trace(VOS_MODULE_ID_TL, TRACE_CODE_TL_QUEUE_CURRENT,
+                                        pwBaReorder->sessionID , ucSlotIndex ));
+
+      TLLOGE(VOS_TRACE(VOS_MODULE_ID_TL, VOS_TRACE_LEVEL_INFO,"One Cycle rounded, lost many frames already, not in Q %d",
                   pwBaReorder->pendingFramesCount));
       return VOS_STATUS_E_RESOURCES;
    }

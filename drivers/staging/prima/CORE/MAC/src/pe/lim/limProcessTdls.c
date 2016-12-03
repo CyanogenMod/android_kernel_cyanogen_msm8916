@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -738,7 +738,8 @@ tSirRetStatus limSendTdlsDisReqFrame(tpAniSirGlobal pMac, tSirMacAddr peer_mac,
                             TID_AC_VI,
                             limTxComplete, pFrame,
                             limMgmtTXComplete,
-                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME,
+                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME |
+                                HAL_USE_PEER_STA_REQUESTED_MASK,
                             pMac->lim.txBdToken++);
     if ( ! HAL_STATUS_SUCCESS ( halstatus ) )
     {
@@ -1329,7 +1330,8 @@ tSirRetStatus limSendTdlsLinkSetupReqFrame(tpAniSirGlobal pMac,
                             TID_AC_VI,
                             limTxComplete, pFrame,
                             limMgmtTXComplete,
-                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME,
+                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME |
+                                HAL_USE_PEER_STA_REQUESTED_MASK,
                             pMac->lim.txBdToken++);
 
     if ( ! HAL_STATUS_SUCCESS ( halstatus ) )
@@ -1538,7 +1540,8 @@ tSirRetStatus limSendTdlsTeardownFrame(tpAniSirGlobal pMac,
                             TID_AC_VI,
                             limTxComplete, pFrame,
                             limMgmtTXComplete,
-                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME,
+                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME |
+                                HAL_USE_PEER_STA_REQUESTED_MASK,
                             pMac->lim.txBdToken++);
     if ( ! HAL_STATUS_SUCCESS ( halstatus ) )
     {
@@ -1801,7 +1804,8 @@ static tSirRetStatus limSendTdlsSetupRspFrame(tpAniSirGlobal pMac,
                             TID_AC_VI,
                             limTxComplete, pFrame,
                             limMgmtTXComplete,
-                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME,
+                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME |
+                                HAL_USE_PEER_STA_REQUESTED_MASK,
                             pMac->lim.txBdToken++);
     if ( ! HAL_STATUS_SUCCESS ( halstatus ) )
     {
@@ -2050,7 +2054,8 @@ tSirRetStatus limSendTdlsLinkSetupCnfFrame(tpAniSirGlobal pMac, tSirMacAddr peer
                             TID_AC_VI,
                             limTxComplete, pFrame, 
                             limMgmtTXComplete,
-                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME,
+                            HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME |
+                                HAL_USE_PEER_STA_REQUESTED_MASK,
                             pMac->lim.txBdToken++);
 
 
@@ -2914,13 +2919,18 @@ void PopulateDot11fLinkIden(tpAniSirGlobal pMac, tpPESession psessionEntry,
 void PopulateDot11fTdlsExtCapability(tpAniSirGlobal pMac, 
                                         tDot11fIEExtCap *extCapability)
 {
-    extCapability->TDLSPeerPSMSupp = PEER_PSM_SUPPORT ;
-    extCapability->TDLSPeerUAPSDBufferSTA = pMac->lim.gLimTDLSBufStaEnabled;
-    extCapability->TDLSChannelSwitching = pMac->lim.gLimTDLSOffChannelEnabled ;
-    extCapability->TDLSSupport = TDLS_SUPPORT ;
-    extCapability->TDLSProhibited = TDLS_PROHIBITED ;
-    extCapability->TDLSChanSwitProhibited = TDLS_CH_SWITCH_PROHIBITED ;
-    extCapability->present = 1 ;
+    struct s_ext_cap *p_ext_cap = (struct s_ext_cap *)extCapability->bytes;
+
+    p_ext_cap->TDLSPeerPSMSupp = PEER_PSM_SUPPORT ;
+    p_ext_cap->TDLSPeerUAPSDBufferSTA = pMac->lim.gLimTDLSBufStaEnabled;
+    p_ext_cap->TDLSChannelSwitching = pMac->lim.gLimTDLSOffChannelEnabled ;
+    p_ext_cap->TDLSSupport = TDLS_SUPPORT ;
+    p_ext_cap->TDLSProhibited = TDLS_PROHIBITED ;
+    p_ext_cap->TDLSChanSwitProhibited = TDLS_CH_SWITCH_PROHIBITED ;
+
+    extCapability->present = 1;
+    extCapability->num_bytes = lim_compute_ext_cap_ie_length(extCapability);
+
     return ;
 }
 
@@ -2968,6 +2978,9 @@ tSirRetStatus limProcessSmeTdlsMgmtSendReq(tpAniSirGlobal pMac,
                            psessionEntry->limSmeState);
         goto lim_tdls_send_mgmt_error;
     }
+    vos_tdls_tx_rx_mgmt_event(SIR_MAC_ACTION_TDLS,
+              SIR_MAC_ACTION_TX, SIR_MAC_MGMT_ACTION,
+              pSendMgmtReq->reqType, pSendMgmtReq->peerMac);
 
     switch( pSendMgmtReq->reqType )
     {
@@ -3069,12 +3082,18 @@ void limSendSmeTdlsLinkEstablishReqRsp(tpAniSirGlobal pMac,
         limLog(pMac, LOGE, FL("Failed to allocate memory"));
         return ;
     }
+
+    vos_mem_zero(pTdlsLinkEstablishReqRsp, sizeof(tSirTdlsLinkEstablishReqRsp));
+
     pTdlsLinkEstablishReqRsp->statusCode = status ;
-    if ( peerMac )
+    if (pStaDs && peerMac)
     {
         vos_mem_copy(pTdlsLinkEstablishReqRsp->peerMac, peerMac, sizeof(tSirMacAddr));
+        pTdlsLinkEstablishReqRsp->sta_idx = pStaDs->staIndex;
     }
+
     pTdlsLinkEstablishReqRsp->sessionId = sessionId;
+
     mmhMsg.type = eWNI_SME_TDLS_LINK_ESTABLISH_RSP ;
     mmhMsg.bodyptr = pTdlsLinkEstablishReqRsp;
     mmhMsg.bodyval = 0;
@@ -3101,12 +3120,18 @@ void limSendSmeTdlsChanSwitchReqRsp(tpAniSirGlobal pMac,
         PELOGE(limLog(pMac, LOGE, FL("Failed to allocate memory"));)
         return ;
     }
+
+    vos_mem_zero(pTdlsChanSwitchReqRsp, sizeof(tSirTdlsChanSwitchReqRsp));
+
     pTdlsChanSwitchReqRsp->statusCode = status ;
-    if ( peerMac )
+    if (pStaDs && peerMac )
     {
         vos_mem_copy(pTdlsChanSwitchReqRsp->peerMac, peerMac, sizeof(tSirMacAddr));
+        pTdlsChanSwitchReqRsp->sta_idx = pStaDs->staIndex;;
     }
+
     pTdlsChanSwitchReqRsp->sessionId = sessionId;
+
     mmhMsg.type = eWNI_SME_TDLS_CHANNEL_SWITCH_RSP ;
     mmhMsg.bodyptr = pTdlsChanSwitchReqRsp;
     mmhMsg.bodyval = 0;
@@ -3774,7 +3799,7 @@ tSirRetStatus limProcesSmeTdlsChanSwitchReq(tpAniSirGlobal pMac,
         return eSIR_MEM_ALLOC_FAILED;
     }
 
-    vos_mem_set( (tANI_U8 *)pMsgTdlsChanSwitch, sizeof(tpTdlsChanSwitchParams), 0);
+    vos_mem_set( (tANI_U8 *)pMsgTdlsChanSwitch, sizeof(*pMsgTdlsChanSwitch), 0);
 
     /* if channel bw offset is not set,
        send maximum supported offset in the band */

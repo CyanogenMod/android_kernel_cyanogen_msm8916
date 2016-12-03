@@ -59,6 +59,9 @@
 #include "rrmApi.h"
 #endif
 #include "limSessionUtils.h"
+#ifdef WLAN_FEATURE_RMC
+#include "limRMC.h"
+#endif
 
 #if defined(FEATURE_WLAN_ESE) && !defined(FEATURE_WLAN_ESE_UPLOAD)
 #include "eseApi.h"
@@ -175,6 +178,11 @@ tSirRetStatus limStartChannelSwitch(tpAniSirGlobal pMac, tpPESession psessionEnt
        limLog(pMac, LOGW, FL("Ignoring channel switch on session %d"), psessionEntry->peSessionId);
        return eSIR_SUCCESS;
     }
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
+    limDiagEventReport(pMac, WLAN_PE_DIAG_CHANNEL_SWITCH_ANOUNCEMENT,
+                       psessionEntry, eSIR_SUCCESS, LIM_SWITCH_CHANNEL_CSA);
+#endif
+
     psessionEntry->channelChangeCSA =  LIM_SWITCH_CHANNEL_CSA;
     /* Deactivate and change reconfigure the timeout value */
     //limDeactivateAndChangeTimer(pMac, eLIM_CHANNEL_SWITCH_TIMER);
@@ -1312,8 +1320,8 @@ __limProcessAddBAReq( tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
     if (!(IS_HWSTA_IDX(pSta->staIndex)))
     {
         status = eSIR_MAC_REQ_DECLINED_STATUS;
-        limLog( pMac, LOGE,
-            FL( "Sta Id is not HW Sta Id, Status code is %d " ), status);
+        limLog( pMac, LOG1,
+            FL( "ta Id is not HW Sta Id, Status code is %d " ), status);
         goto returnAfterError;
     }
 #endif //WLAN_SOFTAP_VSTA_FEATURE
@@ -1524,7 +1532,8 @@ tANI_U8 *pBody;
   if(eSIR_SUCCESS != limSearchAndDeleteDialogueToken(pMac, frmAddBARsp.DialogToken.token,
         pSta->assocId, frmAddBARsp.AddBAParameterSet.tid))
   {
-      PELOGW(limLog(pMac, LOGE, FL("dialogueToken in received addBARsp did not match with outstanding requests"));)
+      limLog(pMac, LOGE,
+        FL("dialogueToken in received addBARsp did not match with outstanding requests"));
       return;
   }
 
@@ -1532,6 +1541,10 @@ tANI_U8 *pBody;
   if( eSIR_MAC_SUCCESS_STATUS == frmAddBARsp.Status.status )
   {
     tANI_U32 val;
+    pMac->lim.staBaInfo[pSta->staIndex].
+        failed_count[frmAddBARsp.AddBAParameterSet.tid] = 0;
+    pMac->lim.staBaInfo[pSta->staIndex].
+        failed_timestamp[frmAddBARsp.AddBAParameterSet.tid] = 0;
     if (wlan_cfgGetInt(pMac, WNI_CFG_NUM_BUFF_ADVERT , &val) != eSIR_SUCCESS)
     {
         limLog(pMac, LOG1, FL("Unable to get WNI_CFG_NUM_BUFF_ADVERT"));
@@ -1558,8 +1571,13 @@ tANI_U8 *pBody;
     }
   }
   else
+  {
+    pMac->lim.staBaInfo[pSta->staIndex].
+       failed_count[frmAddBARsp.AddBAParameterSet.tid]++;
+    pMac->lim.staBaInfo[pSta->staIndex].failed_timestamp[
+       frmAddBARsp.AddBAParameterSet.tid] = jiffies_to_msecs(jiffies);
     goto returnAfterError;
-
+  }
   // Change STA state to wait for ADDBA Rsp from HAL
   LIM_SET_STA_BA_STATE(pSta, frmAddBARsp.AddBAParameterSet.tid, eLIM_BA_STATE_WT_ADD_RSP);
 
@@ -2260,6 +2278,12 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
 
     switch (pActionHdr->category)
     {
+
+        /*
+         * WARNING: If you add Action frame category case here, set the
+         * corresponding bit to 1 in sme_set_allowed_action_frames() for
+         * the FW to hand over that frame to host without dropping itself
+         */
         case SIR_MAC_ACTION_QOS_MGMT:
             if ( (psessionEntry->limQosEnabled) ||
                   (pActionHdr->actionID == SIR_MAC_QOS_MAP_CONFIGURE) )
@@ -2422,7 +2446,9 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
     }
 #if defined WLAN_FEATURE_VOWIFI
     case SIR_MAC_ACTION_RRM:
-        if( pMac->rrm.rrmPEContext.rrmEnable )
+        /* Ignore RRM measurement request until DHCP is set */
+        if(pMac->rrm.rrmPEContext.rrmEnable &&
+           pMac->roam.roamSession[psessionEntry->smeSessionId].dhcp_done)
         {
             switch(pActionHdr->actionID) {
                 case SIR_MAC_RRM_RADIO_MEASURE_REQ:
@@ -2445,11 +2471,14 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
         {
             // Else we will just ignore the RRM messages.
             limLog( pMac, LOG1,
-              FL("RRM Action frame ignored as RRM is disabled in cfg"));
+              FL("RRM Action frame ignored as rrmEnable is %d or DHCP not completed %d"),
+              pMac->rrm.rrmPEContext.rrmEnable,
+              pMac->roam.roamSession[psessionEntry->smeSessionId].dhcp_done);
         }
         break;
 #endif
-#if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR)
+#if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR) \
+    || defined (WLAN_FEATURE_RMC)
         case SIR_MAC_ACTION_VENDOR_SPECIFIC_CATEGORY:
             {
               tpSirMacVendorSpecificFrameHdr pVendorSpecific = (tpSirMacVendorSpecificFrameHdr) pActionHdr;
@@ -2473,6 +2502,57 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
                                          pRxPacketInfo,
                                          psessionEntry, 0);
               }
+#if defined (WLAN_FEATURE_RMC)
+              else if ((eLIM_STA_IN_IBSS_ROLE == psessionEntry->limSystemRole) &&
+                  ((VOS_TRUE == vos_mem_compare(SIR_MAC_RMC_MCAST_ADDRESS,
+                    &pHdr->da[0], sizeof(tSirMacAddr))) ||
+                   (VOS_TRUE == vos_mem_compare(psessionEntry->selfMacAddr,
+                     &pHdr->da[0], sizeof(tSirMacAddr)))) &&
+                   vos_mem_compare(pVendorSpecific->Oui, SIR_MAC_RMC_OUI, 3))
+              {
+                  tANI_U8 MagicCode[] =
+                         { 0x4f, 0x58, 0x59, 0x47, 0x45, 0x4e };
+                  tpSirMacIbssExtNetworkFrameHdr pIbssExtHdr =
+                             (tpSirMacIbssExtNetworkFrameHdr) pActionHdr;
+
+                  if (vos_mem_compare(pIbssExtHdr->MagicCode,
+                      MagicCode, sizeof(MagicCode)) &&
+                      pIbssExtHdr->version == SIR_MAC_RMC_VER )
+                  {
+                      switch (pIbssExtHdr->actionID)
+                      {
+                          default:
+                              PELOGE(limLog(pMac, LOGE,
+                                 FL("Action RMC actionID %d not handled"),
+                                     pIbssExtHdr->actionID);)
+                              break;
+                          case SIR_MAC_RMC_RULER_INFORM_SELECTED:
+                              limLog(pMac, LOG1,
+                                 FL("Action RMC RULER_INFORM_SELECTED."));
+                              limProcessRMCMessages(pMac,
+                                 eLIM_RMC_OTA_RULER_INFORM_SELECTED,
+                                 (tANI_U32 *)pRxPacketInfo);
+                              break;
+                          case SIR_MAC_RMC_RULER_INFORM_CANCELLED:
+                              limLog(pMac, LOG1,
+                                 FL("Action RMC RULER_INFORM_CANCELLED."));
+                              limProcessRMCMessages(pMac,
+                                 eLIM_RMC_OTA_RULER_INFORM_CANCELLED,
+                                 (tANI_U32 *)pRxPacketInfo);
+                              break;
+                      }
+                  }
+                  else
+                  {
+                      limLog( pMac, LOG1,
+                         FL("Dropping the vendor specific action frame in IBSS "
+                             "mode because of Ibss Ext Magic mismatch "
+                             MAC_ADDRESS_STR " or Version mismatch = %d"),
+                             MAC_ADDR_ARRAY(pIbssExtHdr->MagicCode),
+                             pIbssExtHdr->version );
+                  }
+              }
+#endif /* WLAN_FEATURE_RMC */
               else
               {
                  limLog( pMac, LOG1,
@@ -2486,7 +2566,8 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
               }
            }
            break;
-#endif
+#endif /* WLAN_FEATURE_VOWIFI_11R || FEATURE_WLAN_ESE ||
+          FEATURE_WLAN_LFR || WLAN_FEATURE_RMC */
     case SIR_MAC_ACTION_PUBLIC_USAGE:
         switch(pActionHdr->actionID) {
         case SIR_MAC_ACTION_VENDOR_SPECIFIC:
